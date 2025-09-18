@@ -9,7 +9,7 @@ interface RecentProjectsProps {
 }
 
 export default function RecentProjects({}: RecentProjectsProps) {
-  const { projects, loading, error, refreshProjects, retryCount, maxRetries } = useAuditProjects()
+  const { projects, loading, error, refreshProjects, retryCount, maxRetries, isRefreshing } = useAuditProjects()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -76,10 +76,22 @@ export default function RecentProjects({}: RecentProjectsProps) {
               <p className="text-gray-600 text-sm">Your latest audit activities</p>
             </div>
           </div>
-          <button className="text-gray-600 hover:text-gray-800 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button 
+            onClick={() => refreshProjects()} 
+            className="text-gray-600 hover:text-gray-800 transition-colors relative"
+            disabled={loading || isRefreshing}
+          >
+            <svg 
+              className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
+            {isRefreshing && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            )}
           </button>
         </div>
       </div>
