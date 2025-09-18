@@ -29,9 +29,103 @@ interface AuditProject {
   progress: number
   score: number
   issues_count: number
+  total_pages: number
+  total_links: number
+  total_images: number
+  total_meta_tags: number
+  technologies_found: number
+  cms_detected: boolean
+  cms_type: string | null
+  cms_version: string | null
+  cms_plugins: CmsPlugin[] | null
+  cms_themes: CmsTheme[] | null
+  cms_components: CmsComponent[] | null
+  cms_confidence: number
+  cms_detection_method: string | null
+  cms_metadata: any | null
+  technologies: Technology[] | null
+  technologies_confidence: number
+  technologies_detection_method: string | null
+  technologies_metadata: any | null
+  total_html_content: number
+  average_html_per_page: number
+  pages_per_second: number
+  total_response_time: number
+  scraping_completed_at: string | null
+  scraping_data: any | null
   created_at: string
   updated_at: string
   last_audit_at: string | null
+}
+
+interface CmsPlugin {
+  name: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  author: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface CmsTheme {
+  name: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  author: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface CmsComponent {
+  name: string
+  type: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface Technology {
+  name: string
+  version: string | null
+  category: string
+  confidence: number
+  detection_method: string
+  description: string | null
+  website: string | null
+  icon: string | null
+  first_seen: string | null
+  last_seen: string | null
+}
+
+interface ScrapedPage {
+  id: string
+  audit_project_id: string
+  user_id: string
+  url: string
+  status_code: number | null
+  title: string | null
+  description: string | null
+  html_content: string | null
+  html_content_length: number | null
+  links_count: number
+  images_count: number
+  meta_tags_count: number
+  technologies_count: number
+  technologies: string[] | null
+  cms_type: string | null
+  cms_version: string | null
+  cms_plugins: string[] | null
+  is_external: boolean
+  response_time: number | null
+  created_at: string
+  updated_at: string
 }
 
 interface SupabaseContextType {
@@ -47,8 +141,16 @@ interface SupabaseContextType {
   // Audit Projects CRUD operations
   createAuditProject: (projectData: Omit<AuditProject, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => Promise<{ data: AuditProject | null; error: any }>
   getAuditProjects: () => Promise<{ data: AuditProject[] | null; error: any }>
+  getAuditProjectsOptimized: () => Promise<{ data: AuditProject[] | null; error: any }>
   updateAuditProject: (id: string, updates: Partial<AuditProject>) => Promise<{ data: AuditProject | null; error: any }>
   deleteAuditProject: (id: string) => Promise<{ error: any }>
+  // Scraped Pages CRUD operations
+  createScrapedPage: (pageData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<{ data: ScrapedPage | null; error: any }>
+  getScrapedPages: (auditProjectId: string) => Promise<{ data: ScrapedPage[] | null; error: any }>
+  updateScrapedPage: (id: string, updates: Partial<ScrapedPage>) => Promise<{ data: ScrapedPage | null; error: any }>
+  deleteScrapedPage: (id: string) => Promise<{ data: ScrapedPage | null; error: any }>
+  // Bulk operations
+  createScrapedPages: (pagesData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) => Promise<{ data: ScrapedPage[] | null; error: any }>
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
@@ -475,6 +577,77 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Optimized query that only fetches required columns for dashboard components
+    const getAuditProjectsOptimized = async () => {
+      if (!user) {
+        return { data: null, error: { message: 'No user logged in' } }
+      }
+
+      const queryStartTime = performance.now()
+      console.log('🔍 SupabaseContext: Starting optimized query for user:', user.id)
+
+      try {
+        const { data, error } = await supabase
+          .from('audit_projects')
+          .select(`
+            id,
+            site_url,
+            status,
+            progress,
+            last_audit_at,
+            issues_count,
+            score,
+            created_at,
+            updated_at,
+            total_pages,
+            total_links,
+            total_images,
+            total_meta_tags,
+            technologies_found,
+            cms_detected,
+            cms_type,
+            cms_version,
+            cms_plugins,
+            cms_themes,
+            cms_components,
+            cms_confidence,
+            cms_detection_method,
+            cms_metadata,
+            technologies,
+            technologies_confidence,
+            technologies_detection_method,
+            technologies_metadata,
+            total_html_content,
+            average_html_per_page
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        const queryEndTime = performance.now()
+        const queryTime = queryEndTime - queryStartTime
+
+        if (error) {
+          console.error('❌ SupabaseContext: Query error after', queryTime.toFixed(2), 'ms:', error)
+          return { data: null, error }
+        }
+
+        console.log(`✅ SupabaseContext: Query completed in ${queryTime.toFixed(2)}ms`)
+        console.log(`📊 SupabaseContext: Retrieved ${data?.length || 0} projects`)
+        
+        if (data && data.length > 0) {
+          const dataSize = JSON.stringify(data).length
+          console.log(`📦 SupabaseContext: Data size: ${(dataSize / 1024).toFixed(2)}KB`)
+        }
+
+        return { data: data as AuditProject[], error: null }
+      } catch (error) {
+        const queryEndTime = performance.now()
+        const queryTime = queryEndTime - queryStartTime
+        console.error('❌ SupabaseContext: Unexpected error after', queryTime.toFixed(2), 'ms:', error)
+        return { data: null, error }
+      }
+    }
+
   const updateAuditProject = async (id: string, updates: Partial<AuditProject>) => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
@@ -525,6 +698,139 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Scraped Pages CRUD operations
+  const createScrapedPage = async (pageData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .insert({
+          user_id: user.id,
+          ...pageData
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating scraped page:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error creating scraped page:', error)
+      return { data: null, error }
+    }
+  }
+
+  const getScrapedPages = async (auditProjectId: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .select('*')
+        .eq('audit_project_id', auditProjectId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching scraped pages:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error fetching scraped pages:', error)
+      return { data: null, error }
+    }
+  }
+
+  const updateScrapedPage = async (id: string, updates: Partial<ScrapedPage>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating scraped page:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error updating scraped page:', error)
+      return { data: null, error }
+    }
+  }
+
+  const deleteScrapedPage = async (id: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error deleting scraped page:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error deleting scraped page:', error)
+      return { data: null, error }
+    }
+  }
+
+  const createScrapedPages = async (pagesData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const pagesWithUserId = pagesData.map(page => ({
+        ...page,
+        user_id: user.id
+      }))
+
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .insert(pagesWithUserId)
+        .select()
+
+      if (error) {
+        console.error('Error creating scraped pages:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error creating scraped pages:', error)
+      return { data: null, error }
+    }
+  }
+
   const value = {
     user,
     userProfile,
@@ -537,8 +843,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     updateProfile,
     createAuditProject,
     getAuditProjects,
+    getAuditProjectsOptimized,
     updateAuditProject,
     deleteAuditProject,
+    createScrapedPage,
+    getScrapedPages,
+    updateScrapedPage,
+    deleteScrapedPage,
+    createScrapedPages,
   }
 
   return (

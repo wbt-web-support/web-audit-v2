@@ -9,7 +9,7 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ onMenuClick, userProfile }: DashboardHeaderProps) {
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
       <div className="flex items-center justify-between px-4 py-4 lg:px-6">
         {/* Left side - Mobile menu button */}
         <div className="flex items-center">

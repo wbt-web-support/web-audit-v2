@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { AuditProjectsProvider } from '@/contexts/AuditProjectsContext'
 import DashboardSidebar from './components/DashboardSidebar'
 import DashboardHeader from './components/DashboardHeader'
 import DashboardContent from './components/DashboardContent'
@@ -42,30 +43,32 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <DashboardSidebar 
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        userProfile={userProfile}
-      />
-
-      {/* Main Content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <DashboardHeader 
-          onMenuClick={() => setSidebarOpen(true)}
-          userProfile={userProfile}
-        />
-
-        {/* Content */}
-        <DashboardContent 
+    <AuditProjectsProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Sidebar */}
+        <DashboardSidebar 
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
           activeTab={activeTab}
+          onTabChange={setActiveTab}
           userProfile={userProfile}
         />
+
+        {/* Main Content */}
+        <div className="lg:pl-64">
+          {/* Header */}
+          <DashboardHeader 
+            onMenuClick={() => setSidebarOpen(true)}
+            userProfile={userProfile}
+          />
+
+          {/* Content */}
+          <DashboardContent 
+            activeTab={activeTab}
+            userProfile={userProfile}
+          />
+        </div>
       </div>
-    </div>
+    </AuditProjectsProvider>
   )
 }
