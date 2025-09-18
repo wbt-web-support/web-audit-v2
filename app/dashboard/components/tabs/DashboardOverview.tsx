@@ -3,7 +3,7 @@
 // import { motion } from 'framer-motion' // Unused import
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
-import { useAuditProjects } from '@/contexts/AuditProjectsContext'
+import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../SiteCrawlForm'
 import ScrapingService from '../ScrapingService'
 import StatsCards from '../StatsCards'
@@ -12,9 +12,11 @@ import FeaturesShowcase from '../FeaturesShowcase'
 
 interface DashboardOverviewProps {
   userProfile: any
+  projects: AuditProject[]
+  projectsLoading: boolean
+  projectsError: string | null
+  refreshProjects: () => Promise<void>
 }
-
-// Project interface removed - RecentProjects now handles its own data fetching
 
 interface Feature {
   id: number
@@ -24,9 +26,14 @@ interface Feature {
   category: 'Performance' | 'SEO' | 'Security' | 'Accessibility'
 }
 
-export default function DashboardOverview({ userProfile }: DashboardOverviewProps) {
+export default function DashboardOverview({ 
+  userProfile, 
+  projects, 
+  projectsLoading, 
+  projectsError, 
+  refreshProjects 
+}: DashboardOverviewProps) {
   const { createAuditProject } = useSupabase()
-  const { refreshProjects } = useAuditProjects()
   
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -296,7 +303,10 @@ export default function DashboardOverview({ userProfile }: DashboardOverviewProp
       </div>
 
       {/* Stats Cards */}
-      <StatsCards />
+      <StatsCards 
+        projects={projects}
+        projectsLoading={projectsLoading}
+      />
 
       {/* Main Content Row - Site Crawl and Recent Projects */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -308,7 +318,12 @@ export default function DashboardOverview({ userProfile }: DashboardOverviewProp
         />
 
         {/* Recent Projects */}
-        <RecentProjects />
+        <RecentProjects 
+          projects={projects}
+          projectsLoading={projectsLoading}
+          projectsError={projectsError}
+          refreshProjects={refreshProjects}
+        />
       </div>
 
       {/* Features Showcase */}

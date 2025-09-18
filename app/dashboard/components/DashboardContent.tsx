@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { AuditProject } from '@/types/audit'
 import DashboardOverview from './tabs/DashboardOverview'
 import ProjectsTab from './tabs/ProjectsTab'
 import ProfileTab from './tabs/ProfileTab'
@@ -9,21 +10,56 @@ import AdminTab from './tabs/AdminTab'
 interface DashboardContentProps {
   activeTab: string
   userProfile: any
+  projects: AuditProject[]
+  projectsLoading: boolean
+  projectsError: string | null
+  refreshProjects: () => Promise<void>
 }
 
-export default function DashboardContent({ activeTab, userProfile }: DashboardContentProps) {
+export default function DashboardContent({ 
+  activeTab, 
+  userProfile, 
+  projects, 
+  projectsLoading, 
+  projectsError, 
+  refreshProjects 
+}: DashboardContentProps) {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview userProfile={userProfile} />
+        return (
+          <DashboardOverview 
+            userProfile={userProfile} 
+            projects={projects}
+            projectsLoading={projectsLoading}
+            projectsError={projectsError}
+            refreshProjects={refreshProjects}
+          />
+        )
       case 'projects':
-        return <ProjectsTab userProfile={userProfile} />
+        return (
+          <ProjectsTab 
+            userProfile={userProfile} 
+            projects={projects}
+            projectsLoading={projectsLoading}
+            projectsError={projectsError}
+            refreshProjects={refreshProjects}
+          />
+        )
       case 'profile':
         return <ProfileTab userProfile={userProfile} />
       case 'admin':
         return <AdminTab userProfile={userProfile} />
       default:
-        return <DashboardOverview userProfile={userProfile} />
+        return (
+          <DashboardOverview 
+            userProfile={userProfile} 
+            projects={projects}
+            projectsLoading={projectsLoading}
+            projectsError={projectsError}
+            refreshProjects={refreshProjects}
+          />
+        )
     }
   }
 

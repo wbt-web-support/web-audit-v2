@@ -1,16 +1,22 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useAuditProjects } from '@/contexts/AuditProjectsContext'
+import { AuditProject } from '@/types/audit'
 import { RecentProjectSkeleton } from './SkeletonLoader'
 
 interface RecentProjectsProps {
-  // Remove projects prop since we'll use shared data
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  projects: AuditProject[]
+  projectsLoading: boolean
+  projectsError: string | null
+  refreshProjects: () => Promise<void>
 }
 
-export default function RecentProjects({}: RecentProjectsProps) {
-  const { projects, loading, error, refreshProjects, retryCount, maxRetries, isRefreshing } = useAuditProjects()
+export default function RecentProjects({ 
+  projects, 
+  projectsLoading, 
+  projectsError, 
+  refreshProjects 
+}: RecentProjectsProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -80,17 +86,17 @@ export default function RecentProjects({}: RecentProjectsProps) {
           <button 
             onClick={() => refreshProjects()} 
             className="text-gray-600 hover:text-gray-800 transition-colors relative"
-            disabled={loading || isRefreshing}
+            disabled={projectsLoading}
           >
             <svg 
-              className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} 
+              className={`w-5 h-5 ${projectsLoading ? 'animate-spin' : ''}`} 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {isRefreshing && (
+            {projectsLoading && (
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
             )}
           </button>
@@ -98,24 +104,28 @@ export default function RecentProjects({}: RecentProjectsProps) {
       </div>
         
       <div className="p-6">
-        {loading ? (
+        {projectsLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, index) => (
               <RecentProjectSkeleton key={index} />
             ))}
           </div>
-        ) : error ? (
+        ) : projectsError ? (
           <div className="text-center py-8">
             <div className="text-red-500 mb-2">
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <p className="text-red-600 font-medium">{error}</p>
-            {retryCount > 0 && (
-              <p className="text-gray-500 text-sm mt-1">
-                Retry attempt {retryCount}/{maxRetries}
-              </p>
+            <p className="text-red-600 font-medium">{projectsError}</p>
+            {projectsError.includes('Supabase not configured') && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  Please create a <code className="bg-yellow-100 px-1 rounded">.env.local</code> file with your Supabase credentials.
+                  <br />
+                  See <code className="bg-yellow-100 px-1 rounded">env.example</code> for reference.
+                </p>
+              </div>
             )}
             <button 
               onClick={() => refreshProjects()} 

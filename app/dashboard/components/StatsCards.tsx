@@ -1,15 +1,14 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useAuditProjects } from '@/contexts/AuditProjectsContext'
+import { AuditProject } from '@/types/audit'
 
 interface StatsCardsProps {
-  // Remove projects prop since we'll use shared data
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  projects: AuditProject[]
+  projectsLoading: boolean
 }
 
-export default function StatsCards({}: StatsCardsProps) {
-  const { projects, loading } = useAuditProjects()
+export default function StatsCards({ projects, projectsLoading }: StatsCardsProps) {
 
   // Calculate stats
   const totalProjects = projects.length
@@ -28,10 +27,10 @@ export default function StatsCards({}: StatsCardsProps) {
           <div>
             <p className="text-sm font-medium text-gray-600">Total Projects</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">
-              {loading ? '...' : totalProjects}
+              {projectsLoading ? '...' : totalProjects}
             </p>
             <p className="text-sm text-green-600 mt-1">
-              {loading ? 'Loading...' : totalProjects > 0 ? 'Active projects' : 'No projects yet'}
+              {projectsLoading ? 'Loading...' : totalProjects > 0 ? 'Active projects' : 'No projects yet'}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-blue-100 text-blue-600">
@@ -52,10 +51,10 @@ export default function StatsCards({}: StatsCardsProps) {
           <div>
             <p className="text-sm font-medium text-gray-600">Active Projects</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">
-              {loading ? '...' : activeProjects}
+              {projectsLoading ? '...' : activeProjects}
             </p>
             <p className="text-sm text-blue-600 mt-1">
-              {loading ? 'Loading...' : activeProjects > 0 ? 'Currently running' : 'None active'}
+              {projectsLoading ? 'Loading...' : activeProjects > 0 ? 'Currently running' : 'None active'}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-green-100 text-green-600">
@@ -76,10 +75,10 @@ export default function StatsCards({}: StatsCardsProps) {
           <div>
             <p className="text-sm font-medium text-gray-600">Completed Projects</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">
-              {loading ? '...' : completedProjects}
+              {projectsLoading ? '...' : completedProjects}
             </p>
             <p className="text-sm text-purple-600 mt-1">
-              {loading ? 'Loading...' : completedProjects > 0 ? 'Successfully finished' : 'None completed'}
+              {projectsLoading ? 'Loading...' : completedProjects > 0 ? 'Successfully finished' : 'None completed'}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
@@ -100,10 +99,10 @@ export default function StatsCards({}: StatsCardsProps) {
           <div>
             <p className="text-sm font-medium text-gray-600">Success Rate</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">
-              {loading ? '...' : `${successRate}%`}
+              {projectsLoading ? '...' : `${successRate}%`}
             </p>
             <p className="text-sm text-green-600 mt-1">
-              {loading ? 'Loading...' : successRate > 0 ? 'Based on completed projects' : 'No data yet'}
+              {projectsLoading ? 'Loading...' : successRate > 0 ? 'Based on completed projects' : 'No data yet'}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-green-100 text-green-600">

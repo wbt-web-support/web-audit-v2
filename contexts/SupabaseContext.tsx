@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology } from '@/types/audit'
 
 interface UserProfile {
   id: string
@@ -15,93 +16,18 @@ interface UserProfile {
   created_at: string
 }
 
-interface AuditProject {
-  id: string
+interface AuditProjectWithUserId extends AuditProject {
   user_id: string
-  site_url: string
   page_type: 'single' | 'multiple'
   brand_consistency: boolean
   hidden_urls: boolean
   keys_check: boolean
   brand_data: any | null
   hidden_urls_data: any | null
-  status: 'pending' | 'in_progress' | 'completed' | 'failed'
-  progress: number
-  score: number
-  issues_count: number
-  total_pages: number
-  total_links: number
-  total_images: number
-  total_meta_tags: number
-  technologies_found: number
-  cms_detected: boolean
-  cms_type: string | null
-  cms_version: string | null
-  cms_plugins: CmsPlugin[] | null
-  cms_themes: CmsTheme[] | null
-  cms_components: CmsComponent[] | null
-  cms_confidence: number
-  cms_detection_method: string | null
-  cms_metadata: any | null
-  technologies: Technology[] | null
-  technologies_confidence: number
-  technologies_detection_method: string | null
-  technologies_metadata: any | null
-  total_html_content: number
-  average_html_per_page: number
   pages_per_second: number
   total_response_time: number
   scraping_completed_at: string | null
   scraping_data: any | null
-  created_at: string
-  updated_at: string
-  last_audit_at: string | null
-}
-
-interface CmsPlugin {
-  name: string
-  version: string | null
-  active: boolean
-  path: string | null
-  description: string | null
-  author: string | null
-  confidence: number
-  detection_method: string
-}
-
-interface CmsTheme {
-  name: string
-  version: string | null
-  active: boolean
-  path: string | null
-  description: string | null
-  author: string | null
-  confidence: number
-  detection_method: string
-}
-
-interface CmsComponent {
-  name: string
-  type: string
-  version: string | null
-  active: boolean
-  path: string | null
-  description: string | null
-  confidence: number
-  detection_method: string
-}
-
-interface Technology {
-  name: string
-  version: string | null
-  category: string
-  confidence: number
-  detection_method: string
-  description: string | null
-  website: string | null
-  icon: string | null
-  first_seen: string | null
-  last_seen: string | null
 }
 
 interface ScrapedPage {
@@ -139,10 +65,10 @@ interface SupabaseContextType {
   resendConfirmation: (email: string) => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: AuthError | PostgrestError | null }>
   // Audit Projects CRUD operations
-  createAuditProject: (projectData: Omit<AuditProject, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => Promise<{ data: AuditProject | null; error: any }>
-  getAuditProjects: () => Promise<{ data: AuditProject[] | null; error: any }>
+  createAuditProject: (projectData: Omit<AuditProjectWithUserId, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
+  getAuditProjects: () => Promise<{ data: AuditProjectWithUserId[] | null; error: any }>
   getAuditProjectsOptimized: () => Promise<{ data: AuditProject[] | null; error: any }>
-  updateAuditProject: (id: string, updates: Partial<AuditProject>) => Promise<{ data: AuditProject | null; error: any }>
+  updateAuditProject: (id: string, updates: Partial<AuditProjectWithUserId>) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
   deleteAuditProject: (id: string) => Promise<{ error: any }>
   // Scraped Pages CRUD operations
   createScrapedPage: (pageData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<{ data: ScrapedPage | null; error: any }>
@@ -526,7 +452,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Audit Projects CRUD operations
-  const createAuditProject = async (projectData: Omit<AuditProject, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => {
+  const createAuditProject = async (projectData: Omit<AuditProjectWithUserId, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
     }
@@ -546,7 +472,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         return { data: null, error }
       }
 
-      return { data: data as AuditProject, error: null }
+      return { data: data as AuditProjectWithUserId, error: null }
     } catch (error) {
       console.error('Unexpected error creating audit project:', error)
       return { data: null, error }
@@ -570,7 +496,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         return { data: null, error }
       }
 
-      return { data: data as AuditProject[], error: null }
+      return { data: data as AuditProjectWithUserId[], error: null }
     } catch (error) {
       console.error('Unexpected error fetching audit projects:', error)
       return { data: null, error }
@@ -581,6 +507,17 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     const getAuditProjectsOptimized = async () => {
       if (!user) {
         return { data: null, error: { message: 'No user logged in' } }
+      }
+
+      // Check if Supabase is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.error('❌ SupabaseContext: Missing environment variables')
+        return { 
+          data: null, 
+          error: { 
+            message: 'Supabase not configured. Please create a .env.local file with your Supabase credentials.' 
+          } 
+        }
       }
 
       const queryStartTime = performance.now()
@@ -648,7 +585,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-  const updateAuditProject = async (id: string, updates: Partial<AuditProject>) => {
+  const updateAuditProject = async (id: string, updates: Partial<AuditProjectWithUserId>) => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
     }
@@ -667,7 +604,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         return { data: null, error }
       }
 
-      return { data: data as AuditProject, error: null }
+      return { data: data as AuditProjectWithUserId, error: null }
     } catch (error) {
       console.error('Unexpected error updating audit project:', error)
       return { data: null, error }
