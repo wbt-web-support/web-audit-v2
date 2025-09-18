@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
@@ -13,11 +15,83 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showRepeatPassword, setShowRepeatPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { signUp, resendConfirmation } = useAuth();
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log({ firstName, lastName, email, password, repeatPassword });
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
+
+    // Validation
+    if (password !== repeatPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!agreeToTerms) {
+      setError("Please agree to the Terms & Conditions");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error, message } = await signUp(email, password, firstName, lastName);
+      
+      if (error) {
+        setError(error.message || "An error occurred during signup");
+      } else {
+        setSuccess(message || "Account created successfully!");
+        setShowConfirmationMessage(true);
+        // Clear form
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        setRepeatPassword("");
+        setAgreeToTerms(false);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const { error } = await resendConfirmation(email);
+      if (error) {
+        setError(error.message || "Failed to resend confirmation email");
+      } else {
+        setSuccess("Confirmation email sent! Please check your inbox.");
+      }
+    } catch (err) {
+      setError("Failed to resend confirmation email");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -107,6 +181,66 @@ export default function SignupPage() {
                 </p>
               </div>
 
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-800">{success}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Email Confirmation Message */}
+              {showConfirmationMessage && (
+                <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-center">
+                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Check your email</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      We've sent a confirmation link to <strong>{email}</strong>. Please click the link to verify your account.
+                    </p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleResendConfirmation}
+                        disabled={isLoading}
+                        className="text-sm text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50"
+                      >
+                        {isLoading ? 'Sending...' : 'Resend confirmation email'}
+                      </button>
+                      <p className="text-xs text-gray-500">
+                        Didn't receive the email? Check your spam folder.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Signup Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name Fields */}
@@ -121,7 +255,7 @@ export default function SignupPage() {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Fletcher"
+                  placeholder="First name "
                   required
                 />
               </div>
@@ -245,12 +379,23 @@ export default function SignupPage() {
 
             {/* Create Account Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isLoading ? 1 : 1.02 }}
+              whileTap={{ scale: isLoading ? 1 : 0.98 }}
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed"
             >
-              Create account
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating account...
+                </div>
+              ) : (
+                'Create account'
+              )}
             </motion.button>
 
             {/* Divider */}

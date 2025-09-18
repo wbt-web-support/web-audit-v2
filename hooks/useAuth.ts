@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export function useAuth() {
-  const { user, session, loading, signUp, signIn, signOut } = useSupabase()
+  const { user, userProfile, session, loading, signUp, signIn, signOut, resendConfirmation, updateProfile } = useSupabase()
   const router = useRouter()
 
   const isAuthenticated = !!user
-  const isAdmin = user?.user_metadata?.role === 'admin'
+  const isEmailConfirmed = userProfile?.email_confirmed || false
+  const isAdmin = userProfile?.role === 'admin'
+  const isModerator = userProfile?.role === 'moderator'
+  const isModeratorOrAdmin = isAdmin || isModerator
+  const userRole = userProfile?.role || 'user'
 
   // Redirect to login if not authenticated (optional)
   useEffect(() => {
@@ -21,12 +25,19 @@ export function useAuth() {
 
   return {
     user,
+    userProfile,
     session,
     loading,
     isAuthenticated,
+    isEmailConfirmed,
     isAdmin,
+    isModerator,
+    isModeratorOrAdmin,
+    userRole,
     signUp,
     signIn,
     signOut,
+    resendConfirmation,
+    updateProfile,
   }
 }

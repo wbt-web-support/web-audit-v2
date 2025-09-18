@@ -3,12 +3,14 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSupabase } from '@/contexts/SupabaseContext';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { user, loading } = useSupabase();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -122,31 +124,60 @@ export default function Navbar() {
           <motion.div 
             className="hidden sm:flex items-center space-x-2"
           >
-            <Link href="/login">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="px-2 py-1 text-gray-300 hover:text-white transition-colors duration-300 font-medium rounded-full hover:bg-gray-700/50 text-xs"
+            {loading ? (
+              // Show loading state
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-3 py-1 text-gray-400 text-xs"
               >
-                Login
-              </motion.button>
-            </Link>
-            <Link href="/signup">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="px-3 py-1 bg-gray-700 text-white rounded-full hover:bg-gray-600 transition-colors duration-300 font-semibold border border-gray-600 text-xs"
-              >
-                <span className="hidden md:inline">Sign Up</span>
-                <span className="md:hidden">Sign Up</span>
-              </motion.button>
-            </Link>
+                Loading...
+              </motion.div>
+            ) : user ? (
+              // Show Dashboard button when user is logged in
+              <Link href="/dashboard">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-300 font-semibold border border-blue-500 text-xs"
+                >
+                  <span className="hidden md:inline">Dashboard</span>
+                  <span className="md:hidden">Dashboard</span>
+                </motion.button>
+              </Link>
+            ) : (
+              // Show Login and Sign Up buttons when user is not logged in
+              <>
+                <Link href="/login">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    className="px-2 py-1 text-gray-300 hover:text-white transition-colors duration-300 font-medium rounded-full hover:bg-gray-700/50 text-xs"
+                  >
+                    Login
+                  </motion.button>
+                </Link>
+                <Link href="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="px-3 py-1 bg-gray-700 text-white rounded-full hover:bg-gray-600 transition-colors duration-300 font-semibold border border-gray-600 text-xs"
+                  >
+                    <span className="hidden md:inline">Sign Up</span>
+                    <span className="md:hidden">Sign Up</span>
+                  </motion.button>
+                </Link>
+              </>
+            )}
           </motion.div>
 
           {/* Mobile Menu Button */}
@@ -191,33 +222,71 @@ export default function Navbar() {
               </motion.a>
             ))}
             <div className="pt-1 space-y-1">
-              <Link href="/login">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
+              {loading ? (
+                // Show loading state
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ 
                     opacity: isMobileMenuOpen ? 1 : 0, 
                     y: isMobileMenuOpen ? 0 : 20 
                   }}
                   transition={{ duration: 0.3, delay: 0.4 }}
-                  className="w-full px-3 py-1.5 text-gray-300 hover:text-white transition-colors duration-300 font-medium rounded-full hover:bg-gray-700/50 text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full px-3 py-1.5 text-gray-400 text-sm text-center"
                 >
-                  Login
-                </motion.button>
-              </Link>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: isMobileMenuOpen ? 1 : 0, 
-                  y: isMobileMenuOpen ? 0 : 20 
-                }}
-                transition={{ duration: 0.3, delay: 0.5 }}
-                className="w-full px-4 py-1.5 bg-gray-700 text-white rounded-full hover:bg-gray-600 transition-colors duration-300 font-semibold border border-gray-600 text-sm"
-              >
-                Join Waitlist
-              </motion.button>
+                  Loading...
+                </motion.div>
+              ) : user ? (
+                // Show Dashboard button when user is logged in
+                <Link href="/dashboard">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ 
+                      opacity: isMobileMenuOpen ? 1 : 0, 
+                      y: isMobileMenuOpen ? 0 : 20 
+                    }}
+                    transition={{ duration: 0.3, delay: 0.4 }}
+                    className="w-full px-4 py-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-300 font-semibold border border-blue-500 text-sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </motion.button>
+                </Link>
+              ) : (
+                // Show Login and Sign Up buttons when user is not logged in
+                <>
+                  <Link href="/login">
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: isMobileMenuOpen ? 1 : 0, 
+                        y: isMobileMenuOpen ? 0 : 20 
+                      }}
+                      transition={{ duration: 0.3, delay: 0.4 }}
+                      className="w-full px-3 py-1.5 text-gray-300 hover:text-white transition-colors duration-300 font-medium rounded-full hover:bg-gray-700/50 text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Login
+                    </motion.button>
+                  </Link>
+                  <Link href="/signup">
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: isMobileMenuOpen ? 1 : 0, 
+                        y: isMobileMenuOpen ? 0 : 20 
+                      }}
+                      transition={{ duration: 0.3, delay: 0.5 }}
+                      className="w-full px-4 py-1.5 bg-gray-700 text-white rounded-full hover:bg-gray-600 transition-colors duration-300 font-semibold border border-gray-600 text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </motion.button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
