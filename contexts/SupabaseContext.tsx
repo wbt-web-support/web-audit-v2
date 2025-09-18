@@ -15,6 +15,25 @@ interface UserProfile {
   created_at: string
 }
 
+interface AuditProject {
+  id: string
+  user_id: string
+  site_url: string
+  page_type: 'single' | 'multiple'
+  brand_consistency: boolean
+  hidden_urls: boolean
+  keys_check: boolean
+  brand_data: any | null
+  hidden_urls_data: any | null
+  status: 'pending' | 'in_progress' | 'completed' | 'failed'
+  progress: number
+  score: number
+  issues_count: number
+  created_at: string
+  updated_at: string
+  last_audit_at: string | null
+}
+
 interface SupabaseContextType {
   user: User | null
   userProfile: UserProfile | null
@@ -25,6 +44,11 @@ interface SupabaseContextType {
   signOut: () => Promise<{ error: AuthError | null }>
   resendConfirmation: (email: string) => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: AuthError | PostgrestError | null }>
+  // Audit Projects CRUD operations
+  createAuditProject: (projectData: Omit<AuditProject, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => Promise<{ data: AuditProject | null; error: any }>
+  getAuditProjects: () => Promise<{ data: AuditProject[] | null; error: any }>
+  updateAuditProject: (id: string, updates: Partial<AuditProject>) => Promise<{ data: AuditProject | null; error: any }>
+  deleteAuditProject: (id: string) => Promise<{ error: any }>
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
@@ -399,6 +423,108 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
+  // Audit Projects CRUD operations
+  const createAuditProject = async (projectData: Omit<AuditProject, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('audit_projects')
+        .insert({
+          user_id: user.id,
+          ...projectData
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating audit project:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as AuditProject, error: null }
+    } catch (error) {
+      console.error('Unexpected error creating audit project:', error)
+      return { data: null, error }
+    }
+  }
+
+  const getAuditProjects = async () => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('audit_projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching audit projects:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as AuditProject[], error: null }
+    } catch (error) {
+      console.error('Unexpected error fetching audit projects:', error)
+      return { data: null, error }
+    }
+  }
+
+  const updateAuditProject = async (id: string, updates: Partial<AuditProject>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('audit_projects')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating audit project:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as AuditProject, error: null }
+    } catch (error) {
+      console.error('Unexpected error updating audit project:', error)
+      return { data: null, error }
+    }
+  }
+
+  const deleteAuditProject = async (id: string) => {
+    if (!user) {
+      return { error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('audit_projects')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting audit project:', error)
+        return { error }
+      }
+
+      return { error: null }
+    } catch (error) {
+      console.error('Unexpected error deleting audit project:', error)
+      return { error }
+    }
+  }
+
   const value = {
     user,
     userProfile,
@@ -409,6 +535,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resendConfirmation,
     updateProfile,
+    createAuditProject,
+    getAuditProjects,
+    updateAuditProject,
+    deleteAuditProject,
   }
 
   return (
