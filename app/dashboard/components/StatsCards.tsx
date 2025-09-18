@@ -5,6 +5,7 @@ import { useAuditProjects } from '@/contexts/AuditProjectsContext'
 
 interface StatsCardsProps {
   // Remove projects prop since we'll use shared data
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 }
 
 export default function StatsCards({}: StatsCardsProps) {

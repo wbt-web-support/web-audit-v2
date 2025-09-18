@@ -6,10 +6,10 @@ import { useAuditProjects } from '@/contexts/AuditProjectsContext'
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader'
 
 interface ProjectsTabProps {
-  userProfile: any
+  userProfile: unknown
 }
 
-export default function ProjectsTab({ userProfile }: ProjectsTabProps) {
+export default function ProjectsTab({ }: ProjectsTabProps) {
   const { projects, loading, error, refreshProjects, retryCount, maxRetries, isRefreshing } = useAuditProjects()
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   

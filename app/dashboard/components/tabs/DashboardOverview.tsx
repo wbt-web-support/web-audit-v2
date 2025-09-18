@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+// import { motion } from 'framer-motion' // Unused import
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { useAuditProjects } from '@/contexts/AuditProjectsContext'
@@ -25,7 +25,7 @@ interface Feature {
 }
 
 export default function DashboardOverview({ userProfile }: DashboardOverviewProps) {
-  const { createAuditProject, updateAuditProject } = useSupabase()
+  const { createAuditProject } = useSupabase()
   const { refreshProjects } = useAuditProjects()
   
   // Form submission states
@@ -161,7 +161,21 @@ export default function DashboardOverview({ userProfile }: DashboardOverviewProp
         pages_per_second: 0,
         total_response_time: 0,
         scraping_completed_at: null,
-        scraping_data: null
+        scraping_data: null,
+        // CMS fields
+        cms_type: null,
+        cms_version: null,
+        cms_plugins: null,
+        cms_themes: null,
+        cms_components: null,
+        cms_confidence: 0,
+        cms_detection_method: null,
+        cms_metadata: null,
+        // Technologies fields
+        technologies: null,
+        technologies_confidence: 0,
+        technologies_detection_method: null,
+        technologies_metadata: null
       }
 
       console.log('📊 Project data prepared:', projectData)
