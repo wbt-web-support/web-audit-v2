@@ -77,7 +77,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-4 sm:mb-6"
+            className="text-4xl sm:text-5xl md:text-4xl lg:text-4xl xl:text-6xl font-bold text-white mb-4 sm:mb-6"
           >
             WEB{' '}
             <motion.span
