@@ -66,6 +66,7 @@ interface SupabaseContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: AuthError | PostgrestError | null }>
   // Audit Projects CRUD operations
   createAuditProject: (projectData: Omit<AuditProjectWithUserId, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'>) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
+  getAuditProject: (id: string) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
   getAuditProjects: () => Promise<{ data: AuditProjectWithUserId[] | null; error: any }>
   getAuditProjectsOptimized: () => Promise<{ data: AuditProject[] | null; error: any }>
   updateAuditProject: (id: string, updates: Partial<AuditProjectWithUserId>) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
@@ -479,6 +480,31 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const getAuditProject = async (id: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('audit_projects')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching audit project:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as AuditProjectWithUserId, error: null }
+    } catch (error) {
+      console.error('Unexpected error fetching audit project:', error)
+      return { data: null, error }
+    }
+  }
+
   const getAuditProjects = async () => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
@@ -779,6 +805,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     resendConfirmation,
     updateProfile,
     createAuditProject,
+    getAuditProject,
     getAuditProjects,
     getAuditProjectsOptimized,
     updateAuditProject,

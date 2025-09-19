@@ -9,13 +9,15 @@ interface RecentProjectsProps {
   projectsLoading: boolean
   projectsError: string | null
   refreshProjects: () => Promise<void>
+  onProjectSelect?: (projectId: string) => void
 }
 
 export default function RecentProjects({ 
   projects, 
   projectsLoading, 
   projectsError, 
-  refreshProjects 
+  refreshProjects,
+  onProjectSelect
 }: RecentProjectsProps) {
 
   const getStatusColor = (status: string) => {
@@ -211,9 +213,18 @@ export default function RecentProjects({
                       ></div>
                     </div>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-                    View Details →
-                  </button>
+                  {project.status === 'completed' ? (
+                    <button 
+                      onClick={() => onProjectSelect?.(project.id)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                    >
+                      View Analysis →
+                    </button>
+                  ) : (
+                    <button className="text-gray-500 text-sm font-medium">
+                      {project.status === 'in_progress' ? 'Processing...' : 'Pending'}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}

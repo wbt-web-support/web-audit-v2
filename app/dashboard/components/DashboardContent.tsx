@@ -14,6 +14,7 @@ interface DashboardContentProps {
   projectsLoading: boolean
   projectsError: string | null
   refreshProjects: () => Promise<void>
+  onProjectSelect?: (projectId: string) => void
 }
 
 export default function DashboardContent({ 
@@ -22,7 +23,8 @@ export default function DashboardContent({
   projects, 
   projectsLoading, 
   projectsError, 
-  refreshProjects 
+  refreshProjects,
+  onProjectSelect
 }: DashboardContentProps) {
   const renderContent = () => {
     switch (activeTab) {
@@ -34,6 +36,7 @@ export default function DashboardContent({
             projectsLoading={projectsLoading}
             projectsError={projectsError}
             refreshProjects={refreshProjects}
+            onProjectSelect={onProjectSelect}
           />
         )
       case 'projects':
@@ -44,6 +47,7 @@ export default function DashboardContent({
             projectsLoading={projectsLoading}
             projectsError={projectsError}
             refreshProjects={refreshProjects}
+            onProjectSelect={onProjectSelect}
           />
         )
       case 'profile':

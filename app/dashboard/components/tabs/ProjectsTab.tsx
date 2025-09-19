@@ -11,6 +11,7 @@ interface ProjectsTabProps {
   projectsLoading: boolean
   projectsError: string | null
   refreshProjects: () => Promise<void>
+  onProjectSelect?: (projectId: string) => void
 }
 
 export default function ProjectsTab({ 
@@ -18,7 +19,8 @@ export default function ProjectsTab({
   projects, 
   projectsLoading, 
   projectsError, 
-  refreshProjects 
+  refreshProjects,
+  onProjectSelect
 }: ProjectsTabProps) {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   
@@ -799,9 +801,14 @@ export default function ProjectsTab({
                       Created {formatDate(project.created_at)}
                     </div>
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors">
-                        View
-                      </button>
+                      {project.status === 'completed' && (
+                        <button 
+                          onClick={() => onProjectSelect?.(project.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          View Analysis
+                        </button>
+                      )}
                       <button className="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-1 rounded hover:bg-gray-100 transition-colors">
                         Edit
                       </button>

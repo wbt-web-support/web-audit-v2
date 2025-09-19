@@ -306,6 +306,11 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       } else {
         console.log('✅ Audit project updated with summary data successfully')
         onScrapingComplete(true)
+        
+        // Redirect to dashboard with analysis tab after successful completion
+        setTimeout(() => {
+          window.location.href = `/dashboard?tab=analysis&projectId=${projectId}`
+        }, 1000) // Small delay to show success state
       }
 
     } catch (error) {

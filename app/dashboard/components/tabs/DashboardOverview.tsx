@@ -16,6 +16,7 @@ interface DashboardOverviewProps {
   projectsLoading: boolean
   projectsError: string | null
   refreshProjects: () => Promise<void>
+  onProjectSelect?: (projectId: string) => void
 }
 
 interface Feature {
@@ -31,7 +32,8 @@ export default function DashboardOverview({
   projects, 
   projectsLoading, 
   projectsError, 
-  refreshProjects 
+  refreshProjects,
+  onProjectSelect
 }: DashboardOverviewProps) {
   const { createAuditProject } = useSupabase()
   
@@ -323,6 +325,7 @@ export default function DashboardOverview({
           projectsLoading={projectsLoading}
           projectsError={projectsError}
           refreshProjects={refreshProjects}
+          onProjectSelect={onProjectSelect}
         />
       </div>
 
