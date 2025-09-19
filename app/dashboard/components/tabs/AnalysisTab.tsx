@@ -11,6 +11,8 @@ import {
   TechnologiesSection,
   CmsSection,
   PerformanceSection,
+  ImagesSection,
+  LinksSection,
   ProcessingState
 } from '../analysis-tab-components'
 
@@ -266,6 +268,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         {activeSection === 'technologies' && <TechnologiesSection project={project} />}
         {activeSection === 'cms' && <CmsSection project={project} />}
         {activeSection === 'performance' && <PerformanceSection project={project} />}
+        {activeSection === 'images' && <ImagesSection project={project} scrapedPages={scrapedPages} />}
+        {activeSection === 'links' && <LinksSection project={project} scrapedPages={scrapedPages} />}
       </motion.div>
     </div>
   )

@@ -68,13 +68,15 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', name: 'Overview', icon: '📊' },
-            { id: 'pages', name: 'Pages', icon: '📄' },
-            { id: 'technologies', name: 'Technologies', icon: '⚙️' },
-            { id: 'cms', name: 'CMS', icon: '🏗️' },
-            { id: 'performance', name: 'Performance', icon: '⚡' }
-          ].map((tab) => (
+            {[
+              { id: 'overview', name: 'Overview', icon: '📊' },
+              { id: 'pages', name: 'Pages', icon: '📄' },
+              { id: 'technologies', name: 'Technologies', icon: '⚙️' },
+              { id: 'cms', name: 'CMS', icon: '🏗️' },
+              { id: 'performance', name: 'Performance', icon: '⚡' },
+              { id: 'images', name: 'Images', icon: '🖼️' },
+              { id: 'links', name: 'Links', icon: '🔗' }
+            ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => onSectionChange(tab.id)}
