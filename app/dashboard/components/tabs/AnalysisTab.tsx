@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { motion } from 'framer-motion'
+import { fetchPageSpeedInsights } from '@/lib/pagespeed'
 import {
   AnalysisHeader,
   OverviewSection,
@@ -42,6 +43,11 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   const [scrapingError, setScrapingError] = useState<string | null>(null)
   const isProcessing = useRef(false)
   const processedDataRef = useRef<string | null>(null)
+  
+  // PageSpeed states
+  const [isPageSpeedLoading, setIsPageSpeedLoading] = useState(false)
+  const [pageSpeedError, setPageSpeedError] = useState<string | null>(null)
+  const [hasAutoStartedPageSpeed, setHasAutoStartedPageSpeed] = useState(false)
 
   console.log('🔍 AnalysisTab rendered for project:', projectId, 'cachedData:', !!cachedData, 'loading:', loading)
 
@@ -255,6 +261,65 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     }
   }
 
+  // Function to handle PageSpeed Insights API call
+  const handlePageSpeedInsights = async (url: string, projectId: string) => {
+    try {
+      console.log('🚀 Starting PageSpeed Insights for URL:', url)
+      setIsPageSpeedLoading(true)
+      setPageSpeedError(null)
+      
+      // Update project with loading state
+      await updateAuditProject(projectId, {
+        pagespeed_insights_loading: true,
+        pagespeed_insights_error: null
+      })
+      
+      const { data, error } = await fetchPageSpeedInsights(url)
+      
+      if (error) {
+        console.error('❌ PageSpeed Insights error:', error)
+        setPageSpeedError(error)
+        
+        // Update project with error state
+        await updateAuditProject(projectId, {
+          pagespeed_insights_loading: false,
+          pagespeed_insights_error: error,
+          pagespeed_insights_data: null
+        })
+      } else if (data) {
+        console.log('✅ PageSpeed Insights data received:', data)
+        
+        // Update project with PageSpeed data
+        await updateAuditProject(projectId, {
+          pagespeed_insights_data: data,
+          pagespeed_insights_loading: false,
+          pagespeed_insights_error: null
+        })
+        
+        // Update local project state
+        setProject(prev => prev ? {
+          ...prev,
+          pagespeed_insights_data: data,
+          pagespeed_insights_loading: false,
+          pagespeed_insights_error: null
+        } : null)
+      }
+    } catch (error) {
+      console.error('❌ PageSpeed Insights unexpected error:', error)
+      const errorMessage = `PageSpeed Insights failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      setPageSpeedError(errorMessage)
+      
+      // Update project with error state
+      await updateAuditProject(projectId, {
+        pagespeed_insights_loading: false,
+        pagespeed_insights_error: errorMessage,
+        pagespeed_insights_data: null
+      })
+    } finally {
+      setIsPageSpeedLoading(false)
+    }
+  }
+
   // Function to process scraping data and save to database
   const processScrapingData = async (scrapingData: any, projectId: string) => {
     try {
@@ -449,6 +514,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       setScrapingError(null)
       isProcessing.current = true
 
+      // Start PageSpeed Insights in parallel (don't wait for it)
+      console.log('🚀 Starting PageSpeed Insights in parallel...')
+      handlePageSpeedInsights(project.site_url, project.id)
+
       try {
         // Prepare scraping request data
         const scrapeFormData = {
@@ -500,6 +569,27 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     startScraping()
   }, [project?.id, project?.status, project?.site_url, (project as any)?.page_type]) // Depend on project data
 
+  // Auto-start PageSpeed analysis if no data exists
+  useEffect(() => {
+    const autoStartPageSpeed = async () => {
+      if (
+        project && 
+        project.status === 'completed' && 
+        !project.pagespeed_insights_data && 
+        !project.pagespeed_insights_loading && 
+        !project.pagespeed_insights_error &&
+        !hasAutoStartedPageSpeed &&
+        !isPageSpeedLoading
+      ) {
+        console.log('🚀 Auto-starting PageSpeed analysis for completed project:', project.site_url)
+        setHasAutoStartedPageSpeed(true)
+        await handlePageSpeedInsights(project.site_url, project.id)
+      }
+    }
+
+    autoStartPageSpeed()
+  }, [project, hasAutoStartedPageSpeed, isPageSpeedLoading])
+
   // Handle browser visibility changes to prevent unnecessary refetches
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -542,13 +632,13 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   }, [lastFetchTime, dataFetched])
 
 
-  if (loading || isScraping) {
+  if (loading || isScraping || (project?.pagespeed_insights_loading && !project?.pagespeed_insights_data)) {
     return (
       <ModernLoader 
         projectName={project?.site_url || 'Website'}
         totalPages={project?.total_pages || 0}
         currentPage={scrapedPages?.length || 0}
-        isScraping={isScraping}
+        isScraping={isScraping || (project?.pagespeed_insights_loading && !project?.pagespeed_insights_data)}
       />
     )
   }
@@ -620,9 +710,14 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         {activeSection === 'pages' && <PagesSection scrapedPages={scrapedPages} />}
         {activeSection === 'technologies' && <TechnologiesSection project={project} />}
         {activeSection === 'cms' && <CmsSection project={project} />}
-        {activeSection === 'performance' && <PerformanceSection project={project} />}
-        {activeSection === 'images' && <ImagesSection project={project} scrapedPages={scrapedPages} />}
-        {activeSection === 'links' && <LinksSection project={project} scrapedPages={scrapedPages} />}
+        {activeSection === 'performance' && <PerformanceSection project={project} onDataUpdate={(updatedProject) => {
+          setProject(updatedProject)
+          if (onDataUpdate) {
+            onDataUpdate(updatedProject, scrapedPages)
+          }
+        }} />}
+        {activeSection === 'images' && <ImagesSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />}
+        {activeSection === 'links' && <LinksSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />}
       </motion.div>
     </div>
   )

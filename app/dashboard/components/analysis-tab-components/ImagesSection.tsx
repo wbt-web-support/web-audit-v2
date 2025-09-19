@@ -6,6 +6,7 @@ import { AuditProject } from '@/types/audit'
 interface ImagesSectionProps {
   project: AuditProject
   scrapedPages: any[]
+  originalScrapingData?: any
 }
 
 interface ImageData {
@@ -19,36 +20,17 @@ interface ImageData {
   page_url?: string
 }
 
-export default function ImagesSection({ project, scrapedPages }: ImagesSectionProps) {
+export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [altFilter, setAltFilter] = useState<'all' | 'with-alt' | 'without-alt'>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
 
-  // Extract images from scraped pages data
-  const images = useMemo(() => {
-    if (!scrapedPages) return []
-    
-    const allImages: ImageData[] = []
-    
-    scrapedPages.forEach((page: any) => {
-      if (page.images && Array.isArray(page.images)) {
-        page.images.forEach((img: any) => {
-          allImages.push({
-            url: img.src || img.url || '',
-            alt: img.alt || null,
-            title: img.title || null,
-            width: img.width,
-            height: img.height,
-            type: img.type || getImageType(img.src || img.url || ''),
-            size: img.size,
-            page_url: page.url
-          })
-        })
-      }
-    })
-    
-    return allImages
-  }, [scrapedPages])
+  console.log('🖼️ ImagesSection rendered with:', { 
+    project: !!project, 
+    projectSiteUrl: project?.site_url,
+    scrapedPagesCount: scrapedPages?.length || 0,
+    scrapedPages: scrapedPages
+  })
 
   const getImageType = (url: string) => {
     const extension = url.split('.').pop()?.toLowerCase()
@@ -68,6 +50,122 @@ export default function ImagesSection({ project, scrapedPages }: ImagesSectionPr
         return 'Unknown'
     }
   }
+
+  // Extract images from original scraping data or HTML content
+  const images = useMemo(() => {
+    console.log('🖼️ ImagesSection - Starting image extraction')
+    console.log('📊 scrapedPages:', scrapedPages)
+    console.log('🌐 project.site_url:', project.site_url)
+    console.log('🔍 originalScrapingData:', originalScrapingData)
+    
+    const allImages: ImageData[] = []
+    
+    // First, try to extract from original scraping data
+    if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
+      console.log('📊 Using original scraping data for image extraction')
+      
+      originalScrapingData.pages.forEach((page: any, pageIndex: number) => {
+        console.log(`📄 Processing page ${pageIndex + 1} from scraping data:`, page.url)
+        
+        if (page.images && Array.isArray(page.images)) {
+          console.log(`🖼️ Found ${page.images.length} images in scraping data for page ${pageIndex + 1}`)
+          
+          page.images.forEach((img: any, imgIndex: number) => {
+            const src = img.src || img.url || ''
+            console.log(`🖼️ Image ${imgIndex + 1} from scraping data:`, { src, alt: img.alt, title: img.title })
+            
+            if (src) {
+              // Convert relative URLs to absolute
+              let absoluteUrl = src
+              if (!src.startsWith('http')) {
+                const baseUrl = project.site_url || 'https://example.com'
+                if (src.startsWith('/')) {
+                  absoluteUrl = `${baseUrl}${src}`
+                } else {
+                  absoluteUrl = `${baseUrl}/${src}`
+                }
+              }
+              
+              console.log('🔗 Image URL conversion from scraping data:', { src, absoluteUrl, page: page.url })
+              
+              allImages.push({
+                url: absoluteUrl,
+                alt: img.alt || null,
+                title: img.title || null,
+                width: img.width || undefined,
+                height: img.height || undefined,
+                type: getImageType(src),
+                page_url: page.url
+              })
+            }
+          })
+        }
+      })
+    }
+    
+    // If no images found in scraping data, fall back to HTML parsing
+    if (allImages.length === 0 && scrapedPages && scrapedPages.length > 0) {
+      console.log('📊 No images in scraping data, falling back to HTML parsing')
+      
+      scrapedPages.forEach((page: any, pageIndex: number) => {
+        console.log(`📄 Processing page ${pageIndex + 1} from HTML:`, page.url)
+        console.log('📝 HTML content length:', page.html_content?.length || 0)
+        
+        if (page.html_content) {
+          try {
+            // Create a temporary DOM parser to extract images
+            if (typeof DOMParser === 'undefined') {
+              console.warn('DOMParser not available in this environment')
+              return
+            }
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(page.html_content, 'text/html')
+            const imgElements = doc.querySelectorAll('img')
+            
+            console.log(`🖼️ Found ${imgElements.length} img elements in HTML for page ${pageIndex + 1}`)
+            
+            imgElements.forEach((img: HTMLImageElement, imgIndex: number) => {
+              const src = img.src || img.getAttribute('src') || ''
+              console.log(`🖼️ Image ${imgIndex + 1} from HTML:`, { src, alt: img.alt, title: img.title })
+              
+              if (src) {
+                // Convert relative URLs to absolute
+                let absoluteUrl = src
+                if (!src.startsWith('http')) {
+                  const baseUrl = project.site_url || 'https://example.com'
+                  if (src.startsWith('/')) {
+                    absoluteUrl = `${baseUrl}${src}`
+                  } else {
+                    absoluteUrl = `${baseUrl}/${src}`
+                  }
+                }
+                
+                console.log('🔗 Image URL conversion from HTML:', { src, absoluteUrl, page: page.url })
+                
+                allImages.push({
+                  url: absoluteUrl,
+                  alt: img.alt || null,
+                  title: img.title || null,
+                  width: img.width || undefined,
+                  height: img.height || undefined,
+                  type: getImageType(src),
+                  page_url: page.url
+                })
+              }
+            })
+          } catch (error) {
+            console.warn('❌ Error parsing HTML for images:', error)
+          }
+        } else {
+          console.log('❌ No HTML content for page:', page.url)
+        }
+      })
+    }
+    
+    console.log('✅ Total images extracted:', allImages.length)
+    console.log('🖼️ All images:', allImages)
+    return allImages
+  }, [scrapedPages, project.site_url, originalScrapingData])
 
   const filteredImages = useMemo(() => {
     return images.filter(img => {
@@ -111,43 +209,42 @@ export default function ImagesSection({ project, scrapedPages }: ImagesSectionPr
         </div>
       </div>
 
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-          <div className="text-sm text-blue-600">Total Images</div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-sm text-gray-600">Total Images</div>
         </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.withAlt}</div>
-          <div className="text-sm text-green-600">With Alt Text</div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.withAlt}</div>
+          <div className="text-sm text-gray-600">With Alt Text</div>
         </div>
-        <div className="bg-red-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">{stats.withoutAlt}</div>
-          <div className="text-sm text-red-600">Without Alt Text</div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.withoutAlt}</div>
+          <div className="text-sm text-gray-600">Without Alt Text</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="flex justify-end gap-3 mb-6">
         {/* Search */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+        <div className="w-48">
           <input
             type="text"
             placeholder="Search images..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
 
         {/* Alt Text Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Alt Text</label>
+        <div className="w-40">
           <select
             value={altFilter}
             onChange={(e) => setAltFilter(e.target.value as any)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Images</option>
             <option value="with-alt">With Alt Text</option>
@@ -156,12 +253,11 @@ export default function ImagesSection({ project, scrapedPages }: ImagesSectionPr
         </div>
 
         {/* Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Image Type</label>
+        <div className="w-32">
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Types</option>
             {imageTypes.map(type => (
@@ -201,13 +297,21 @@ export default function ImagesSection({ project, scrapedPages }: ImagesSectionPr
               {filteredImages.map((img, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-16 h-16 bg-gray-100 rounded border overflow-hidden">
+                    <div className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
                       <img
                         src={img.url}
                         alt={img.alt || 'No alt text'}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none'
+                          const target = e.currentTarget
+                          target.style.display = 'none'
+                          const parent = target.parentElement
+                          if (parent) {
+                            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">Failed to load</div>'
+                          }
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', img.url)
                         }}
                       />
                     </div>
@@ -229,12 +333,12 @@ export default function ImagesSection({ project, scrapedPages }: ImagesSectionPr
                       {img.alt ? (
                         <span className="text-sm text-gray-900">{img.alt}</span>
                       ) : (
-                        <span className="text-sm text-red-500 italic">No alt text</span>
+                        <span className="text-sm text-gray-500 italic">No alt text</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-900 rounded-full">
                       {img.type || 'Unknown'}
                     </span>
                   </td>

@@ -171,7 +171,11 @@ export default function DashboardOverview({
         technologies: null,
         technologies_confidence: 0,
         technologies_detection_method: null,
-        technologies_metadata: null
+        technologies_metadata: null,
+        // PageSpeed Insights fields
+        pagespeed_insights_data: null,
+        pagespeed_insights_loading: false,
+        pagespeed_insights_error: null
       }
 
       console.log('📊 Project data prepared:', projectData)

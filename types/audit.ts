@@ -28,6 +28,10 @@ export interface AuditProject {
   technologies_metadata: any | null
   total_html_content: number
   average_html_per_page: number
+  pagespeed_insights_data: PageSpeedInsightsData | null
+  pagespeed_insights_loading: boolean
+  pagespeed_insights_error: string | null
+  scraping_data: any | null
 }
 
 export interface CmsPlugin {
@@ -74,4 +78,140 @@ export interface Technology {
   icon: string | null
   first_seen: string | null
   last_seen: string | null
+}
+
+export interface PageSpeedInsightsData {
+  lighthouseResult: {
+    categories: {
+      performance: {
+        score: number
+        title: string
+      }
+      accessibility: {
+        score: number
+        title: string
+      }
+      'best-practices': {
+        score: number
+        title: string
+      }
+      seo: {
+        score: number
+        title: string
+      }
+    }
+    audits: {
+      'first-contentful-paint': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'largest-contentful-paint': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'cumulative-layout-shift': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'speed-index': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'total-blocking-time': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'interactive': {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'max-potential-fid'?: {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'server-response-time'?: {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'total-byte-weight'?: {
+        displayValue: string
+        score: number
+        title: string
+      }
+      'dom-size'?: {
+        displayValue: string
+        score: number
+        title: string
+      }
+      [key: string]: {
+        displayValue: string
+        score: number
+        title: string
+      } | undefined
+    }
+    configSettings: {
+      formFactor: string
+      locale: string
+    }
+    fetchTime: string
+    finalUrl: string
+    runWarnings: string[]
+    userAgent: string
+    fullPageScreenshot?: {
+      data: string
+      mime_type: string
+      width: number
+      height: number
+    }
+    screenshots?: {
+      data: string
+      mime_type: string
+      width: number
+      height: number
+    }
+  }
+  loadingExperience: {
+    metrics: {
+      'FIRST_CONTENTFUL_PAINT_MS': {
+        category: string
+        distributions: Array<{
+          min: number
+          max: number
+          proportion: number
+        }>
+        percentile: number
+      }
+      'LARGEST_CONTENTFUL_PAINT_MS': {
+        category: string
+        distributions: Array<{
+          min: number
+          max: number
+          proportion: number
+        }>
+        percentile: number
+      }
+      'CUMULATIVE_LAYOUT_SHIFT_SCORE': {
+        category: string
+        distributions: Array<{
+          min: number
+          max: number
+          proportion: number
+        }>
+        percentile: number
+      }
+    }
+    overall_category: string
+  }
+  version: {
+    major: number
+    minor: number
+  }
 }

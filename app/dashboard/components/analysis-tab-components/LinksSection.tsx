@@ -6,6 +6,7 @@ import { AuditProject } from '@/types/audit'
 interface LinksSectionProps {
   project: AuditProject
   scrapedPages: any[]
+  originalScrapingData?: any
 }
 
 interface LinkData {
@@ -13,47 +14,100 @@ interface LinkData {
   text: string | null
   title: string | null
   type: 'internal' | 'external'
-  status_code?: number
   page_url?: string
   target?: string
   rel?: string
 }
 
-export default function LinksSection({ project, scrapedPages }: LinksSectionProps) {
+export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'internal' | 'external'>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  // Extract links from scraped pages data
+  // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
-    if (!scrapedPages) return []
-    
     const allLinks: LinkData[] = []
     const baseDomain = project.site_url ? new URL(project.site_url).hostname : ''
     
-    scrapedPages.forEach((page: any) => {
-      if (page.links && Array.isArray(page.links)) {
-        page.links.forEach((link: any) => {
-          const linkUrl = link.href || link.url || ''
-          const isInternal = linkUrl.startsWith('/') || 
-            (linkUrl.startsWith('http') && linkUrl.includes(baseDomain))
-          
-          allLinks.push({
-            url: linkUrl,
-            text: link.text || link.innerText || null,
-            title: link.title || null,
-            type: isInternal ? 'internal' : 'external',
-            status_code: link.status_code,
-            page_url: page.url,
-            target: link.target,
-            rel: link.rel
+    // First, try to extract from original scraping data
+    if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
+      console.log('📊 Using original scraping data for link extraction')
+      
+      originalScrapingData.pages.forEach((page: any) => {
+        if (page.links && Array.isArray(page.links)) {
+          page.links.forEach((link: any) => {
+            const href = link.href || link.url || ''
+            if (href && href !== '#') {
+              // Convert relative URLs to absolute
+              const absoluteUrl = href.startsWith('http') ? href : 
+                href.startsWith('/') ? `${project.site_url}${href}` : 
+                `${project.site_url}/${href}`
+              
+              const isInternal = href.startsWith('/') || 
+                (href.startsWith('http') && href.includes(baseDomain))
+              
+              allLinks.push({
+                url: absoluteUrl,
+                text: link.text || link.innerText || null,
+                title: link.title || null,
+                type: isInternal ? 'internal' : 'external',
+                page_url: page.url,
+                target: link.target || '_self',
+                rel: link.rel || undefined
+              })
+            }
           })
-        })
-      }
-    })
+        }
+      })
+    }
+    
+    // If no links found in scraping data, fall back to HTML parsing
+    if (allLinks.length === 0 && scrapedPages && scrapedPages.length > 0) {
+      console.log('📊 No links in scraping data, falling back to HTML parsing')
+      
+      scrapedPages.forEach((page: any) => {
+        if (page.html_content) {
+          try {
+            // Create a temporary DOM parser to extract links
+            if (typeof DOMParser === 'undefined') {
+              console.warn('DOMParser not available in this environment')
+              return
+            }
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(page.html_content, 'text/html')
+            const linkElements = doc.querySelectorAll('a[href]')
+            
+            linkElements.forEach((link) => {
+              const anchorElement = link as HTMLAnchorElement
+              const href = anchorElement.href || anchorElement.getAttribute('href') || ''
+              if (href && href !== '#') {
+                // Convert relative URLs to absolute
+                const absoluteUrl = href.startsWith('http') ? href : 
+                  href.startsWith('/') ? `${project.site_url}${href}` : 
+                  `${project.site_url}/${href}`
+                
+                const isInternal = href.startsWith('/') || 
+                  (href.startsWith('http') && href.includes(baseDomain))
+                
+                allLinks.push({
+                  url: absoluteUrl,
+                  text: anchorElement.textContent?.trim() || null,
+                  title: anchorElement.title || null,
+                  type: isInternal ? 'internal' : 'external',
+                  page_url: page.url,
+                  target: anchorElement.target || '_self',
+                  rel: anchorElement.rel || undefined
+                })
+              }
+            })
+          } catch (error) {
+            console.warn('Error parsing HTML for links:', error)
+          }
+        }
+      })
+    }
     
     return allLinks
-  }, [scrapedPages, project.site_url])
+  }, [scrapedPages, project.site_url, originalScrapingData])
 
   const filteredLinks = useMemo(() => {
     return links.filter(link => {
@@ -66,39 +120,18 @@ export default function LinksSection({ project, scrapedPages }: LinksSectionProp
       // Type filter
       const matchesType = typeFilter === 'all' || link.type === typeFilter
 
-      // Status filter
-      const matchesStatus = statusFilter === 'all' || 
-        (statusFilter === 'working' && link.status_code && link.status_code >= 200 && link.status_code < 400) ||
-        (statusFilter === 'broken' && link.status_code && (link.status_code >= 400 || link.status_code < 200)) ||
-        (statusFilter === 'unknown' && !link.status_code)
-
-      return matchesSearch && matchesType && matchesStatus
+      return matchesSearch && matchesType
     })
-  }, [links, searchTerm, typeFilter, statusFilter])
+  }, [links, searchTerm, typeFilter])
 
   const stats = useMemo(() => {
     const total = links.length
     const internal = links.filter(link => link.type === 'internal').length
     const external = links.filter(link => link.type === 'external').length
-    const working = links.filter(link => link.status_code && link.status_code >= 200 && link.status_code < 400).length
-    const broken = links.filter(link => link.status_code && (link.status_code >= 400 || link.status_code < 200)).length
     
-    return { total, internal, external, working, broken }
+    return { total, internal, external }
   }, [links])
 
-  const getStatusColor = (statusCode?: number) => {
-    if (!statusCode) return 'bg-gray-100 text-gray-800'
-    if (statusCode >= 200 && statusCode < 300) return 'bg-green-100 text-green-800'
-    if (statusCode >= 300 && statusCode < 400) return 'bg-yellow-100 text-yellow-800'
-    return 'bg-red-100 text-red-800'
-  }
-
-  const getStatusText = (statusCode?: number) => {
-    if (!statusCode) return 'Unknown'
-    if (statusCode >= 200 && statusCode < 300) return 'Working'
-    if (statusCode >= 300 && statusCode < 400) return 'Redirect'
-    return 'Broken'
-  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -110,69 +143,44 @@ export default function LinksSection({ project, scrapedPages }: LinksSectionProp
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-          <div className="text-sm text-blue-600">Total Links</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-sm text-gray-600">Total Links</div>
         </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.internal}</div>
-          <div className="text-sm text-green-600">Internal</div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.internal}</div>
+          <div className="text-sm text-gray-600">Internal</div>
         </div>
-        <div className="bg-purple-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.external}</div>
-          <div className="text-sm text-purple-600">External</div>
-        </div>
-        <div className="bg-emerald-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-emerald-600">{stats.working}</div>
-          <div className="text-sm text-emerald-600">Working</div>
-        </div>
-        <div className="bg-red-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">{stats.broken}</div>
-          <div className="text-sm text-red-600">Broken</div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.external}</div>
+          <div className="text-sm text-gray-600">External</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="flex justify-end gap-3 mb-6">
         {/* Search */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+        <div className="w-48">
           <input
             type="text"
             placeholder="Search links..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
 
         {/* Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Link Type</label>
+        <div className="w-40">
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Links</option>
             <option value="internal">Internal Links</option>
             <option value="external">External Links</option>
-          </select>
-        </div>
-
-        {/* Status Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="working">Working</option>
-            <option value="broken">Broken</option>
-            <option value="unknown">Unknown</option>
           </select>
         </div>
       </div>
@@ -191,9 +199,6 @@ export default function LinksSection({ project, scrapedPages }: LinksSectionProp
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Target
@@ -233,21 +238,11 @@ export default function LinksSection({ project, scrapedPages }: LinksSectionProp
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                       link.type === 'internal' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-purple-100 text-purple-800'
+                        ? 'bg-gray-100 text-gray-900' 
+                        : 'bg-gray-200 text-gray-900'
                     }`}>
                       {link.type}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(link.status_code)}`}>
-                        {link.status_code || 'N/A'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {getStatusText(link.status_code)}
-                      </span>
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {link.target || '_self'}

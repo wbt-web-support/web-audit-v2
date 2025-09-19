@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology } from '@/types/audit'
+import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology, PageSpeedInsightsData } from '@/types/audit'
 
 interface UserProfile {
   id: string
@@ -28,6 +28,9 @@ interface AuditProjectWithUserId extends AuditProject {
   total_response_time: number
   scraping_completed_at: string | null
   scraping_data: any | null
+  pagespeed_insights_data: PageSpeedInsightsData | null
+  pagespeed_insights_loading: boolean
+  pagespeed_insights_error: string | null
 }
 
 interface ScrapedPage {
@@ -581,7 +584,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             technologies_detection_method,
             technologies_metadata,
             total_html_content,
-            average_html_per_page
+            average_html_per_page,
+            pagespeed_insights_data,
+            pagespeed_insights_loading,
+            pagespeed_insights_error
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
