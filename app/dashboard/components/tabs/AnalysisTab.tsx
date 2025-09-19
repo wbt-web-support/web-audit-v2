@@ -13,7 +13,8 @@ import {
   PerformanceSection,
   ImagesSection,
   LinksSection,
-  ProcessingState
+  ProcessingState,
+  ModernLoader
 } from '../analysis-tab-components'
 
 interface AnalysisTabProps {
@@ -543,59 +544,12 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
   if (loading || isScraping) {
     return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </div>
-
-        {/* Scraping Status */}
-        {isScraping && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-              <div>
-                <h3 className="text-sm font-semibold text-blue-900">Scraping in Progress</h3>
-                <p className="text-xs text-blue-700">Analyzing website data, please wait...</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-6">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ModernLoader 
+        projectName={project?.site_url || 'Website'}
+        totalPages={project?.total_pages || 0}
+        currentPage={scrapedPages?.length || 0}
+        isScraping={isScraping}
+      />
     )
   }
 
@@ -637,7 +591,14 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
   // Show processing state if project is still in progress (but not scraping)
   if (project.status === 'in_progress' || (project.status === 'pending' && !isScraping)) {
-    return <ProcessingState project={project} />
+    return (
+      <ModernLoader 
+        projectName={project.site_url || 'Website'}
+        totalPages={project.total_pages || 0}
+        currentPage={scrapedPages?.length || 0}
+        isScraping={false}
+      />
+    )
   }
 
   return (
