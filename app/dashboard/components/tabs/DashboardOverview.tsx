@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../SiteCrawlForm'
-import ScrapingService from '../ScrapingService'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 
 interface DashboardOverviewProps {
@@ -38,8 +37,6 @@ export default function DashboardOverview({
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-  const [apiResult, setApiResult] = useState<any>(null)
-  const [projectId, setProjectId] = useState<string | null>(null)
 
   // Sample data removed - RecentProjects now fetches real data from database
 
@@ -112,14 +109,6 @@ export default function DashboardOverview({
     setIsSubmitting(true)
     setSubmitStatus('submitting')
     
-    // Set up 20-second timeout
-    const timeoutId = setTimeout(() => {
-      console.error('⏰ Form submission timed out after 20 seconds')
-      setSubmitStatus('error')
-      setIsSubmitting(false)
-      alert('Form submission timed out. Please check your internet connection and try again.')
-    }, 20000)
-    
     try {
       // Test database connection first
       console.log('🔍 Step 1: Testing database connection...')
@@ -187,95 +176,37 @@ export default function DashboardOverview({
 
       console.log('📊 Project data prepared:', projectData)
 
-      // Create the audit project with timeout
+      // Create the audit project
       console.log('🔍 Step 4: Creating audit project in database...')
-      let createdProject = null
-      let currentProjectId = null
+      const { data: createdProject, error: projectError } = await createAuditProject(projectData)
       
-      try {
-        const createProjectPromise = createAuditProject(projectData)
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database operation timed out')), 10000)
-        )
-        
-        console.log('⏳ Waiting for database operation (10s timeout)...')
-        const { data, error } = await Promise.race([createProjectPromise, timeoutPromise]) as any
-        console.log('📊 Database operation result:', { data, error })
-
-        if (error) {
-          console.warn('⚠️ Database creation failed, but continuing with API call...', error)
-        } else if (data) {
-          createdProject = data
-          currentProjectId = data.id
-          setProjectId(data.id)
-          console.log('✅ Audit project created successfully:', data)
-        } else {
-          console.warn('⚠️ No data returned from createAuditProject, but continuing...')
-        }
-      } catch (dbError) {
-        console.warn('⚠️ Database operation failed, but continuing with API call...', dbError)
+      if (projectError) {
+        console.error('❌ Error creating project:', projectError)
+        setSubmitStatus('error')
+        alert('Failed to create project. Please try again.')
+        return
       }
 
-      // Clear timeout on success
-      clearTimeout(timeoutId)
+      if (!createdProject) {
+        console.error('❌ No project created')
+        setSubmitStatus('error')
+        alert('Failed to create project. Please try again.')
+        return
+      }
+
+      console.log('✅ Audit project created successfully:', createdProject)
       setSubmitStatus('success')
       
       // Refresh projects data to show the new project
-      if (createdProject) {
-        await refreshProjects()
-      }
+      await refreshProjects()
       
-      // Make API request to scraping service
-      try {
-        console.log('🔍 Step 5: Making API request to scraping service...')
-        
-        const scrapeFormData = {
-          url: formattedUrl,
-          mode: formData.pageType === 'single' ? 'single' : 'multipage',
-          maxPages: 100,
-          extractImagesFlag: true,
-          extractLinksFlag: true,
-          detectTechnologiesFlag: true
-        }
-        
-        console.log('📊 Scraping request data:', scrapeFormData)
-        
-        const apiEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'http://localhost:3001/scrap'
-        console.log('🌐 API endpoint:', apiEndpoint)
-        
-        console.log('⏳ Making fetch request...')
-        const scrapeResponse = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(scrapeFormData)
-        })
-        
-        console.log('📊 Scraping response status:', scrapeResponse.status)
-        console.log('📊 Scraping response ok:', scrapeResponse.ok)
-        
-        if (!scrapeResponse.ok) {
-          throw new Error(`Scraping API error: ${scrapeResponse.status}`)
-        }
-        
-        console.log('⏳ Parsing JSON response...')
-        const scrapeData = await scrapeResponse.json()
-        console.log('✅ Scraping API response:', scrapeData)
-        setApiResult(scrapeData)
-        
-      } catch (apiError) {
-        console.error('❌ Scraping API error:', apiError)
-        setApiResult({ error: 'Failed to start scraping process' })
+      // Redirect to analysis tab immediately
+      console.log('🔄 Redirecting to analysis tab...')
+      if (onProjectSelect) {
+        onProjectSelect(createdProject.id)
       }
-      
-      // Show success message
-      const projectIdMessage = currentProjectId ? `Project ID: ${currentProjectId}` : 'Project ID: N/A (Database issue)'
-      const scrapingStatus = apiResult ? 'Scraping process started.' : 'Note: Scraping process failed to start.'
-      alert(`Form submitted successfully!\n${projectIdMessage}\n${scrapingStatus}`)
       
     } catch (error) {
-      clearTimeout(timeoutId)
       console.error('❌ Unexpected error in form submission:', error)
       setSubmitStatus('error')
       alert(`An unexpected error occurred: ${error}`)
@@ -329,25 +260,6 @@ export default function DashboardOverview({
 
       {/* Features Showcase */}
       <FeaturesShowcase features={features} />
-
-      {/* Scraping Service - handles data processing */}
-      <ScrapingService 
-        projectId={projectId}
-        scrapingData={apiResult}
-        onScrapingComplete={(success) => {
-          console.log('Scraping completed:', success)
-        }}
-      />
-
-      {/* API Result Display */}
-      {apiResult && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-sm font-semibold text-blue-900 mb-2">Scraping API Response:</h3>
-          <pre className="text-xs text-blue-800 bg-blue-100 p-2 rounded overflow-auto max-h-32">
-            {JSON.stringify(apiResult, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   )
 }
