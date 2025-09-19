@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
-import DashboardSidebar from './components/DashboardSidebar'
-import DashboardHeader from './components/DashboardHeader'
-import DashboardContent from './components/DashboardContent'
+import { DashboardSidebar, DashboardHeader, DashboardContent } from './components/dashboard-components'
 import AnalysisTab from './components/tabs/AnalysisTab'
 
 export default function DashboardPage() {

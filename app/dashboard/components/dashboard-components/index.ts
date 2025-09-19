@@ -1,0 +1,6 @@
+export { default as DashboardContent } from './DashboardContent'
+export { default as DashboardHeader } from './DashboardHeader'
+export { default as DashboardSidebar } from './DashboardSidebar'
+export { default as RecentProjects } from './RecentProjects'
+export { default as StatsCards } from './StatsCards'
+export { default as FeaturesShowcase } from './FeaturesShowcase'

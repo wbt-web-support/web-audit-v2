@@ -6,9 +6,7 @@ import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../SiteCrawlForm'
 import ScrapingService from '../ScrapingService'
-import StatsCards from '../StatsCards'
-import RecentProjects from '../RecentProjects'
-import FeaturesShowcase from '../FeaturesShowcase'
+import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 
 interface DashboardOverviewProps {
   userProfile: any

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { AuditProject } from '@/types/audit'
-import { RecentProjectSkeleton } from './SkeletonLoader'
+import { RecentProjectSkeleton } from '../SkeletonLoader'
 
 interface RecentProjectsProps {
   projects: AuditProject[]

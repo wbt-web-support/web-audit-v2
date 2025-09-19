@@ -2,10 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { AuditProject } from '@/types/audit'
-import DashboardOverview from './tabs/DashboardOverview'
-import ProjectsTab from './tabs/ProjectsTab'
-import ProfileTab from './tabs/ProfileTab'
-import AdminTab from './tabs/AdminTab'
+import DashboardOverview from '../tabs/DashboardOverview'
+import ProjectsTab from '../tabs/ProjectsTab'
+import ProfileTab from '../tabs/ProfileTab'
+import AdminTab from '../tabs/AdminTab'
 
 interface DashboardContentProps {
   activeTab: string
