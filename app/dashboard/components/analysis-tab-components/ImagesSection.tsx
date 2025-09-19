@@ -51,6 +51,44 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     }
   }
 
+  // Helper function to parse fullTag HTML and extract image attributes
+  const parseImageFromFullTag = (fullTag: string) => {
+    try {
+      // Create a temporary DOM element to parse the fullTag
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = fullTag
+      const imgElement = tempDiv.querySelector('img')
+      
+      if (!imgElement) {
+        return null
+      }
+      
+      // Extract all relevant attributes
+      const src = imgElement.src || imgElement.getAttribute('src') || ''
+      const alt = imgElement.alt || imgElement.getAttribute('alt') || null
+      const title = imgElement.title || imgElement.getAttribute('title') || null
+      const width = imgElement.width || imgElement.getAttribute('width') || null
+      const height = imgElement.height || imgElement.getAttribute('height') || null
+      const className = imgElement.className || imgElement.getAttribute('class') || null
+      const loading = imgElement.loading || imgElement.getAttribute('loading') || null
+      const decoding = imgElement.getAttribute('decoding') || null
+      
+      return {
+        src,
+        alt,
+        title,
+        width: width ? parseInt(width.toString()) : null,
+        height: height ? parseInt(height.toString()) : null,
+        className,
+        loading,
+        decoding
+      }
+    } catch (error) {
+      console.warn('❌ Error parsing fullTag:', error)
+      return null
+    }
+  }
+
   // Extract images from original scraping data or HTML content
   const images = useMemo(() => {
     console.log('🖼️ ImagesSection - Starting image extraction')
@@ -71,8 +109,30 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           console.log(`🖼️ Found ${page.images.length} images in scraping data for page ${pageIndex + 1}`)
           
           page.images.forEach((img: any, imgIndex: number) => {
-            const src = img.src || img.url || ''
-            console.log(`🖼️ Image ${imgIndex + 1} from scraping data:`, { src, alt: img.alt, title: img.title })
+            let src = img.src || img.url || ''
+            let alt = img.alt || img.altText || img.alt_text || null
+            let title = img.title || img.titleText || img.title_text || null
+            let width = img.width || undefined
+            let height = img.height || undefined
+            
+            // If we have fullTag, parse it to extract more accurate data
+            if (img.fullTag) {
+              console.log(`🖼️ Parsing fullTag for image ${imgIndex + 1}:`, img.fullTag)
+              
+              const parsedData = parseImageFromFullTag(img.fullTag)
+              if (parsedData) {
+                console.log(`🖼️ Parsed from fullTag:`, parsedData)
+                
+                // Use parsed values if available, fallback to original values
+                if (parsedData.src) src = parsedData.src
+                if (parsedData.alt !== null) alt = parsedData.alt
+                if (parsedData.title !== null) title = parsedData.title
+                if (parsedData.width !== null) width = parsedData.width
+                if (parsedData.height !== null) height = parsedData.height
+              }
+            }
+            
+            console.log(`🖼️ Image ${imgIndex + 1} from scraping data:`, { src, alt, title, width, height, rawImg: img })
             
             if (src) {
               // Convert relative URLs to absolute
@@ -90,10 +150,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               
               allImages.push({
                 url: absoluteUrl,
-                alt: img.alt || null,
-                title: img.title || null,
-                width: img.width || undefined,
-                height: img.height || undefined,
+                alt: alt,
+                title: title,
+                width: width,
+                height: height,
                 type: getImageType(src),
                 page_url: page.url
               })
@@ -126,7 +186,9 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             
             imgElements.forEach((img: HTMLImageElement, imgIndex: number) => {
               const src = img.src || img.getAttribute('src') || ''
-              console.log(`🖼️ Image ${imgIndex + 1} from HTML:`, { src, alt: img.alt, title: img.title })
+              const alt = img.alt || img.getAttribute('alt') || null
+              const title = img.title || img.getAttribute('title') || null
+              console.log(`🖼️ Image ${imgIndex + 1} from HTML:`, { src, alt, title, rawElement: img })
               
               if (src) {
                 // Convert relative URLs to absolute
@@ -144,8 +206,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 
                 allImages.push({
                   url: absoluteUrl,
-                  alt: img.alt || null,
-                  title: img.title || null,
+                  alt: alt,
+                  title: title,
                   width: img.width || undefined,
                   height: img.height || undefined,
                   type: getImageType(src),
@@ -164,6 +226,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     
     console.log('✅ Total images extracted:', allImages.length)
     console.log('🖼️ All images:', allImages)
+    
+    // Debug: Log images with and without alt text
+    const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
+    const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
+    console.log('🖼️ Images with alt text:', withAlt.length, withAlt)
+    console.log('🖼️ Images without alt text:', withoutAlt.length, withoutAlt)
+    
     return allImages
   }, [scrapedPages, project.site_url, originalScrapingData])
 
@@ -176,9 +245,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         (img.title && img.title.toLowerCase().includes(searchTerm.toLowerCase()))
 
       // Alt text filter
+      const hasAltText = img.alt && img.alt.trim() !== ''
       const matchesAlt = altFilter === 'all' || 
-        (altFilter === 'with-alt' && img.alt) ||
-        (altFilter === 'without-alt' && !img.alt)
+        (altFilter === 'with-alt' && hasAltText) ||
+        (altFilter === 'without-alt' && !hasAltText)
 
       // Type filter
       const matchesType = typeFilter === 'all' || img.type === typeFilter
@@ -194,7 +264,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
   const stats = useMemo(() => {
     const total = images.length
-    const withAlt = images.filter(img => img.alt).length
+    const withAlt = images.filter(img => img.alt && img.alt.trim() !== '').length
     const withoutAlt = total - withAlt
     
     return { total, withAlt, withoutAlt }
@@ -330,7 +400,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   </td>
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
-                      {img.alt ? (
+                      {img.alt && img.alt.trim() !== '' ? (
                         <span className="text-sm text-gray-900">{img.alt}</span>
                       ) : (
                         <span className="text-sm text-gray-500 italic">No alt text</span>

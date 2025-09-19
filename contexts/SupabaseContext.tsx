@@ -587,7 +587,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             average_html_per_page,
             pagespeed_insights_data,
             pagespeed_insights_loading,
-            pagespeed_insights_error
+            pagespeed_insights_error,
+            seo_analysis
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -633,13 +634,15 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error updating audit project:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
         return { data: null, error }
       }
 
       return { data: data as AuditProjectWithUserId, error: null }
     } catch (error) {
       console.error('Unexpected error updating audit project:', error)
-      return { data: null, error }
+      console.error('Unexpected error details:', JSON.stringify(error, null, 2))
+      return { data: null, error: error instanceof Error ? error : { message: 'Unknown error occurred' } }
     }
   }
 

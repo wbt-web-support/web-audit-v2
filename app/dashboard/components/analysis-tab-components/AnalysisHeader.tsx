@@ -71,9 +71,10 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
             {[
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'pages', name: 'Pages', icon: '📄' },
-              { id: 'technologies', name: 'Technologies', icon: '⚙️' },
+              { id: 'technologies', name: 'Technical', icon: '⚙️' },
               { id: 'cms', name: 'CMS', icon: '🏗️' },
               { id: 'performance', name: 'Performance', icon: '⚡' },
+              { id: 'seo', name: 'SEO', icon: '🔍' },
               { id: 'images', name: 'Images', icon: '🖼️' },
               { id: 'links', name: 'Links', icon: '🔗' }
             ].map((tab) => (

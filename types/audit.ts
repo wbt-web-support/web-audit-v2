@@ -32,6 +32,28 @@ export interface AuditProject {
   pagespeed_insights_loading: boolean
   pagespeed_insights_error: string | null
   scraping_data: any | null
+  seo_analysis: SEOAnalysisResult | null
+}
+
+export interface SEOIssue {
+  type: 'error' | 'warning' | 'info'
+  category: string
+  title: string
+  description: string
+  fix: string
+  impact: 'high' | 'medium' | 'low'
+}
+
+export interface SEOAnalysisResult {
+  score: number
+  issues: SEOIssue[]
+  summary: {
+    totalIssues: number
+    errors: number
+    warnings: number
+    info: number
+  }
+  recommendations: string[]
 }
 
 export interface CmsPlugin {

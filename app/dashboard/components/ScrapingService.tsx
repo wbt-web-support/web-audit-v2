@@ -146,8 +146,49 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
   }
 
   // Function to process technologies data and remove duplicates
-  const processTechnologiesData = (technologiesData: any) => {
-    if (!technologiesData || !Array.isArray(technologiesData)) {
+  const processTechnologiesData = (technologiesData: any, summaryTechnologies: string[] = []) => {
+    // Combine both detailed technologies and summary technologies
+    const allTechnologies: any[] = []
+    
+    // Add detailed technologies if available
+    if (technologiesData && Array.isArray(technologiesData)) {
+      technologiesData.forEach(tech => {
+        // Check if it's a string (simple technology name) or an object (detailed technology)
+        if (typeof tech === 'string') {
+          allTechnologies.push({
+            name: tech,
+            version: null,
+            category: 'unknown',
+            confidence: 0.9,
+            detection_method: 'extracted_data',
+            description: null,
+            website: null,
+            icon: null
+          })
+        } else if (typeof tech === 'object' && tech !== null) {
+          // It's a detailed technology object
+          allTechnologies.push(tech)
+        }
+      })
+    }
+    
+    // Add summary technologies as simple objects
+    if (summaryTechnologies && Array.isArray(summaryTechnologies)) {
+      summaryTechnologies.forEach(techName => {
+        allTechnologies.push({
+          name: techName,
+          version: null,
+          category: 'unknown',
+          confidence: 0.9, // Higher confidence for summary technologies
+          detection_method: 'summary',
+          description: null,
+          website: null,
+          icon: null
+        })
+      })
+    }
+
+    if (allTechnologies.length === 0) {
       return {
         technologies: null,
         technologies_confidence: 0,
@@ -157,7 +198,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
     }
 
     // Process technologies - remove duplicates and add metadata
-    const uniqueTechnologies = technologiesData.reduce((acc: any[], tech: any) => {
+    const uniqueTechnologies = allTechnologies.reduce((acc: any[], tech: any) => {
       const existing = acc.find(t => t.name === tech.name && t.category === (tech.category || 'unknown'))
       
       if (!existing) {
@@ -273,7 +314,10 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       const cmsData = processCmsData(scrapingData.extractedData?.cms)
       
       // Process technologies data to avoid repetition and extract unique information
-      const technologiesData = processTechnologiesData(scrapingData.extractedData?.technologies)
+      const technologiesData = processTechnologiesData(
+        scrapingData.extractedData?.technologies,
+        scrapingData.summary?.technologies
+      )
       
       // Update audit project with summary data
       const summaryData = {

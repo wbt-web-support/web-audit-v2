@@ -1,22 +1,26 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { motion } from 'framer-motion'
 import { fetchPageSpeedInsights } from '@/lib/pagespeed'
+import { analyzeSEO } from '@/lib/seo-analysis'
 import {
   AnalysisHeader,
   OverviewSection,
-  PagesSection,
-  TechnologiesSection,
-  CmsSection,
-  PerformanceSection,
-  ImagesSection,
-  LinksSection,
   ProcessingState,
   ModernLoader
 } from '../analysis-tab-components'
+
+// Lazy load heavy components
+const PagesSection = lazy(() => import('../analysis-tab-components/PagesSection'))
+const TechnologiesSection = lazy(() => import('../analysis-tab-components/TechnologiesSection'))
+const CmsSection = lazy(() => import('../analysis-tab-components/CmsSection'))
+const PerformanceSection = lazy(() => import('../analysis-tab-components/PerformanceSection'))
+const ImagesSection = lazy(() => import('../analysis-tab-components/ImagesSection'))
+const LinksSection = lazy(() => import('../analysis-tab-components/LinksSection'))
+const SEOAnalysisSection = lazy(() => import('../analysis-tab-components/SEOAnalysisSection'))
 
 interface AnalysisTabProps {
   projectId: string
@@ -48,8 +52,59 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   const [isPageSpeedLoading, setIsPageSpeedLoading] = useState(false)
   const [pageSpeedError, setPageSpeedError] = useState<string | null>(null)
   const [hasAutoStartedPageSpeed, setHasAutoStartedPageSpeed] = useState(false)
+  const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set(['overview']))
+  const [scrapedPagesLoaded, setScrapedPagesLoaded] = useState(false)
+  
+  // SEO Analysis states
+  const [hasAutoStartedSeoAnalysis, setHasAutoStartedSeoAnalysis] = useState(false)
 
   console.log('🔍 AnalysisTab rendered for project:', projectId, 'cachedData:', !!cachedData, 'loading:', loading)
+  
+  // Performance monitoring
+  useEffect(() => {
+    const startTime = performance.now()
+    return () => {
+      const endTime = performance.now()
+      console.log(`⏱️ AnalysisTab render time: ${endTime - startTime}ms`)
+    }
+  })
+
+  // Function to handle section loading
+  const handleSectionChange = async (section: string) => {
+    setActiveSection(section)
+    if (!loadedSections.has(section)) {
+      setLoadedSections(prev => new Set([...prev, section]))
+    }
+    
+    // Load scraped pages if needed for this section
+    if ((section === 'pages' || section === 'images' || section === 'links') && !scrapedPagesLoaded && project?.status === 'completed') {
+      console.log('📄 Loading scraped pages for section:', section)
+      try {
+        const { data: pages, error: pagesError } = await getScrapedPages(projectId)
+        if (pagesError) {
+          console.error('Error fetching scraped pages:', pagesError)
+        } else if (pages) {
+          setScrapedPages(pages)
+          setScrapedPagesLoaded(true)
+          console.log('✅ Scraped pages loaded:', pages.length)
+        }
+      } catch (error) {
+        console.error('Error loading scraped pages:', error)
+      }
+    }
+  }
+
+  // Loading skeleton component
+  const SectionSkeleton = () => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="space-y-3">
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    </div>
+  )
 
   // Function to process CMS data and remove duplicates
   const processCmsData = (cmsData: any) => {
@@ -193,8 +248,30 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       }
     }
 
+    // Process technologies - handle both string arrays and object arrays
+    const allTechnologies: any[] = []
+    
+    technologiesData.forEach(tech => {
+      // Check if it's a string (simple technology name) or an object (detailed technology)
+      if (typeof tech === 'string') {
+        allTechnologies.push({
+          name: tech,
+          version: null,
+          category: 'unknown',
+          confidence: 0.9,
+          detection_method: 'summary',
+          description: null,
+          website: null,
+          icon: null
+        })
+      } else if (typeof tech === 'object' && tech !== null) {
+        // It's a detailed technology object
+        allTechnologies.push(tech)
+      }
+    })
+
     // Process technologies - remove duplicates and add metadata
-    const uniqueTechnologies = technologiesData.reduce((acc: any[], tech: any) => {
+    const uniqueTechnologies = allTechnologies.reduce((acc: any[], tech: any) => {
       const existing = acc.find(t => t.name === tech.name && t.category === (tech.category || 'unknown'))
       
       if (!existing) {
@@ -320,6 +397,38 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     }
   }
 
+  // Function to handle SEO Analysis using scraped pages data
+  const handleSeoAnalysis = async (projectId: string, scrapedPages: any[]) => {
+    try {
+      console.log('🚀 Starting SEO Analysis for project:', projectId)
+      
+      // Get the first page's HTML content from scraped pages
+      const firstPage = scrapedPages.find(page => page.audit_project_id === projectId)
+      if (!firstPage?.html_content) {
+        throw new Error('No HTML content available for SEO analysis')
+      }
+      
+      // Perform SEO analysis
+      const seoAnalysis = analyzeSEO(firstPage.html_content, project?.site_url || '')
+      
+      console.log('✅ SEO Analysis completed:', seoAnalysis)
+      
+      // Update project with SEO analysis data
+      await updateAuditProject(projectId, {
+        seo_analysis: seoAnalysis
+      })
+      
+      // Update local project state
+      setProject(prev => prev ? {
+        ...prev,
+        seo_analysis: seoAnalysis
+      } : null)
+      
+    } catch (error) {
+      console.error('❌ SEO Analysis error:', error)
+    }
+  }
+
   // Function to process scraping data and save to database
   const processScrapingData = async (scrapingData: any, projectId: string) => {
     try {
@@ -369,7 +478,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       const cmsData = processCmsData(scrapingData.extractedData?.cms)
       
       // Process technologies data to avoid repetition and extract unique information
-      const technologiesData = processTechnologiesData(scrapingData.extractedData?.technologies)
+      const technologiesData = processTechnologiesData(scrapingData.summary?.technologies)
       
       // Update audit project with summary data
       const summaryData = {
@@ -386,24 +495,50 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
         total_response_time: scrapingData.performance?.totalTime || 0,
         scraping_completed_at: new Date().toISOString(),
-        scraping_data: scrapingData,
+        scraping_data: {
+          summary: scrapingData.summary,
+          performance: scrapingData.performance,
+          extractedData: {
+            cms: scrapingData.extractedData?.cms,
+            technologies: scrapingData.extractedData?.technologies
+          },
+          responseTime: scrapingData.responseTime,
+          timestamp: new Date().toISOString()
+        },
         status: 'completed' as const,
         progress: 100
       }
 
       console.log('📊 Updating audit project with summary data:', summaryData)
+      console.log('📊 Summary data keys:', Object.keys(summaryData))
+      console.log('📊 Scraping data size:', JSON.stringify(scrapingData).length, 'characters')
+
+      // Validate that the data can be serialized
+      try {
+        JSON.stringify(summaryData)
+        console.log('✅ Summary data is serializable')
+      } catch (serializationError) {
+        console.error('❌ Summary data serialization error:', serializationError)
+        setScrapingError('Failed to serialize summary data for database update')
+        return
+      }
 
       const { error: updateError } = await updateAuditProject(projectId, summaryData)
       
       if (updateError) {
         console.error('❌ Error updating audit project with summary:', updateError)
-        setScrapingError('Failed to update project with summary data')
+        console.error('❌ Error details:', JSON.stringify(updateError, null, 2))
+        setScrapingError(`Failed to update project with summary data: ${updateError.message || 'Unknown error'}`)
         return
       } else {
         console.log('✅ Audit project updated with summary data successfully')
         
         // Update local state
         setProject(prev => prev ? { ...prev, ...summaryData } : null)
+        
+        // Start SEO Analysis after scraping is complete
+        console.log('🚀 Starting SEO Analysis after scraping completion...')
+        handleSeoAnalysis(projectId, scrapedPagesData)
         
         // Update parent cache
         if (onDataUpdate) {
@@ -468,18 +603,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           
           let pagesData: any[] = []
           
-          // If project is completed, fetch scraped pages
+          // Skip scraped pages fetch on initial load - load them on demand
           if (projectData.status === 'completed') {
-            console.log('📄 AnalysisTab: Fetching scraped pages...')
-            const { data: pages, error: pagesError } = await getScrapedPages(projectId)
-            
-            if (pagesError) {
-              console.error('Error fetching scraped pages:', pagesError)
-            } else if (pages) {
-              pagesData = pages
-              setScrapedPages(pages)
-              console.log('✅ AnalysisTab: Scraped pages fetched:', pages.length)
-            }
+            console.log('📄 AnalysisTab: Skipping initial scraped pages fetch - will load on demand')
+            setScrapedPagesLoaded(false)
           }
           
           // Update parent cache
@@ -590,6 +717,25 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     autoStartPageSpeed()
   }, [project, hasAutoStartedPageSpeed, isPageSpeedLoading])
 
+  // Auto-start SEO analysis if no data exists and we have scraped pages
+  useEffect(() => {
+    const autoStartSeoAnalysis = async () => {
+      if (
+        project && 
+        project.status === 'completed' && 
+        !project.seo_analysis &&
+        !hasAutoStartedSeoAnalysis &&
+        scrapedPages.length > 0
+      ) {
+        console.log('🚀 Auto-starting SEO analysis for completed project:', project.site_url)
+        setHasAutoStartedSeoAnalysis(true)
+        await handleSeoAnalysis(project.id, scrapedPages)
+      }
+    }
+
+    autoStartSeoAnalysis()
+  }, [project, hasAutoStartedSeoAnalysis, scrapedPages])
+
   // Handle browser visibility changes to prevent unnecessary refetches
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -696,7 +842,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       <AnalysisHeader 
         project={project} 
         activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
+        onSectionChange={handleSectionChange} 
       />
 
       {/* Content Sections */}
@@ -706,18 +852,54 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        {activeSection === 'overview' && <OverviewSection project={project} />}
-        {activeSection === 'pages' && <PagesSection scrapedPages={scrapedPages} />}
-        {activeSection === 'technologies' && <TechnologiesSection project={project} />}
-        {activeSection === 'cms' && <CmsSection project={project} />}
-        {activeSection === 'performance' && <PerformanceSection project={project} onDataUpdate={(updatedProject) => {
-          setProject(updatedProject)
-          if (onDataUpdate) {
-            onDataUpdate(updatedProject, scrapedPages)
-          }
-        }} />}
-        {activeSection === 'images' && <ImagesSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />}
-        {activeSection === 'links' && <LinksSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />}
+        {activeSection === 'overview' && <OverviewSection project={project} scrapedPages={scrapedPages} />}
+        
+        {activeSection === 'pages' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <PagesSection scrapedPages={scrapedPages} />
+          </Suspense>
+        )}
+        
+        {activeSection === 'technologies' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <TechnologiesSection project={project} />
+          </Suspense>
+        )}
+        
+        {activeSection === 'cms' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <CmsSection project={project} />
+          </Suspense>
+        )}
+        
+        {activeSection === 'performance' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <PerformanceSection project={project} onDataUpdate={(updatedProject: AuditProject) => {
+              setProject(updatedProject)
+              if (onDataUpdate) {
+                onDataUpdate(updatedProject, scrapedPages)
+              }
+            }} />
+          </Suspense>
+        )}
+        
+        {activeSection === 'images' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <ImagesSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />
+          </Suspense>
+        )}
+        
+        {activeSection === 'links' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <LinksSection project={project} scrapedPages={scrapedPages} originalScrapingData={project.scraping_data} />
+          </Suspense>
+        )}
+        
+        {/* {activeSection === 'seo' && (
+          <Suspense fallback={<SectionSkeleton />}>
+            <SEOAnalysisSection project={project} scrapedPages={scrapedPages} />
+          </Suspense>
+        )} */}
       </motion.div>
     </div>
   )

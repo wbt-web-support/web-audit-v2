@@ -22,7 +22,7 @@ export default function ModernLoader({
     { id: 'pages', label: 'Scanning Pages', icon: '📄' },
     { id: 'images', label: 'Analyzing Images', icon: '🖼️' },
     { id: 'links', label: 'Checking Links', icon: '🔗' },
-    { id: 'technologies', label: 'Detecting Technologies', icon: '⚙️' },
+    { id: 'technologies', label: 'Detecting Technical', icon: '⚙️' },
     { id: 'performance', label: 'Measuring Performance', icon: '⚡' },
     { id: 'cms', label: 'Identifying CMS', icon: '🏗️' }
   ]

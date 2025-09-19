@@ -175,7 +175,9 @@ export default function DashboardOverview({
         // PageSpeed Insights fields
         pagespeed_insights_data: null,
         pagespeed_insights_loading: false,
-        pagespeed_insights_error: null
+        pagespeed_insights_error: null,
+        // SEO Analysis fields
+        seo_analysis: null
       }
 
       console.log('📊 Project data prepared:', projectData)

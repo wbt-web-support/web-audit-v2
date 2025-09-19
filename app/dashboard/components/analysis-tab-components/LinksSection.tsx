@@ -22,6 +22,8 @@ interface LinkData {
 export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'internal' | 'external'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(20)
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -124,6 +126,19 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     })
   }, [links, searchTerm, typeFilter])
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredLinks.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedLinks = filteredLinks.slice(startIndex, endIndex)
+
+  // Reset to first page when filters change
+  const handleFilterChange = (newSearchTerm: string, newTypeFilter: 'all' | 'internal' | 'external') => {
+    setSearchTerm(newSearchTerm)
+    setTypeFilter(newTypeFilter)
+    setCurrentPage(1)
+  }
+
   const stats = useMemo(() => {
     const total = links.length
     const internal = links.filter(link => link.type === 'internal').length
@@ -138,7 +153,8 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Links Analysis</h3>
         <div className="text-sm text-gray-500">
-          {filteredLinks.length} of {stats.total} links
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
+          {filteredLinks.length !== stats.total && ` (${stats.total} total)`}
         </div>
       </div>
 
@@ -166,7 +182,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
             type="text"
             placeholder="Search links..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleFilterChange(e.target.value, typeFilter)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -175,7 +191,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
         <div className="w-40">
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
+            onChange={(e) => handleFilterChange(searchTerm, e.target.value as any)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Links</option>
@@ -209,7 +225,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredLinks.map((link, index) => (
+              {paginatedLinks.map((link, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -272,6 +288,67 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
             </svg>
           </div>
           <p className="text-gray-600">No links found matching your filters</p>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredLinks.length > itemsPerPage && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center text-sm text-gray-700">
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                      currentPage === pageNum
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
