@@ -23,7 +23,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'internal' | 'external'>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(20)
+  const [itemsPerPage] = useState(40)
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {

@@ -895,11 +895,11 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           </Suspense>
         )}
         
-        {/* {activeSection === 'seo' && (
+        {activeSection === 'seo' && (
           <Suspense fallback={<SectionSkeleton />}>
             <SEOAnalysisSection project={project} scrapedPages={scrapedPages} />
           </Suspense>
-        )} */}
+        )}
       </motion.div>
     </div>
   )

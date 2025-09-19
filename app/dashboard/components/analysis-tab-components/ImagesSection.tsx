@@ -24,6 +24,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const [searchTerm, setSearchTerm] = useState('')
   const [altFilter, setAltFilter] = useState<'all' | 'with-alt' | 'without-alt'>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(40)
 
   console.log('🖼️ ImagesSection rendered with:', { 
     project: !!project, 
@@ -257,6 +259,20 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     })
   }, [images, searchTerm, altFilter, typeFilter])
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredImages.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedImages = filteredImages.slice(startIndex, endIndex)
+
+  // Reset to first page when filters change
+  const handleFilterChange = (newSearchTerm: string, newAltFilter: 'all' | 'with-alt' | 'without-alt', newTypeFilter: string) => {
+    setSearchTerm(newSearchTerm)
+    setAltFilter(newAltFilter)
+    setTypeFilter(newTypeFilter)
+    setCurrentPage(1)
+  }
+
   const imageTypes = useMemo(() => {
     const types = [...new Set(images.map(img => img.type).filter(Boolean))]
     return types.sort()
@@ -275,7 +291,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Images Analysis</h3>
         <div className="text-sm text-gray-500">
-          {filteredImages.length} of {stats.total} images
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredImages.length)} of {filteredImages.length} images
+          {filteredImages.length !== stats.total && ` (${stats.total} total)`}
         </div>
       </div>
 
@@ -304,7 +321,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             type="text"
             placeholder="Search images..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleFilterChange(e.target.value, altFilter, typeFilter)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -313,7 +330,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         <div className="w-40">
           <select
             value={altFilter}
-            onChange={(e) => setAltFilter(e.target.value as any)}
+            onChange={(e) => handleFilterChange(searchTerm, e.target.value as any, typeFilter)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Images</option>
@@ -326,7 +343,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         <div className="w-32">
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(e) => handleFilterChange(searchTerm, altFilter, e.target.value)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Types</option>
@@ -364,7 +381,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredImages.map((img, index) => (
+              {paginatedImages.map((img, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
@@ -440,6 +457,67 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             </svg>
           </div>
           <p className="text-gray-600">No images found matching your filters</p>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredImages.length > itemsPerPage && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center text-sm text-gray-700">
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                      currentPage === pageNum
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
