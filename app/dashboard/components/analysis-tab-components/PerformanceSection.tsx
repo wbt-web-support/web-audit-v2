@@ -36,12 +36,23 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
       
       if (error) {
         console.error('❌ PageSpeed reanalysis error:', error)
-        setReanalyzeError(error)
+        
+        // Provide more user-friendly error messages
+        let userFriendlyError = error
+        if (error.includes('Lighthouse processing issues')) {
+          userFriendlyError = 'PageSpeed Insights is temporarily unavailable due to server issues. Please try again in a few minutes.'
+        } else if (error.includes('500')) {
+          userFriendlyError = 'PageSpeed Insights server is experiencing issues. Please try again later.'
+        } else if (error.includes('Failed to fetch')) {
+          userFriendlyError = 'Unable to connect to PageSpeed Insights. Please check your internet connection and try again.'
+        }
+        
+        setReanalyzeError(userFriendlyError)
         
         // Update project with error state
         await updateAuditProject(project.id, {
           pagespeed_insights_loading: false,
-          pagespeed_insights_error: error,
+          pagespeed_insights_error: userFriendlyError,
           pagespeed_insights_data: null
         })
       } else if (data) {
@@ -69,12 +80,23 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
     } catch (error) {
       console.error('❌ PageSpeed reanalysis unexpected error:', error)
       const errorMessage = `Reanalysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      setReanalyzeError(errorMessage)
+      
+      // Provide more user-friendly error messages
+      let userFriendlyError = errorMessage
+      if (errorMessage.includes('Lighthouse processing issues')) {
+        userFriendlyError = 'PageSpeed Insights is temporarily unavailable due to server issues. Please try again in a few minutes.'
+      } else if (errorMessage.includes('500')) {
+        userFriendlyError = 'PageSpeed Insights server is experiencing issues. Please try again later.'
+      } else if (errorMessage.includes('Failed to fetch')) {
+        userFriendlyError = 'Unable to connect to PageSpeed Insights. Please check your internet connection and try again.'
+      }
+      
+      setReanalyzeError(userFriendlyError)
       
       // Update project with error state
       await updateAuditProject(project.id, {
         pagespeed_insights_loading: false,
-        pagespeed_insights_error: errorMessage,
+        pagespeed_insights_error: userFriendlyError,
         pagespeed_insights_data: null
       })
     } finally {

@@ -354,12 +354,23 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       
       if (error) {
         console.error('❌ PageSpeed Insights error:', error)
-        setPageSpeedError(error)
+        
+        // Provide more user-friendly error messages
+        let userFriendlyError = error
+        if (error.includes('Lighthouse processing issues')) {
+          userFriendlyError = 'PageSpeed Insights is temporarily unavailable due to server issues. Please try again in a few minutes.'
+        } else if (error.includes('500')) {
+          userFriendlyError = 'PageSpeed Insights server is experiencing issues. Please try again later.'
+        } else if (error.includes('Failed to fetch')) {
+          userFriendlyError = 'Unable to connect to PageSpeed Insights. Please check your internet connection and try again.'
+        }
+        
+        setPageSpeedError(userFriendlyError)
         
         // Update project with error state
         await updateAuditProject(projectId, {
           pagespeed_insights_loading: false,
-          pagespeed_insights_error: error,
+          pagespeed_insights_error: userFriendlyError,
           pagespeed_insights_data: null
         })
       } else if (data) {

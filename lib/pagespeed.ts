@@ -172,6 +172,19 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
           if (!response.ok) {
             const errorText = await response.text().catch(() => 'Unable to read error response')
             console.error('❌ PageSpeed API error response:', errorText)
+            
+            // Handle specific error cases
+            if (response.status === 500) {
+              try {
+                const errorData = JSON.parse(errorText)
+                if (errorData.error?.reason === 'lighthouseError') {
+                  throw new Error('PageSpeed Insights is temporarily unavailable due to Lighthouse processing issues. Please try again later.')
+                }
+              } catch {
+                // If we can't parse the error, use a generic message
+              }
+            }
+            
             throw new Error(`PageSpeed API error: ${response.status} - ${response.statusText}. Details: ${errorText}`)
           }
           
