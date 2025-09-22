@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Variables
+
+Copy `env.example` to `.env.local` and configure the following variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+- `NEXT_PUBLIC_SCRAPER_API_ENDPOINT` - HTTPS endpoint for the scraping service (required for production)
+
+**Important**: The scraping API endpoint must use HTTPS in production to avoid Mixed Content errors.
+
 ## Getting Started
 
 First, run the development server:

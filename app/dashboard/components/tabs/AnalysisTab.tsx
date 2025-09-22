@@ -657,8 +657,15 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         console.log('📊 Scraping request data:', scrapeFormData)
         
-        const apiEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'http://localhost:3001/scrap'
+        // Use HTTPS endpoint for production, fallback to environment variable
+        const apiEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'https://rkssksgc48wgkckwsco4swog.81.0.220.43.sslip.io/scrap'
         console.log('🌐 API endpoint:', apiEndpoint)
+        
+        // Validate that we're using HTTPS in production
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && !apiEndpoint.startsWith('https:')) {
+          console.error('❌ Mixed Content Error: Cannot use HTTP endpoint on HTTPS site')
+          throw new Error('Scraping API endpoint must use HTTPS in production')
+        }
         
         console.log('⏳ Making fetch request...')
         const scrapeResponse = await fetch(apiEndpoint, {
