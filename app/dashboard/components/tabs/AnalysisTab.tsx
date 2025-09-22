@@ -411,11 +411,61 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   const handleSeoAnalysis = async (projectId: string, scrapedPages: any[]) => {
     try {
       console.log('🚀 Starting SEO Analysis for project:', projectId)
+      console.log('📊 Scraped pages data:', scrapedPages)
+      console.log('📊 Scraped pages count:', scrapedPages?.length || 0)
+      
+      if (!scrapedPages || scrapedPages.length === 0) {
+        console.warn('⚠️ No scraped pages available for SEO analysis')
+        return
+      }
       
       // Get the first page's HTML content from scraped pages
       const firstPage = scrapedPages.find(page => page.audit_project_id === projectId)
-      if (!firstPage?.html_content) {
-        throw new Error('No HTML content available for SEO analysis')
+      console.log('🔍 First page found:', firstPage)
+      
+      if (!firstPage) {
+        console.warn('⚠️ No page found with matching project ID for SEO analysis')
+        return
+      }
+      
+      if (!firstPage.html_content) {
+        console.warn('⚠️ No HTML content available in first page for SEO analysis')
+        console.log('📊 First page data:', {
+          url: firstPage.url,
+          title: firstPage.title,
+          hasHtmlContent: !!firstPage.html_content,
+          htmlContentLength: firstPage.html_content?.length || 0
+        })
+        
+        // Try to get HTML content from project's scraping_data as fallback
+        if (project?.scraping_data?.pages?.[0]?.html) {
+          console.log('🔄 Trying fallback HTML content from project scraping_data...')
+          const fallbackHtml = project.scraping_data.pages[0].html
+          console.log('📊 Fallback HTML content length:', fallbackHtml?.length || 0)
+          
+          if (fallbackHtml) {
+            // Perform SEO analysis with fallback HTML
+            const seoAnalysis = analyzeSEO(fallbackHtml, project?.site_url || '')
+            
+            console.log('✅ SEO Analysis completed with fallback HTML:', seoAnalysis)
+            
+            // Update project with SEO analysis data
+            await updateAuditProject(projectId, {
+              seo_analysis: seoAnalysis
+            })
+            
+            // Update local project state
+            setProject(prev => prev ? {
+              ...prev,
+              seo_analysis: seoAnalysis
+            } : null)
+            
+            return
+          }
+        }
+        
+        console.warn('⚠️ No HTML content available for SEO analysis (no fallback)')
+        return
       }
       
       // Perform SEO analysis
@@ -451,27 +501,42 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       }
 
       // Prepare scraped pages data
-      const scrapedPagesData = scrapingData.pages.map((page: any) => ({
-        audit_project_id: projectId,
-        url: page.url,
-        status_code: page.statusCode,
-        title: page.title,
-        description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
-        html_content: page.html,
-        html_content_length: page.htmlContentLength,
-        links_count: page.links?.length || 0,
-        images_count: page.images?.length || 0,
-        meta_tags_count: page.metaTags?.length || 0,
-        technologies_count: page.technologies?.length || 0,
-        technologies: page.technologies || null,
-        cms_type: scrapingData.extractedData?.cms?.type || null,
-        cms_version: scrapingData.extractedData?.cms?.version || null,
-        cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
-        is_external: false, // Main page is not external
-        response_time: scrapingData.responseTime
-      }))
+      const scrapedPagesData = scrapingData.pages.map((page: any) => {
+        console.log('🔍 Processing page:', {
+          url: page.url,
+          hasHtml: !!page.html,
+          htmlLength: page.html?.length || 0,
+          statusCode: page.statusCode,
+          title: page.title
+        })
+        
+        return {
+          audit_project_id: projectId,
+          url: page.url,
+          status_code: page.statusCode,
+          title: page.title,
+          description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
+          html_content: page.html,
+          html_content_length: page.htmlContentLength,
+          links_count: page.links?.length || 0,
+          images_count: page.images?.length || 0,
+          meta_tags_count: page.metaTags?.length || 0,
+          technologies_count: page.technologies?.length || 0,
+          technologies: page.technologies || null,
+          cms_type: scrapingData.extractedData?.cms?.type || null,
+          cms_version: scrapingData.extractedData?.cms?.version || null,
+          cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
+          is_external: false, // Main page is not external
+          response_time: scrapingData.responseTime
+        }
+      })
 
       console.log('📊 Prepared scraped pages data:', scrapedPagesData)
+      console.log('📊 HTML content check:', scrapedPagesData.map((page: any) => ({
+        url: page.url,
+        hasHtmlContent: !!page.html_content,
+        htmlContentLength: page.html_content?.length || 0
+      })))
 
       // Save scraped pages to database
       const { data: savedPages, error: pagesError } = await createScrapedPages(scrapedPagesData)
