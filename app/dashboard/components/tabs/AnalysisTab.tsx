@@ -677,56 +677,135 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         console.log('📊 Scraping request data:', scrapeFormData)
         
         // Use HTTPS endpoint for production, fallback to environment variable
-        const apiEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'https://rkssksgc48wgkckwsco4swog.81.0.220.43.sslip.io/scrap'
-        console.log('🌐 API endpoint:', apiEndpoint)
+        const primaryEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'http://rkssksgc48wgkckwsco4swog.81.0.220.43.sslip.io/scrap'
+        const fallbackEndpoints = [
+          primaryEndpoint,
+          'http://rkssksgc48wgkckwsco4swog.81.0.220.43.sslip.io/scrap',
+          // Add more fallback endpoints if available
+        ]
+        
+        console.log('🌐 Primary API endpoint:', primaryEndpoint)
+        console.log('🔄 Fallback endpoints available:', fallbackEndpoints.length)
         
         // Validate that we're using HTTPS in production
-        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && !apiEndpoint.startsWith('https:')) {
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && !primaryEndpoint.startsWith('https:')) {
           console.error('❌ Mixed Content Error: Cannot use HTTP endpoint on HTTPS site')
           throw new Error('Scraping API endpoint must use HTTPS in production')
         }
         
-        // Retry logic for scraping request
+        // Test basic connectivity to the primary endpoint
+        try {
+          console.log('🔍 Testing basic connectivity...')
+            const connectivityTest = await fetch(primaryEndpoint, {
+              method: 'HEAD',
+              signal: AbortSignal.timeout(120000), // 2 minute timeout
+              mode: 'cors'
+            })
+          console.log('✅ Connectivity test passed:', connectivityTest.status)
+        } catch (connectivityError) {
+          console.warn('⚠️ Connectivity test failed:', connectivityError)
+          console.log('🔄 Will proceed with retry logic...')
+        }
+        
+        // Retry logic for scraping request with endpoint fallback
         const makeScrapingRequest = async (retries = 3, delay = 1000): Promise<Response> => {
           for (let i = 0; i < retries; i++) {
-            try {
-              console.log(`⏳ Making fetch request (attempt ${i + 1}/${retries})...`)
+            // Try different endpoints
+            const endpointsToTry = fallbackEndpoints.slice(0, Math.min(i + 1, fallbackEndpoints.length))
+            
+            for (const apiEndpoint of endpointsToTry) {
+              try {
+                console.log(`⏳ Making fetch request (attempt ${i + 1}/${retries}) to ${apiEndpoint}...`)
+                console.log('🌐 API endpoint:', apiEndpoint)
+                console.log('📦 Request data size:', JSON.stringify(scrapeFormData).length, 'bytes')
+              
+              // Test network connectivity first
+              try {
+                const testResponse = await fetch(apiEndpoint, { 
+                  method: 'HEAD',
+                  signal: AbortSignal.timeout(5000) // 5 second timeout for test
+                })
+                console.log('✅ Network connectivity test passed:', testResponse.status)
+              } catch (testError) {
+                console.warn('⚠️ Network connectivity test failed:', testError)
+                // Continue with the actual request anyway
+              }
               
               const controller = new AbortController()
-              const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+              const timeoutId = setTimeout(() => {
+                console.log('⏰ Request timeout triggered')
+                controller.abort()
+              }, 120000) // 2 minute timeout
               
+              console.log('🚀 Sending scraping request...')
               const scrapeResponse = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'User-Agent': 'WebAudit/1.0'
                 },
                 body: JSON.stringify(scrapeFormData),
-                signal: controller.signal
+                signal: controller.signal,
+                mode: 'cors',
+                credentials: 'omit'
               })
               
               clearTimeout(timeoutId)
               
               console.log('📊 Scraping response status:', scrapeResponse.status)
               console.log('📊 Scraping response ok:', scrapeResponse.ok)
+              console.log('📊 Response headers:', Object.fromEntries(scrapeResponse.headers.entries()))
               
               if (!scrapeResponse.ok) {
-                throw new Error(`Scraping API error: ${scrapeResponse.status} - ${scrapeResponse.statusText}`)
+                const errorText = await scrapeResponse.text().catch(() => 'Unable to read error response')
+                console.error('❌ API error response:', errorText)
+                throw new Error(`Scraping API error: ${scrapeResponse.status} - ${scrapeResponse.statusText}. Details: ${errorText}`)
               }
               
-              return scrapeResponse
-            } catch (error) {
-              console.warn(`Scraping request attempt ${i + 1} failed:`, error)
-              
-              if (error instanceof Error && error.name === 'AbortError') {
-                throw new Error('Scraping request timed out after 30 seconds')
+                return scrapeResponse
+              } catch (error) {
+                console.error(`❌ Scraping request to ${apiEndpoint} failed:`, error)
+                console.error('Error details:', {
+                  name: error instanceof Error ? error.name : 'Unknown',
+                  message: error instanceof Error ? error.message : String(error),
+                  stack: error instanceof Error ? error.stack : undefined,
+                  cause: error instanceof Error ? error.cause : undefined
+                })
+                
+                if (error instanceof Error && error.name === 'AbortError') {
+                  throw new Error('Scraping request timed out after 2 minutes')
+                }
+                
+                if (error instanceof Error && error.message.includes('Failed to fetch')) {
+                  console.error('🔍 Network error details:', {
+                    apiEndpoint,
+                    isOnline: navigator.onLine,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                  })
+                }
+                
+                // If this is the last endpoint for this attempt, continue to next attempt
+                if (apiEndpoint === endpointsToTry[endpointsToTry.length - 1]) {
+                  if (i === retries - 1) {
+                    // Enhanced error message for the final attempt
+                    let enhancedError = error instanceof Error ? error.message : String(error)
+                    if (enhancedError.includes('Failed to fetch')) {
+                      enhancedError = `Network connection failed. Please check your internet connection and ensure the scraping service is accessible. Tried endpoints: ${fallbackEndpoints.join(', ')}`
+                    }
+                    throw new Error(enhancedError)
+                  }
+                  
+                  // Wait before retrying with exponential backoff
+                  const waitTime = delay * Math.pow(2, i) // Exponential backoff
+                  console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+                  await new Promise(resolve => setTimeout(resolve, waitTime))
+                } else {
+                  // Try next endpoint immediately
+                  console.log(`🔄 Trying next endpoint...`)
+                }
               }
-              
-              if (i === retries - 1) {
-                throw error
-              }
-              
-              // Wait before retrying
-              await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
             }
           }
           
