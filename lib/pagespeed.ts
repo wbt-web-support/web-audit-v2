@@ -142,21 +142,82 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
     
     console.log('🌐 PageSpeed API URL:', apiUrl)
     
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ PageSpeed API error:', response.status, errorText)
-      return {
-        data: null,
-        error: `PageSpeed API error: ${response.status} - ${errorText}`
+    // Retry logic for PageSpeed Insights request
+    const makePageSpeedRequest = async (retries = 3, delay = 1000): Promise<Response> => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          console.log(`⏳ Making PageSpeed request (attempt ${i + 1}/${retries})...`)
+          
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => {
+            console.log('⏰ PageSpeed request timeout triggered')
+            controller.abort()
+          }, 120000) // 2 minute timeout
+          
+          const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'WebAudit/1.0'
+            },
+            signal: controller.signal,
+            mode: 'cors'
+          })
+          
+          clearTimeout(timeoutId)
+          
+          console.log('📊 PageSpeed response status:', response.status)
+          console.log('📊 PageSpeed response ok:', response.ok)
+          
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => 'Unable to read error response')
+            console.error('❌ PageSpeed API error response:', errorText)
+            throw new Error(`PageSpeed API error: ${response.status} - ${response.statusText}. Details: ${errorText}`)
+          }
+          
+          return response
+        } catch (error) {
+          console.error(`❌ PageSpeed request attempt ${i + 1} failed:`, error)
+          console.error('Error details:', {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            cause: error instanceof Error ? error.cause : undefined
+          })
+          
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('PageSpeed request timed out after 2 minutes')
+          }
+          
+          if (error instanceof Error && error.message.includes('Failed to fetch')) {
+            console.error('🔍 PageSpeed network error details:', {
+              apiUrl,
+              isOnline: navigator.onLine,
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString()
+            })
+          }
+          
+          if (i === retries - 1) {
+            // Enhanced error message for the final attempt
+            let enhancedError = error instanceof Error ? error.message : String(error)
+            if (enhancedError.includes('Failed to fetch')) {
+              enhancedError = `Network connection failed for PageSpeed Insights. Please check your internet connection and try again.`
+            }
+            throw new Error(enhancedError)
+          }
+          
+          // Wait before retrying with exponential backoff
+          const waitTime = delay * Math.pow(2, i) // Exponential backoff
+          console.log(`⏳ Waiting ${waitTime}ms before PageSpeed retry...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+        }
       }
+      
+      throw new Error('All PageSpeed request attempts failed')
     }
+    
+    const response = await makePageSpeedRequest()
 
     const data = await response.json()
     console.log('✅ PageSpeed Insights data received:', data)
