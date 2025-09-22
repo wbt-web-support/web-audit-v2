@@ -33,7 +33,7 @@ interface AnalysisTabProps {
 }
 
 export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: AnalysisTabProps) {
-  const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject } = useSupabase()
+  const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject, isConnected, connectionError } = useSupabase()
   const [project, setProject] = useState<AuditProject | null>(null)
   const [scrapedPages, setScrapedPages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -640,6 +640,25 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       setScrapingError(null)
       isProcessing.current = true
 
+      // Check database connection before starting
+      try {
+        console.log('🔍 Checking database connection...')
+        
+        if (connectionError) {
+          throw new Error(`Database connection error: ${connectionError}`)
+        }
+        
+        if (!isConnected) {
+          console.warn('⚠️ Database not connected, but continuing with scraping...')
+        }
+      } catch (dbError) {
+        console.error('❌ Database connection check failed:', dbError)
+        setScrapingError(`Database connection issue: ${dbError}`)
+        setIsScraping(false)
+        isProcessing.current = false
+        return
+      }
+
       // Start PageSpeed Insights in parallel (don't wait for it)
       console.log('🚀 Starting PageSpeed Insights in parallel...')
       handlePageSpeedInsights(project.site_url, project.id)
@@ -667,21 +686,54 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           throw new Error('Scraping API endpoint must use HTTPS in production')
         }
         
-        console.log('⏳ Making fetch request...')
-        const scrapeResponse = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(scrapeFormData)
-        })
-        
-        console.log('📊 Scraping response status:', scrapeResponse.status)
-        console.log('📊 Scraping response ok:', scrapeResponse.ok)
-        
-        if (!scrapeResponse.ok) {
-          throw new Error(`Scraping API error: ${scrapeResponse.status}`)
+        // Retry logic for scraping request
+        const makeScrapingRequest = async (retries = 3, delay = 1000): Promise<Response> => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              console.log(`⏳ Making fetch request (attempt ${i + 1}/${retries})...`)
+              
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+              
+              const scrapeResponse = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(scrapeFormData),
+                signal: controller.signal
+              })
+              
+              clearTimeout(timeoutId)
+              
+              console.log('📊 Scraping response status:', scrapeResponse.status)
+              console.log('📊 Scraping response ok:', scrapeResponse.ok)
+              
+              if (!scrapeResponse.ok) {
+                throw new Error(`Scraping API error: ${scrapeResponse.status} - ${scrapeResponse.statusText}`)
+              }
+              
+              return scrapeResponse
+            } catch (error) {
+              console.warn(`Scraping request attempt ${i + 1} failed:`, error)
+              
+              if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error('Scraping request timed out after 30 seconds')
+              }
+              
+              if (i === retries - 1) {
+                throw error
+              }
+              
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
+            }
+          }
+          
+          throw new Error('All scraping request attempts failed')
         }
+        
+        const scrapeResponse = await makeScrapingRequest()
         
         console.log('⏳ Parsing JSON response...')
         const scrapeData = await scrapeResponse.json()
@@ -692,7 +744,23 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
       } catch (apiError) {
         console.error('❌ Scraping API error:', apiError)
-        setScrapingError(`Scraping failed: ${apiError}`)
+        
+        let errorMessage = 'Scraping failed: '
+        if (apiError instanceof Error) {
+          if (apiError.message.includes('Failed to fetch')) {
+            errorMessage += 'Network connection lost. Please check your internet connection and try again.'
+          } else if (apiError.message.includes('timeout')) {
+            errorMessage += 'Request timed out. The scraping service may be overloaded. Please try again.'
+          } else if (apiError.message.includes('Mixed Content')) {
+            errorMessage += 'Security error. Please contact support.'
+          } else {
+            errorMessage += apiError.message
+          }
+        } else {
+          errorMessage += 'Unknown error occurred'
+        }
+        
+        setScrapingError(errorMessage)
       } finally {
         setIsScraping(false)
         isProcessing.current = false
@@ -807,12 +875,28 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           {scrapingError ? 'Scraping Error' : 'Error Loading Analysis'}
         </h3>
         <p className="text-gray-600 mb-4">{scrapingError || error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Try Again
-        </button>
+        <div className="flex gap-3 justify-center">
+          {scrapingError && (
+            <button 
+              onClick={() => {
+                setScrapingError(null)
+                // Trigger scraping again by updating project status
+                if (project) {
+                  updateAuditProject(project.id, { status: 'pending' })
+                }
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry Scraping
+            </button>
+          )}
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
       </div>
     )
   }
