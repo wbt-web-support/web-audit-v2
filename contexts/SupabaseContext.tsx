@@ -62,6 +62,8 @@ interface SupabaseContextType {
   userProfile: UserProfile | null
   session: Session | null
   loading: boolean
+  connectionError: string | null
+  isConnected: boolean
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: AuthError | null; message?: string }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
@@ -90,6 +92,44 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  // Connection retry mechanism
+  const retryConnection = async (retries = 3, delay = 1000): Promise<boolean> => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        console.log(`Connection attempt ${i + 1}/${retries}`)
+        const { data, error } = await supabase
+          .from('users')
+          .select('count')
+          .limit(1)
+        
+        if (!error) {
+          console.log('✅ Database connection successful')
+          setIsConnected(true)
+          setConnectionError(null)
+          return true
+        }
+        
+        console.warn(`Connection attempt ${i + 1} failed:`, error.message)
+        
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
+        }
+      } catch (error) {
+        console.warn(`Connection attempt ${i + 1} failed with error:`, error)
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
+        }
+      }
+    }
+    
+    console.error('❌ All connection attempts failed')
+    setIsConnected(false)
+    setConnectionError('Unable to connect to database after multiple attempts')
+    return false
+  }
 
   // Function to test database access
   const testDatabaseAccess = async () => {
@@ -108,29 +148,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       console.log('Test 1 result:', { data: testData, error: testError })
       
       if (testError) {
-        console.error('Database access test failed:', {
-          message: testError.message || 'No message',
-          details: testError.details || 'No details',
-          hint: testError.hint || 'No hint',
-          code: testError.code || 'No code',
-          fullError: JSON.stringify(testError, null, 2),
-          errorType: typeof testError,
-          errorKeys: Object.keys(testError || {}),
-          errorString: String(testError)
-        })
-        
-        // Check for specific error types
-        if (testError.code === 'PGRST301') {
-          console.error('Table "users" does not exist. Please run the database setup script.')
-        } else if (testError.code === '42501') {
-          console.error('Permission denied. Check RLS policies.')
-        } else if (testError.message?.includes('relation "users" does not exist')) {
-          console.error('Table "users" does not exist. Please run the database setup script.')
-        } else if (testError.message?.includes('permission denied')) {
-          console.error('Permission denied. Check RLS policies and user permissions.')
+        console.error('Database access test failed:', testError)
+        const connected = await retryConnection()
+        if (!connected) {
+          throw new Error(`Database connection failed: ${testError.message}`)
         }
-        
-        return false
+      } else {
+        setIsConnected(true)
+        setConnectionError(null)
       }
       
       console.log('Database access test passed')
@@ -275,117 +300,140 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    // Set a timeout to ensure loading state is always resolved
-    const loadingTimeout = setTimeout(() => {
-      console.log('Loading timeout reached, setting loading to false')
-      setLoading(false)
-    }, 3000) // 3 second timeout
-
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    let isMounted = true
+    let loadingTimeout: NodeJS.Timeout
+    
+    const initializeConnection = async () => {
       try {
-        setSession(session)
-        setUser(session?.user ?? null)
+        console.log('🔄 Initializing Supabase connection...')
         
-        if (session?.user) {
-          console.log('User session found:', session.user.id)
+        // Test database connection first
+        const connectionTest = await testDatabaseAccess()
+        if (!connectionTest && isMounted) {
+          console.warn('⚠️ Database connection test failed, but continuing with auth...')
+        }
+        
+        // Get initial session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError && isMounted) {
+          console.error('Session error:', sessionError)
+          setConnectionError(sessionError.message)
+        }
+        
+        if (isMounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
           
-          // Create a fallback profile immediately to avoid loading issues
-          const fallbackProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            first_name: session.user.user_metadata?.first_name || '',
-            last_name: session.user.user_metadata?.last_name || '',
-            role: 'user' as const,
-            email_confirmed: !!session.user.email_confirmed_at,
-            created_at: session.user.created_at
-          }
-          
-          setUserProfile(fallbackProfile)
-          
-          // Try to fetch/create profile in background (non-blocking)
-          setTimeout(async () => {
-            try {
-              let profile = await fetchUserProfile(session.user.id)
-              
-              if (!profile) {
-                console.log('No profile found, attempting to create user profile...')
-                profile = await createUserProfile(session.user)
-              }
-              
-              if (profile) {
-                console.log('Profile updated from database')
-                setUserProfile(profile)
-              }
-            } catch (error) {
-              console.log('Background profile fetch failed, using fallback')
+          if (session?.user) {
+            console.log('✅ User session found:', session.user.id)
+            
+            // Create a fallback profile immediately to avoid loading issues
+            const fallbackProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              first_name: session.user.user_metadata?.first_name || '',
+              last_name: session.user.user_metadata?.last_name || '',
+              role: 'user' as const,
+              email_confirmed: !!session.user.email_confirmed_at,
+              created_at: session.user.created_at
             }
-          }, 100)
-        } else {
-          console.log('No user session found')
-          setUserProfile(null)
+            
+            setUserProfile(fallbackProfile)
+            
+            // Try to fetch/create profile in background (non-blocking)
+            if (isConnected) {
+              setTimeout(async () => {
+                if (!isMounted) return
+                
+                try {
+                  let profile = await fetchUserProfile(session.user.id)
+                  
+                  if (!profile) {
+                    console.log('No profile found, attempting to create user profile...')
+                    profile = await createUserProfile(session.user)
+                  }
+                  
+                  if (profile && isMounted) {
+                    console.log('Profile updated from database')
+                    setUserProfile(profile)
+                  }
+                } catch (error) {
+                  console.log('Background profile fetch failed, using fallback')
+                }
+              }, 100)
+            }
+          } else {
+            console.log('No user session found')
+            setUserProfile(null)
+          }
         }
       } catch (error) {
-        console.error('Error in initial session setup:', error)
-        setUserProfile(null)
+        console.error('Error in connection initialization:', error)
+        if (isMounted) {
+          setConnectionError(error instanceof Error ? error.message : 'Unknown connection error')
+        }
       } finally {
-        clearTimeout(loadingTimeout)
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
+    // Set a timeout to ensure loading state is always resolved
+    loadingTimeout = setTimeout(() => {
+      if (isMounted) {
+        console.log('Loading timeout reached, setting loading to false')
         setLoading(false)
       }
-    }).catch((error) => {
-      console.error('Error getting initial session:', error)
+    }, 5000) // Increased to 5 seconds
+    
+    // Initialize connection
+    initializeConnection()
+    
+    // Cleanup function
+    return () => {
+      isMounted = false
       clearTimeout(loadingTimeout)
-      setLoading(false)
-    })
+    }
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.id)
+      if (!isMounted) return
       
-      try {
-        setSession(session)
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          let profile = await fetchUserProfile(session.user.id)
-          
-          // If profile doesn't exist, try to create one
-          if (!profile) {
-            console.log('No profile found, attempting to create user profile...')
-            profile = await createUserProfile(session.user)
-            
-            if (profile) {
-              console.log('User profile created successfully')
-            } else {
-              console.log('Failed to create user profile, using fallback profile')
-              // Create a fallback profile from user data
-              profile = {
-                id: session.user.id,
-                email: session.user.email || '',
-                first_name: session.user.user_metadata?.first_name || '',
-                last_name: session.user.user_metadata?.last_name || '',
-                role: 'user' as const,
-                email_confirmed: !!session.user.email_confirmed_at,
-                created_at: session.user.created_at
-              }
+      console.log('Auth state change:', event, session?.user?.id)
+      setSession(session)
+      setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        // Test connection when auth state changes
+        const connected = await retryConnection(2, 500)
+        if (connected) {
+          // Fetch profile if connected
+          try {
+            let profile = await fetchUserProfile(session.user.id)
+            if (!profile) {
+              profile = await createUserProfile(session.user)
             }
+            if (profile && isMounted) {
+              setUserProfile(profile)
+            }
+          } catch (error) {
+            console.log('Profile fetch failed during auth change')
           }
-          
-          setUserProfile(profile)
-        } else {
-          setUserProfile(null)
         }
-      } catch (error) {
-        console.error('Error in auth state change:', error)
+      } else {
         setUserProfile(null)
-      } finally {
-        setLoading(false)
       }
     })
-
-    return () => subscription.unsubscribe()
+    
+    return () => {
+      isMounted = false
+      clearTimeout(loadingTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -808,6 +856,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     userProfile,
     session,
     loading,
+    connectionError,
+    isConnected,
     signUp,
     signIn,
     signOut,

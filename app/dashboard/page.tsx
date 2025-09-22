@@ -5,6 +5,7 @@ import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { DashboardSidebar, DashboardHeader, DashboardContent } from './components/dashboard-components'
 import AnalysisTab from './components/tabs/AnalysisTab'
+import ConnectionStatus from './components/ConnectionStatus'
 
 export default function DashboardPage() {
   const { user, userProfile, loading, getAuditProjectsOptimized } = useSupabase()
@@ -290,6 +291,7 @@ export default function DashboardPage() {
           />
         )}
       </div>
+      <ConnectionStatus />
     </div>
   )
 }
