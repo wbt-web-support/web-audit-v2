@@ -152,7 +152,7 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
           const timeoutId = setTimeout(() => {
             console.log('⏰ PageSpeed request timeout triggered')
             controller.abort()
-          }, 120000) // 2 minute timeout
+          }, 180000) // 3 minute timeout
           
           const response = await fetch(apiUrl, {
             method: 'GET',
@@ -186,7 +186,7 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
           })
           
           if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error('PageSpeed request timed out after 2 minutes')
+            throw new Error('PageSpeed request timed out after 3 minutes')
           }
           
           if (error instanceof Error && error.message.includes('Failed to fetch')) {

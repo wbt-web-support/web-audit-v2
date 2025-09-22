@@ -698,7 +698,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           console.log('🔍 Testing basic connectivity...')
             const connectivityTest = await fetch(primaryEndpoint, {
               method: 'HEAD',
-              signal: AbortSignal.timeout(120000), // 2 minute timeout
+              signal: AbortSignal.timeout(180000), // 3 minute timeout
               mode: 'cors'
             })
           console.log('✅ Connectivity test passed:', connectivityTest.status)
@@ -735,7 +735,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
               const timeoutId = setTimeout(() => {
                 console.log('⏰ Request timeout triggered')
                 controller.abort()
-              }, 120000) // 2 minute timeout
+              }, 180000) // 3 minute timeout
               
               console.log('🚀 Sending scraping request...')
               const scrapeResponse = await fetch(apiEndpoint, {
@@ -774,7 +774,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
                 })
                 
                 if (error instanceof Error && error.name === 'AbortError') {
-                  throw new Error('Scraping request timed out after 2 minutes')
+                  throw new Error('Scraping request timed out after 3 minutes')
                 }
                 
                 if (error instanceof Error && error.message.includes('Failed to fetch')) {
