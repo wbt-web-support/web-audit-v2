@@ -235,7 +235,7 @@ export default function DashboardOverview({
           Welcome back, {userProfile?.first_name || 'User'}!
         </h1>
         <p className="text-blue-100">
-          Here's what's happening with your web audits today.
+          Here&apos;s what&apos;s happening with your web audits today.
         </p>
       </div>
 

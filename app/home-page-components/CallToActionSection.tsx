@@ -34,8 +34,8 @@ export default function CallToActionSection() {
               Ready to Audit Your Website?
             </h2>
             <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-              Get instant insights into your website's performance, security, and SEO. 
-              Start your free audit today and discover what's holding your site back.
+              Get instant insights into your website&apos;s performance, security, and SEO. 
+              Start your free audit today and discover what&apos;s holding your site back.
             </p>
 
             {/* CTA Buttons */}

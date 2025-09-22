@@ -54,10 +54,10 @@ export default function FooterSection() {
               <h3 className="text-3xl font-bold mb-4">WEB AUDIT</h3>
               <p className="text-gray-400 mb-6 leading-relaxed">
                 The most comprehensive website audit platform powered by AI. 
-                Analyze, optimize, and improve your website's performance, security, and SEO.
+                Analyze, optimize, and improve your website&apos;s performance, security, and SEO.
               </p>
               <div className="flex space-x-4">
-                {['twitter', 'linkedin', 'github', 'discord'].map((social, index) => (
+                {['twitter', 'linkedin', 'github', 'discord'].map((social) => (
                   <motion.a
                     key={social}
                     href="#"

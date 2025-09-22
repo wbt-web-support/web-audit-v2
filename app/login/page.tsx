@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const { signIn, isAuthenticated, isEmailConfirmed, userProfile } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const router = useRouter();
 
   // Redirect if already authenticated
@@ -43,7 +43,7 @@ export default function LoginPage() {
         setSuccess("Login successful! Redirecting...");
         // The useEffect will handle the redirect
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
@@ -137,7 +137,7 @@ export default function LoginPage() {
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
                 <p className="text-gray-600">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link href="/signup" className="text-blue-600 hover:text-blue-500 transition-colors">
                     Sign up
                   </Link>

@@ -9,7 +9,6 @@ import { analyzeSEO } from '@/lib/seo-analysis'
 import {
   AnalysisHeader,
   OverviewSection,
-  ProcessingState,
   ModernLoader
 } from '../analysis-tab-components'
 
@@ -21,6 +20,7 @@ const PerformanceSection = lazy(() => import('../analysis-tab-components/Perform
 const ImagesSection = lazy(() => import('../analysis-tab-components/ImagesSection'))
 const LinksSection = lazy(() => import('../analysis-tab-components/LinksSection'))
 const SEOAnalysisSection = lazy(() => import('../analysis-tab-components/SEOAnalysisSection'))
+// const ExtractedKeysSection = lazy(() => import('../analysis-tab-components/ExtractedKeysSection'))
 
 interface AnalysisTabProps {
   projectId: string
@@ -46,11 +46,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   const [isScraping, setIsScraping] = useState(false)
   const [scrapingError, setScrapingError] = useState<string | null>(null)
   const isProcessing = useRef(false)
-  const processedDataRef = useRef<string | null>(null)
   
   // PageSpeed states
   const [isPageSpeedLoading, setIsPageSpeedLoading] = useState(false)
-  const [pageSpeedError, setPageSpeedError] = useState<string | null>(null)
+  const [, setPageSpeedError] = useState<string | null>(null)
   const [hasAutoStartedPageSpeed, setHasAutoStartedPageSpeed] = useState(false)
   const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set(['overview']))
   const [scrapedPagesLoaded, setScrapedPagesLoaded] = useState(false)
@@ -601,7 +600,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           console.log('✅ AnalysisTab: Project data fetched:', projectData.id)
           setProject(projectData)
           
-          let pagesData: any[] = []
+          const pagesData: any[] = []
           
           // Skip scraped pages fetch on initial load - load them on demand
           if (projectData.status === 'completed') {

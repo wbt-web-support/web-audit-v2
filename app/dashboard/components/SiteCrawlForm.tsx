@@ -87,21 +87,21 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
     })
   }
 
-  const resetForm = () => {
-    setSiteUrl('')
-    setPageType('single')
-    setBrandConsistency(false)
-    setHiddenUrls(false)
-    setKeysCheck(false)
-    setBrandData({
-      companyName: '',
-      phoneNumber: '',
-      emailAddress: '',
-      address: '',
-      additionalInformation: ''
-    })
-    setHiddenUrlsList([{ id: '1', url: '' }])
-  }
+  // const resetForm = () => {
+  //   setSiteUrl('')
+  //   setPageType('single')
+  //   setBrandConsistency(false)
+  //   setHiddenUrls(false)
+  //   setKeysCheck(false)
+  //   setBrandData({
+  //     companyName: '',
+  //     phoneNumber: '',
+  //     emailAddress: '',
+  //     address: '',
+  //     additionalInformation: ''
+  //   })
+  //   setHiddenUrlsList([{ id: '1', url: '' }])
+  // }
 
   return (
     <motion.div
@@ -333,7 +333,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
                 </button>
               </div>
               <div className="space-y-3">
-                {hiddenUrlsList.map((hiddenUrl, index) => (
+                {hiddenUrlsList.map((hiddenUrl) => (
                   <div key={hiddenUrl.id} className="flex items-center space-x-2">
                     <input
                       type="url"

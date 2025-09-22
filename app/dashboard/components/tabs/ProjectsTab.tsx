@@ -15,13 +15,12 @@ interface ProjectsTabProps {
 }
 
 export default function ProjectsTab({ 
-  userProfile, 
   projects, 
   projectsLoading, 
   projectsError, 
   refreshProjects,
   onProjectSelect
-}: ProjectsTabProps) {
+}: Omit<ProjectsTabProps, 'userProfile'>) {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   
   // Performance tracking

@@ -76,7 +76,8 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               { id: 'performance', name: 'Performance', icon: '⚡' },
               { id: 'seo', name: 'SEO', icon: '🔍' },
               { id: 'images', name: 'Images', icon: '🖼️' },
-              { id: 'links', name: 'Links', icon: '🔗' }
+              { id: 'links', name: 'Links', icon: '🔗' },
+              { id: 'extracted-keys', name: 'Data Keys', icon: '🔑' }
             ].map((tab) => (
             <button
               key={tab.id}

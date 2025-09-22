@@ -129,7 +129,7 @@ export default function HeroSection() {
           >
             From single-page checks to full-site crawls, our AI analyzes content, SEO, 
             performance, branding, and security risks. Get actionable insights to improve 
-            your site's quality, speed, and visibility.
+            your site&apos;s quality, speed, and visibility.
           </motion.p>
 
           {/* URL Input and CTA */}
@@ -152,7 +152,7 @@ export default function HeroSection() {
                 whileTap={{ scale: 0.95 }}
                 className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg whitespace-nowrap text-sm sm:text-base"
               >
-                Let's Go! 🚀
+                Let&apos;s Go! 🚀
               </motion.button>
             </div>
           </motion.div>

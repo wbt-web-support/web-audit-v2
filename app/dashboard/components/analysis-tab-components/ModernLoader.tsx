@@ -16,7 +16,7 @@ export default function ModernLoader({
   isScraping = false
 }: ModernLoaderProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const [, setProgress] = useState(0)
 
   const steps = [
     { id: 'pages', label: 'Scanning Pages', icon: '📄' },

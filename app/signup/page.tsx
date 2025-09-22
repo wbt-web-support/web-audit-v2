@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
@@ -21,7 +21,7 @@ export default function SignupPage() {
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
 
   const { signUp, resendConfirmation } = useAuth();
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ export default function SignupPage() {
         setRepeatPassword("");
         setAgreeToTerms(false);
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
@@ -87,7 +87,7 @@ export default function SignupPage() {
       } else {
         setSuccess("Confirmation email sent! Please check your inbox.");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to resend confirmation email");
     } finally {
       setIsLoading(false);
@@ -223,7 +223,7 @@ export default function SignupPage() {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Check your email</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      We've sent a confirmation link to <strong>{email}</strong>. Please click the link to verify your account.
+                      We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please click the link to verify your account.
                     </p>
                     <div className="space-y-2">
                       <button
@@ -234,7 +234,7 @@ export default function SignupPage() {
                         {isLoading ? 'Sending...' : 'Resend confirmation email'}
                       </button>
                       <p className="text-xs text-gray-500">
-                        Didn't receive the email? Check your spam folder.
+                        Didn&apos;t receive the email? Check your spam folder.
                       </p>
                     </div>
                   </div>

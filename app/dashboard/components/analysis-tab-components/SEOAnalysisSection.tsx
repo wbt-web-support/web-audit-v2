@@ -1,6 +1,6 @@
 'use client'
 
-import { SEOAnalysisResult, SEOIssue } from '@/types/audit'
+import { SEOAnalysisResult } from '@/types/audit'
 import { analyzeSEO } from '@/lib/seo-analysis'
 import { useState, useEffect } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'

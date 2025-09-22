@@ -41,8 +41,7 @@ export default function DashboardContent({
         )
       case 'projects':
         return (
-          <ProjectsTab 
-            userProfile={userProfile} 
+          <ProjectsTab
             projects={projects}
             projectsLoading={projectsLoading}
             projectsError={projectsError}
