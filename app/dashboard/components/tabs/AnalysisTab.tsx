@@ -678,6 +678,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
           html_content_length: page.htmlContentLength,
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
+          links: page.links || null, // Store actual links data
+          images: page.images || null, // Store actual images data
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
           technologies: page.technologies || null,
@@ -763,6 +765,50 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
       // Process technologies data to avoid repetition and extract unique information
       const technologiesData = processTechnologiesData(scrapingData.summary?.technologies)
       
+      // Aggregate images and links from all pages
+      console.log('🖼️ Aggregating images and links data from all pages...')
+      const allImages: any[] = []
+      const allLinks: any[] = []
+      
+      scrapingData.pages.forEach((page: any, index: number) => {
+        console.log(`📄 Processing page ${index + 1} for images and links:`, {
+          url: page.url,
+          imagesCount: page.images?.length || 0,
+          linksCount: page.links?.length || 0
+        })
+        
+        // Add images with page context
+        if (page.images && Array.isArray(page.images)) {
+          page.images.forEach((image: any) => {
+            allImages.push({
+              ...image,
+              page_url: page.url,
+              page_title: page.title,
+              page_index: index
+            })
+          })
+        }
+        
+        // Add links with page context
+        if (page.links && Array.isArray(page.links)) {
+          page.links.forEach((link: any) => {
+            allLinks.push({
+              ...link,
+              page_url: page.url,
+              page_title: page.title,
+              page_index: index
+            })
+          })
+        }
+      })
+      
+      console.log('📊 Aggregated data summary:', {
+        totalImages: allImages.length,
+        totalLinks: allLinks.length,
+        uniqueImageSources: [...new Set(allImages.map(img => img.src))].length,
+        uniqueLinkHrefs: [...new Set(allLinks.map(link => link.href))].length
+      })
+      
       // Update audit project with summary data
       const summaryData = {
         total_pages: scrapingData.summary?.totalPages || 0,
@@ -779,6 +825,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
         total_response_time: scrapingData.performance?.totalTime || 0,
         scraping_completed_at: new Date().toISOString(),
         all_pages_html: allPagesHtml, // Store filtered pages data in all_pages_html column
+        images: allImages, // Store aggregated images data from all pages
+        links: allLinks, // Store aggregated links data from all pages
         scraping_data: {
           summary: scrapingData.summary,
           performance: scrapingData.performance,

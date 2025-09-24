@@ -35,6 +35,9 @@ interface AuditProjectWithUserId extends AuditProject {
   social_meta_tags_data: SocialMetaTagsData | null
   // HTML content storage for all pages
   all_pages_html: any[] | null
+  // Images and links data storage
+  images: any[] | null // Store aggregated images data from all pages
+  links: any[] | null // Store aggregated links data from all pages
 }
 
 interface ScrapedPage {
@@ -49,6 +52,8 @@ interface ScrapedPage {
   html_content_length: number | null
   links_count: number
   images_count: number
+  links: any[] | null // Store actual links data
+  images: any[] | null // Store actual images data
   meta_tags_count: number
   technologies_count: number
   technologies: string[] | null

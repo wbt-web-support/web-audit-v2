@@ -324,6 +324,8 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           html_content_length: page.htmlContentLength,
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
+          links: page.links || null, // Store actual links data
+          images: page.images || null, // Store actual images data
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
           technologies: page.technologies || null,
@@ -418,6 +420,50 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         urls: allPagesHtml.map((p: any) => p.pageUrl)
       })
       
+      // Aggregate images and links from all pages
+      console.log('🖼️ Aggregating images and links data from all pages...')
+      const allImages: any[] = []
+      const allLinks: any[] = []
+      
+      scrapingData.pages.forEach((page: any, index: number) => {
+        console.log(`📄 Processing page ${index + 1} for images and links:`, {
+          url: page.url,
+          imagesCount: page.images?.length || 0,
+          linksCount: page.links?.length || 0
+        })
+        
+        // Add images with page context
+        if (page.images && Array.isArray(page.images)) {
+          page.images.forEach((image: any) => {
+            allImages.push({
+              ...image,
+              page_url: page.url,
+              page_title: page.title,
+              page_index: index
+            })
+          })
+        }
+        
+        // Add links with page context
+        if (page.links && Array.isArray(page.links)) {
+          page.links.forEach((link: any) => {
+            allLinks.push({
+              ...link,
+              page_url: page.url,
+              page_title: page.title,
+              page_index: index
+            })
+          })
+        }
+      })
+      
+      console.log('📊 Aggregated data summary:', {
+        totalImages: allImages.length,
+        totalLinks: allLinks.length,
+        uniqueImageSources: [...new Set(allImages.map(img => img.src))].length,
+        uniqueLinkHrefs: [...new Set(allLinks.map(link => link.href))].length
+      })
+      
       const summaryData = {
         total_pages: scrapingData.summary?.totalPages || 0,
         total_links: scrapingData.summary?.totalLinks || 0,
@@ -432,6 +478,8 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
         total_response_time: scrapingData.performance?.totalTime || 0,
         all_pages_html: allPagesHtml, // Store all pages HTML in new column
+        images: allImages, // Store aggregated images data from all pages
+        links: allLinks, // Store aggregated links data from all pages
         scraping_completed_at: new Date().toISOString(),
         scraping_data: {
           ...scrapingData,
@@ -458,17 +506,19 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         console.error('❌ Error updating audit project with summary:', updateError)
         console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
         
-        // Check if the error is related to the all_pages_html column not existing
-        if (updateError.message && updateError.message.includes('all_pages_html')) {
-          console.warn('⚠️ all_pages_html column may not exist in database')
-          console.warn('💡 You need to add this column to your audit_projects table:')
+        // Check if the error is related to missing columns
+        if (updateError.message && (updateError.message.includes('all_pages_html') || updateError.message.includes('images') || updateError.message.includes('links'))) {
+          console.warn('⚠️ Some columns may not exist in database')
+          console.warn('💡 You need to add these columns to your audit_projects table:')
           console.warn('   ALTER TABLE audit_projects ADD COLUMN all_pages_html JSONB;')
+          console.warn('   ALTER TABLE audit_projects ADD COLUMN images JSONB;')
+          console.warn('   ALTER TABLE audit_projects ADD COLUMN links JSONB;')
           
-          // Try updating without the all_pages_html field
-          const { all_pages_html, ...summaryDataWithoutHtml } = summaryData
+          // Try updating without the problematic fields
+          const { all_pages_html, images, links, ...summaryDataWithoutNewFields } = summaryData
           
           
-          const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutHtml)
+          const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutNewFields)
           if (retryError) {
             console.error('❌ Retry also failed:', retryError)
             onScrapingComplete(false)
