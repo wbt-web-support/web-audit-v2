@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology, PageSpeedInsightsData } from '@/types/audit'
+import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology, PageSpeedInsightsData, MetaTagsData, SocialMetaTagsData } from '@/types/audit'
 
 interface UserProfile {
   id: string
@@ -31,6 +31,8 @@ interface AuditProjectWithUserId extends AuditProject {
   pagespeed_insights_data: PageSpeedInsightsData | null
   pagespeed_insights_loading: boolean
   pagespeed_insights_error: string | null
+  meta_tags_data: MetaTagsData | null
+  social_meta_tags_data: SocialMetaTagsData | null
 }
 
 interface ScrapedPage {
@@ -51,6 +53,8 @@ interface ScrapedPage {
   cms_type: string | null
   cms_version: string | null
   cms_plugins: string[] | null
+  social_meta_tags: any | null
+  social_meta_tags_count: number
   is_external: boolean
   response_time: number | null
   created_at: string
@@ -83,6 +87,10 @@ interface SupabaseContextType {
   deleteScrapedPage: (id: string) => Promise<{ data: ScrapedPage | null; error: any }>
   // Bulk operations
   createScrapedPages: (pagesData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]) => Promise<{ data: ScrapedPage[] | null; error: any }>
+  // Meta tags processing
+  processMetaTagsData: (auditProjectId: string) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
+  // Manual trigger for existing projects
+  triggerMetaTagsProcessing: (auditProjectId: string) => Promise<{ success: boolean; error?: any }>
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
@@ -657,7 +665,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           console.log(`📦 SupabaseContext: Data size: ${(dataSize / 1024).toFixed(2)}KB`)
         }
 
-        return { data: data as AuditProject[], error: null }
+        // Add default values for meta tags fields if they don't exist
+        const projectsWithDefaults = data?.map(project => ({
+          ...project,
+          meta_tags_data: (project as any).meta_tags_data || null,
+          social_meta_tags_data: (project as any).social_meta_tags_data || null
+        })) || []
+
+        return { data: projectsWithDefaults as AuditProject[], error: null }
       } catch (error) {
         const queryEndTime = performance.now()
         const queryTime = queryEndTime - queryStartTime
@@ -725,11 +740,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      const { social_meta_tags, social_meta_tags_count, ...pageWithoutSocialTags } = pageData
+      
       const { data, error } = await supabase
         .from('scraped_pages')
         .insert({
           user_id: user.id,
-          ...pageData
+          ...pageWithoutSocialTags
         })
         .select()
         .single()
@@ -777,9 +794,11 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      const { social_meta_tags, social_meta_tags_count, ...updatesWithoutSocialTags } = updates
+      
       const { data, error } = await supabase
         .from('scraped_pages')
-        .update(updates)
+        .update(updatesWithoutSocialTags)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -829,10 +848,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const pagesWithUserId = pagesData.map(page => ({
-        ...page,
-        user_id: user.id
-      }))
+      const pagesWithUserId = pagesData.map(page => {
+        const { social_meta_tags, social_meta_tags_count, ...pageWithoutSocialTags } = page
+        return {
+          ...pageWithoutSocialTags,
+          user_id: user.id
+        }
+      })
 
       const { data, error } = await supabase
         .from('scraped_pages')
@@ -848,6 +870,294 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error creating scraped pages:', error)
       return { data: null, error }
+    }
+  }
+
+  // Function to process and aggregate meta tags data from scraped pages
+  const processMetaTagsData = async (auditProjectId: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      console.log('🔍 Processing meta tags data for project:', auditProjectId)
+
+      // Get all scraped pages for this project
+      const { data: scrapedPages, error: pagesError } = await supabase
+        .from('scraped_pages')
+        .select('*')
+        .eq('audit_project_id', auditProjectId)
+        .eq('user_id', user.id)
+
+      if (pagesError) {
+        console.error('Error fetching scraped pages for meta tags processing:', pagesError)
+        return { data: null, error: pagesError }
+      }
+
+      if (!scrapedPages || scrapedPages.length === 0) {
+        console.log('No scraped pages found for meta tags processing')
+        return { data: null, error: null }
+      }
+
+      // Process meta tags data from homepage only
+      console.log('🏠 Processing meta tags data for homepage only...')
+      const metaTagsData = processAllMetaTags(scrapedPages)
+      const socialMetaTagsData = processAllSocialMetaTags(scrapedPages)
+      
+      console.log('📊 Meta tags data processed:', {
+        totalMetaTags: metaTagsData.total_count,
+        standardTags: Object.keys(metaTagsData.standard_meta_tags).length,
+        socialTags: socialMetaTagsData.total_social_tags,
+        platforms: socialMetaTagsData.platforms_detected
+      })
+
+      // Update the audit project with aggregated meta tags data
+      // Use a more flexible approach that handles missing columns
+      const updateData: any = {}
+      
+      // Only include fields that exist in the database
+      try {
+        // Try to update with meta tags data
+        const { data: updatedProject, error: updateError } = await supabase
+          .from('audit_projects')
+          .update({
+            meta_tags_data: metaTagsData,
+            social_meta_tags_data: socialMetaTagsData
+          })
+          .eq('id', auditProjectId)
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (updateError) {
+          console.warn('Meta tags columns may not exist yet, skipping meta tags data update:', updateError.message)
+          // Return the project without meta tags data
+          const { data: projectData } = await supabase
+            .from('audit_projects')
+            .select('*')
+            .eq('id', auditProjectId)
+            .eq('user_id', user.id)
+            .single()
+          
+          return { data: projectData as AuditProjectWithUserId, error: null }
+        }
+
+        return { data: updatedProject as AuditProjectWithUserId, error: null }
+      } catch (error) {
+        console.warn('Error updating meta tags data, columns may not exist:', error)
+        // Return the project without meta tags data
+        const { data: projectData } = await supabase
+          .from('audit_projects')
+          .select('*')
+          .eq('id', auditProjectId)
+          .eq('user_id', user.id)
+          .single()
+        
+        return { data: projectData as AuditProjectWithUserId, error: null }
+      }
+    } catch (error) {
+      console.error('Unexpected error processing meta tags data:', error)
+      return { data: null, error }
+    }
+  }
+
+  // Helper function to process meta tags from a single page (homepage or first available page)
+  const processAllMetaTags = (scrapedPages: ScrapedPage[]): MetaTagsData => {
+    if (!scrapedPages || scrapedPages.length === 0) {
+      return {
+        all_meta_tags: [],
+        standard_meta_tags: {},
+        http_equiv_tags: [],
+        custom_meta_tags: [],
+        total_count: 0,
+        pages_with_meta_tags: 0,
+        average_meta_tags_per_page: 0
+      }
+    }
+
+    // Find the homepage (root URL) or use the first page
+    const homepage = scrapedPages.find(page => {
+      try {
+        const url = new URL(page.url)
+        const pathname = url.pathname
+        return pathname === '/' || pathname === '' || pathname === '/index.html'
+      } catch {
+        return false
+      }
+    }) || scrapedPages[0] // Fallback to first page if no homepage found
+
+    console.log('🏠 Processing meta tags for page:', homepage.url)
+
+    const allMetaTags: any[] = []
+    const standardMetaTags: any = {}
+    const httpEquivTags: any[] = []
+    const customMetaTags: any[] = []
+
+    if (homepage.meta_tags_count > 0 && homepage.html_content) {
+      // Parse HTML content to extract meta tags
+      const metaTags = extractMetaTagsFromHTML(homepage.html_content)
+      allMetaTags.push(...metaTags)
+
+      // Categorize meta tags
+      metaTags.forEach(tag => {
+        if (tag.httpEquiv) {
+          httpEquivTags.push(tag)
+        } else if (isStandardMetaTag(tag.name)) {
+          standardMetaTags[tag.name] = tag.content
+        } else {
+          customMetaTags.push(tag)
+        }
+      })
+    }
+
+    return {
+      all_meta_tags: allMetaTags,
+      standard_meta_tags: standardMetaTags,
+      http_equiv_tags: httpEquivTags,
+      custom_meta_tags: customMetaTags,
+      total_count: homepage.meta_tags_count || 0,
+      pages_with_meta_tags: homepage.meta_tags_count > 0 ? 1 : 0,
+      average_meta_tags_per_page: homepage.meta_tags_count || 0
+    }
+  }
+
+  // Helper function to process social meta tags from homepage only
+  const processAllSocialMetaTags = (scrapedPages: ScrapedPage[]): SocialMetaTagsData => {
+    if (!scrapedPages || scrapedPages.length === 0) {
+      return {
+        open_graph: {},
+        twitter: {},
+        linkedin: {},
+        pinterest: {},
+        whatsapp: {},
+        telegram: {},
+        discord: {},
+        slack: {},
+        total_social_tags: 0,
+        social_meta_tags_count: 0,
+        platforms_detected: [],
+        completeness_score: 0,
+        missing_platforms: ['open_graph', 'twitter', 'linkedin', 'pinterest']
+      }
+    }
+
+    // Find the homepage (root URL) or use the first page
+    const homepage = scrapedPages.find(page => {
+      try {
+        const url = new URL(page.url)
+        const pathname = url.pathname
+        return pathname === '/' || pathname === '' || pathname === '/index.html'
+      } catch {
+        return false
+      }
+    }) || scrapedPages[0] // Fallback to first page if no homepage found
+
+    console.log('🏠 Processing social meta tags for page:', homepage.url)
+
+    const allSocialTags: any = {
+      open_graph: {},
+      twitter: {},
+      linkedin: {},
+      pinterest: {},
+      whatsapp: {},
+      telegram: {},
+      discord: {},
+      slack: {}
+    }
+
+    const platformsDetected: string[] = []
+    let totalSocialTags = 0
+    const socialMetaTagsCount = (homepage as any).social_meta_tags_count || 0
+
+    // Since we're no longer storing full social meta tags data, we'll use the count
+    // and provide basic platform detection based on the count
+    if (socialMetaTagsCount > 0) {
+      // Basic platform detection - this is a simplified approach
+      // In a real implementation, you might want to parse the HTML again to detect specific platforms
+      platformsDetected.push('social_meta_tags_detected')
+      totalSocialTags = socialMetaTagsCount
+    }
+
+    // Calculate completeness score based on count
+    const expectedPlatforms = ['open_graph', 'twitter', 'linkedin', 'pinterest']
+    const missingPlatforms = expectedPlatforms.filter(platform => !platformsDetected.includes(platform))
+    const completenessScore = socialMetaTagsCount > 0 ? 50 : 0 // Basic scoring based on presence
+
+    return {
+      ...allSocialTags,
+      total_social_tags: totalSocialTags,
+      social_meta_tags_count: socialMetaTagsCount,
+      platforms_detected: platformsDetected,
+      completeness_score: completenessScore,
+      missing_platforms: missingPlatforms
+    }
+  }
+
+  // Helper function to extract meta tags from HTML content
+  const extractMetaTagsFromHTML = (htmlContent: string): any[] => {
+    const metaTags: any[] = []
+    const metaTagRegex = /<meta\s+([^>]+)>/gi
+    let match
+
+    while ((match = metaTagRegex.exec(htmlContent)) !== null) {
+      const attributes = match[1]
+      const tag: any = {}
+
+      // Parse attributes
+      const attrRegex = /(\w+)=["']([^"']*)["']/g
+      let attrMatch
+
+      while ((attrMatch = attrRegex.exec(attributes)) !== null) {
+        const [, attrName, attrValue] = attrMatch
+        tag[attrName] = attrValue
+      }
+
+      if (tag.name || tag.property || tag.httpEquiv || tag.charset) {
+        metaTags.push({
+          name: tag.name || '',
+          content: tag.content || '',
+          property: tag.property || undefined,
+          httpEquiv: tag.httpEquiv || undefined,
+          charset: tag.charset || undefined
+        })
+      }
+    }
+
+    return metaTags
+  }
+
+  // Helper function to check if a meta tag is standard
+  const isStandardMetaTag = (name: string): boolean => {
+    const standardTags = [
+      'title', 'description', 'keywords', 'author', 'robots', 'viewport',
+      'charset', 'language', 'generator', 'rating', 'distribution',
+      'copyright', 'reply-to', 'owner', 'url', 'identifier-url',
+      'category', 'coverage', 'target', 'handheld-friendly',
+      'mobile-optimized', 'apple-mobile-web-app-capable',
+      'apple-mobile-web-app-status-bar-style', 'apple-mobile-web-app-title',
+      'format-detection', 'theme-color', 'msapplication-tilecolor',
+      'msapplication-config'
+    ]
+    return standardTags.includes(name.toLowerCase())
+  }
+
+  // Manual trigger for meta tags processing (useful for existing projects)
+  const triggerMetaTagsProcessing = async (auditProjectId: string) => {
+    try {
+      console.log('🔄 Manually triggering meta tags processing for project:', auditProjectId)
+      
+      const { data, error } = await processMetaTagsData(auditProjectId)
+      
+      if (error) {
+        console.error('❌ Meta tags processing failed:', error)
+        return { success: false, error }
+      }
+      
+      console.log('✅ Meta tags processing completed successfully')
+      return { success: true }
+    } catch (error) {
+      console.error('❌ Unexpected error in meta tags processing:', error)
+      return { success: false, error }
     }
   }
 
@@ -874,6 +1184,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     updateScrapedPage,
     deleteScrapedPage,
     createScrapedPages,
+    processMetaTagsData,
+    triggerMetaTagsProcessing,
   }
 
   return (

@@ -33,7 +33,7 @@ interface AnalysisTabProps {
 }
 
 export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: AnalysisTabProps) {
-  const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject, isConnected, connectionError } = useSupabase()
+  const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject, processMetaTagsData, isConnected, connectionError } = useSupabase()
   const [project, setProject] = useState<AuditProject | null>(null)
   const [scrapedPages, setScrapedPages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -500,6 +500,39 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         return
       }
 
+      // Function to extract all social media meta tags from HTML content
+      const extractSocialMetaTags = (htmlContent: string) => {
+        if (!htmlContent) return { socialMetaTags: [], count: 0 }
+        
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(htmlContent, 'text/html')
+        
+        // Extract all social media meta tags
+        const socialMetaTags = doc.querySelectorAll(`
+          meta[property^="og:"],
+          meta[name^="twitter:"],
+          meta[name^="linkedin:"],
+          meta[name^="pinterest:"],
+          meta[name^="whatsapp:"],
+          meta[name^="telegram:"],
+          meta[name^="discord:"],
+          meta[name^="slack:"]
+        `)
+        
+        const extractedTags: any[] = []
+        socialMetaTags.forEach((tag) => {
+          const element = tag as HTMLMetaElement
+          extractedTags.push({
+            name: element.name || '',
+            property: element.getAttribute('property') || '',
+            content: element.content || '',
+            httpEquiv: element.getAttribute('http-equiv') || undefined
+          })
+        })
+        
+        return { socialMetaTags: extractedTags, count: extractedTags.length }
+      }
+
       // Prepare scraped pages data
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
         console.log('🔍 Processing page:', {
@@ -509,6 +542,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           statusCode: page.statusCode,
           title: page.title
         })
+        
+        const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
         return {
           audit_project_id: projectId,
@@ -526,6 +561,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           cms_type: scrapingData.extractedData?.cms?.type || null,
           cms_version: scrapingData.extractedData?.cms?.version || null,
           cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
+          social_meta_tags: socialMetaTags, // Store full social meta tags data
+          social_meta_tags_count: socialMetaTagsCount, // Store count as well
           is_external: false, // Main page is not external
           response_time: scrapingData.responseTime
         }
@@ -547,6 +584,15 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         return
       } else {
         console.log('✅ Scraped pages saved successfully:', savedPages?.length || 0, 'pages')
+      }
+
+      // Process meta tags data from homepage
+      console.log('🏠 Processing meta tags data...')
+      const { data: metaTagsResult, error: metaTagsError } = await processMetaTagsData(projectId)
+      if (metaTagsError) {
+        console.warn('⚠️ Meta tags processing failed:', metaTagsError)
+      } else {
+        console.log('✅ Meta tags data processed successfully')
       }
 
       // Process CMS data to avoid repetition and extract unique information
@@ -1107,7 +1153,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         {activeSection === 'technologies' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <TechnologiesSection project={project} />
+            <TechnologiesSection project={project} scrapedPages={scrapedPages} />
           </Suspense>
         )}
         

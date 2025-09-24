@@ -10,7 +10,7 @@ interface ScrapingServiceProps {
 }
 
 export default function ScrapingService({ projectId, scrapingData, onScrapingComplete }: ScrapingServiceProps) {
-  const { createScrapedPages, updateAuditProject } = useSupabase()
+  const { createScrapedPages, updateAuditProject, processMetaTagsData } = useSupabase()
   const isProcessing = useRef(false)
   const processedDataRef = useRef<string | null>(null)
 
@@ -276,26 +276,65 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         return
       }
 
+      // Function to extract all social media meta tags from HTML content
+      const extractSocialMetaTags = (htmlContent: string) => {
+        if (!htmlContent) return { socialMetaTags: [], count: 0 }
+        
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(htmlContent, 'text/html')
+        
+        // Extract all social media meta tags
+        const socialMetaTags = doc.querySelectorAll(`
+          meta[property^="og:"],
+          meta[name^="twitter:"],
+          meta[name^="linkedin:"],
+          meta[name^="pinterest:"],
+          meta[name^="whatsapp:"],
+          meta[name^="telegram:"],
+          meta[name^="discord:"],
+          meta[name^="slack:"]
+        `)
+        
+        const extractedTags: any[] = []
+        socialMetaTags.forEach((tag) => {
+          const element = tag as HTMLMetaElement
+          extractedTags.push({
+            name: element.name || '',
+            property: element.getAttribute('property') || '',
+            content: element.content || '',
+            httpEquiv: element.getAttribute('http-equiv') || undefined
+          })
+        })
+        
+        return { socialMetaTags: extractedTags, count: extractedTags.length }
+      }
+
       // Prepare scraped pages data
-      const scrapedPagesData = scrapingData.pages.map((page: any) => ({
-        audit_project_id: projectId,
-        url: page.url,
-        status_code: page.statusCode,
-        title: page.title,
-        description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
-        html_content: page.html,
-        html_content_length: page.htmlContentLength,
-        links_count: page.links?.length || 0,
-        images_count: page.images?.length || 0,
-        meta_tags_count: page.metaTags?.length || 0,
-        technologies_count: page.technologies?.length || 0,
-        technologies: page.technologies || null,
-        cms_type: scrapingData.extractedData?.cms?.type || null,
-        cms_version: scrapingData.extractedData?.cms?.version || null,
-        cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
-        is_external: false, // Main page is not external
-        response_time: scrapingData.responseTime
-      }))
+      const scrapedPagesData = scrapingData.pages.map((page: any) => {
+        const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
+        
+        return {
+          audit_project_id: projectId,
+          url: page.url,
+          status_code: page.statusCode,
+          title: page.title,
+          description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
+          html_content: page.html,
+          html_content_length: page.htmlContentLength,
+          links_count: page.links?.length || 0,
+          images_count: page.images?.length || 0,
+          meta_tags_count: page.metaTags?.length || 0,
+          technologies_count: page.technologies?.length || 0,
+          technologies: page.technologies || null,
+          cms_type: scrapingData.extractedData?.cms?.type || null,
+          cms_version: scrapingData.extractedData?.cms?.version || null,
+          cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
+          social_meta_tags: socialMetaTags, // Store full social meta tags data
+          social_meta_tags_count: socialMetaTagsCount, // Store count as well
+          is_external: false, // Main page is not external
+          response_time: scrapingData.responseTime
+        }
+      })
 
       console.log('📊 Prepared scraped pages data:', scrapedPagesData)
 
@@ -308,6 +347,15 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         return
       } else {
         console.log('✅ Scraped pages saved successfully:', savedPages?.length || 0, 'pages')
+      }
+
+      // Process meta tags data from homepage
+      console.log('🏠 Processing meta tags data...')
+      const { data: metaTagsResult, error: metaTagsError } = await processMetaTagsData(projectId)
+      if (metaTagsError) {
+        console.warn('⚠️ Meta tags processing failed:', metaTagsError)
+      } else {
+        console.log('✅ Meta tags data processed successfully')
       }
 
       // Process CMS data to avoid repetition and extract unique information
