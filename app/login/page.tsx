@@ -14,15 +14,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated, authChecked } = useAuth();
   const router = useRouter();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/');
+    console.log('🔍 Login useEffect - authChecked:', authChecked, 'isAuthenticated:', isAuthenticated);
+    if (authChecked && isAuthenticated) {
+      console.log('✅ User already authenticated, redirecting to dashboard');
+      router.push('/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [authChecked, isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +43,8 @@ export default function LoginPage() {
         }
       } else {
         setSuccess("Login successful! Redirecting...");
-        // The useEffect will handle the redirect
+        // The useEffect will handle the redirect after auth state updates
+        // Don't redirect immediately - let the auth state change handle it
       }
     } catch {
       setError("An unexpected error occurred");

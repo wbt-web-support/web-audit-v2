@@ -3,14 +3,14 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSupabase } from '@/contexts/SupabaseContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const { user, loading } = useSupabase();
+  const { user, loading, isAuthenticated, authChecked } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -124,7 +124,7 @@ export default function Navbar() {
           <motion.div 
             className="hidden sm:flex items-center space-x-2"
           >
-            {loading ? (
+            {loading || !authChecked ? (
               // Show loading state
               <motion.div
                 initial={{ opacity: 0 }}
@@ -133,7 +133,7 @@ export default function Navbar() {
               >
                 Loading...
               </motion.div>
-            ) : user ? (
+            ) : isAuthenticated ? (
               // Show Dashboard button when user is logged in
               <Link href="/dashboard">
                 <motion.button
@@ -222,7 +222,7 @@ export default function Navbar() {
               </motion.a>
             ))}
             <div className="pt-1 space-y-1">
-              {loading ? (
+              {loading || !authChecked ? (
                 // Show loading state
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -235,7 +235,7 @@ export default function Navbar() {
                 >
                   Loading...
                 </motion.div>
-              ) : user ? (
+              ) : isAuthenticated ? (
                 // Show Dashboard button when user is logged in
                 <Link href="/dashboard">
                   <motion.button

@@ -405,15 +405,45 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(loadingTimeout)
     }
 
-    // Listen for auth changes
+    // Listen for auth changes with enhanced state management
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
       
-      console.log('Auth state change:', event, session?.user?.id)
-      setSession(session)
-      setUser(session?.user ?? null)
+      console.log('🔄 Auth state change:', event, session?.user?.id)
+      
+      // Handle different auth events
+      switch (event) {
+        case 'SIGNED_IN':
+          console.log('✅ User signed in:', session?.user?.email)
+          setSession(session)
+          setUser(session?.user ?? null)
+          break
+          
+        case 'SIGNED_OUT':
+          console.log('🚪 User signed out')
+          setSession(null)
+          setUser(null)
+          setUserProfile(null)
+          break
+          
+        case 'TOKEN_REFRESHED':
+          console.log('🔄 Token refreshed')
+          setSession(session)
+          break
+          
+        case 'USER_UPDATED':
+          console.log('👤 User updated:', session?.user?.email)
+          setSession(session)
+          setUser(session?.user ?? null)
+          break
+          
+        default:
+          console.log('🔄 Auth event:', event)
+          setSession(session)
+          setUser(session?.user ?? null)
+      }
       
       if (session?.user) {
         // Test connection when auth state changes
@@ -423,13 +453,26 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           try {
             let profile = await fetchUserProfile(session.user.id)
             if (!profile) {
+              console.log('📝 Creating new user profile...')
               profile = await createUserProfile(session.user)
             }
             if (profile && isMounted) {
+              console.log('✅ User profile loaded:', profile.email)
               setUserProfile(profile)
             }
           } catch (error) {
-            console.log('Profile fetch failed during auth change')
+            console.error('❌ Profile fetch failed during auth change:', error)
+            // Set fallback profile to prevent loading issues
+            const fallbackProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              first_name: session.user.user_metadata?.first_name || '',
+              last_name: session.user.user_metadata?.last_name || '',
+              role: 'user' as const,
+              email_confirmed: !!session.user.email_confirmed_at,
+              created_at: session.user.created_at
+            }
+            setUserProfile(fallbackProfile)
           }
         }
       } else {
@@ -480,8 +523,28 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      console.log('🚪 Starting logout process...')
+      
+      // Clear local state first
+      setUser(null)
+      setUserProfile(null)
+      setSession(null)
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('❌ Logout error:', error)
+        return { error }
+      }
+      
+      console.log('✅ Logout successful')
+      return { error: null }
+    } catch (error) {
+      console.error('❌ Unexpected logout error:', error)
+      return { error: error as any }
+    }
   }
 
   const resendConfirmation = async (email: string) => {

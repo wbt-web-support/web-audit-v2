@@ -309,7 +309,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         return { socialMetaTags: extractedTags, count: extractedTags.length }
       }
 
-      // Prepare scraped pages data
+      // Prepare scraped pages data (without HTML content since it's stored in audit_projects)
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
@@ -319,7 +319,6 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           status_code: page.statusCode,
           title: page.title,
           description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
-          html_content: page.html,
           html_content_length: page.htmlContentLength,
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
@@ -367,6 +366,14 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         scrapingData.summary?.technologies
       )
       
+      // Extract HTML content from all pages
+      const allPagesHtml = scrapingData.pages.map((page: any) => ({
+        url: page.url,
+        html: page.html,
+        title: page.title,
+        statusCode: page.statusCode
+      }))
+
       // Update audit project with summary data
       const summaryData = {
         total_pages: scrapingData.summary?.totalPages || 0,
@@ -381,6 +388,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         average_html_per_page: scrapingData.summary?.averageHtmlPerPage || 0,
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
         total_response_time: scrapingData.performance?.totalTime || 0,
+        all_pages_html: allPagesHtml, // Store all pages HTML in new column
         scraping_completed_at: new Date().toISOString(),
         scraping_data: scrapingData,
         status: 'completed' as const,

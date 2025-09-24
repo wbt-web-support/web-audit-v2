@@ -49,7 +49,7 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
       case 'keys':
         return <KeysTab project={project} />
       case 'social':
-        return <SocialPreviewTab project={project} scrapedPages={scrapedPages} />
+        return <SocialPreviewTab project={project} />
       default:
         return <TechnologiesTab project={project} />
     }

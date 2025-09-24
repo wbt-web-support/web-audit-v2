@@ -6,6 +6,68 @@ interface TechnologiesTabProps {
   project: AuditProject
 }
 
+// Technology icon fallback component
+const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?: string }) => {
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'javascript': 'bg-yellow-100 text-yellow-800',
+      'css': 'bg-blue-100 text-blue-800',
+      'html': 'bg-orange-100 text-orange-800',
+      'framework': 'bg-purple-100 text-purple-800',
+      'library': 'bg-green-100 text-green-800',
+      'database': 'bg-red-100 text-red-800',
+      'server': 'bg-gray-100 text-gray-800',
+      'analytics': 'bg-indigo-100 text-indigo-800',
+      'cms': 'bg-pink-100 text-pink-800',
+      'ecommerce': 'bg-emerald-100 text-emerald-800',
+      'detected': 'bg-blue-100 text-blue-800',
+      'unknown': 'bg-slate-100 text-slate-800'
+    }
+    return colors[category?.toLowerCase()] || colors['detected']
+  }
+
+  if (tech.icon) {
+    return (
+      <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
+        <img 
+          src={tech.icon} 
+          alt={tech.name}
+          className="w-6 h-6 object-contain"
+          onError={(e) => {
+            // Hide the image and show fallback
+            e.currentTarget.style.display = 'none'
+            const parent = e.currentTarget.parentElement
+            if (parent) {
+              parent.innerHTML = `
+                <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center">
+                  <span class="text-xs font-semibold text-slate-600">${getInitials(tech.name)}</span>
+                </div>
+              `
+            }
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
+      <div className={`w-6 h-6 rounded flex items-center justify-center ${getCategoryColor(tech.category)}`}>
+        <span className="text-xs font-semibold">{getInitials(tech.name)}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function TechnologiesTab({ project }: TechnologiesTabProps) {
   // Get technologies from the processed project data first, then fallback to raw data
   let technologies = null
@@ -26,7 +88,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
         return {
           name: tech,
           version: null,
-          category: 'unknown',
+          category: 'detected',
           confidence: 0.9,
           detection_method: 'summary',
           description: null,
@@ -48,7 +110,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
         return {
           name: tech,
           version: null,
-          category: 'unknown',
+          category: 'detected',
           confidence: 0.9,
           detection_method: 'extracted_data',
           description: null,
@@ -67,35 +129,40 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
         <>
           {/* Technologies by Category */}
           {project.technologies_metadata?.technologies_by_category ? (
-            <div>
-              <h4 className="text-md font-medium text-gray-700 mb-3">By Category</h4>
-              <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Technology Stack</h3>
+                <div className="text-sm text-gray-500">
+                  {Object.keys(project.technologies_metadata.technologies_by_category).length} categories
+                </div>
+              </div>
+              
+              <div className="space-y-6">
                 {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]: [string, any]) => (
-                  <div key={category} className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="font-medium text-gray-800 mb-3 capitalize">{category}</h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {techs.map((tech: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
-                          <div className="flex items-center">
-                            {tech.icon && (
-                              <img 
-                                src={tech.icon} 
-                                alt={tech.name}
-                                className="w-5 h-5 mr-2 rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none'
-                                }}
-                              />
-                            )}
-                            <div>
-                              <span className="font-medium text-gray-900">{tech.name}</span>
-                              {tech.version && (
-                                <span className="ml-2 text-gray-500 text-sm">v{tech.version}</span>
-                              )}
+                  <div key={category} className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div className="p-6 border-b border-gray-100">
+                      <h4 className="text-lg font-semibold text-gray-900 capitalize flex items-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                        {category.replace(/_/g, ' ')}
+                        <span className="ml-2 text-sm font-normal text-gray-500">({techs.length})</span>
+                      </h4>
+                    </div>
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {techs.map((tech: any, index: number) => (
+                          <div key={index} className="group bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all duration-200 hover:shadow-md">
+                            <div className="flex items-center space-x-3">
+                              <TechnologyIcon tech={tech} className="w-10 h-10 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <h5 className="font-medium text-gray-900 truncate">{tech.name}</h5>
+                                {tech.version && (
+                                  <p className="text-sm text-gray-500">v{tech.version}</p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -103,53 +170,62 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
             </div>
           ) : (
             // Fallback: Display raw technologies if no processed metadata
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-md font-medium text-gray-700">Detected Technologies ({technologies.length})</h4>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Detected Technologies</h3>
+                  <p className="text-sm text-gray-500 mt-1">{technologies.length} technologies found</p>
+                </div>
                 {isSummaryData && (
-                  <div className="text-sm text-gray-500">
-                    <span className="inline-flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Basic detection
-                    </span>
+                  <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Basic detection
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {technologies.map((tech: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center">
-                      {tech.icon && (
-                        <img 
-                          src={tech.icon} 
-                          alt={tech.name}
-                          className="w-6 h-6 mr-3 rounded"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      )}
-                      <div>
-                        <span className="font-medium text-gray-900">{tech.name}</span>
-                        {tech.version && (
-                          <span className="ml-2 text-gray-500 text-sm">v{tech.version}</span>
-                        )}
-                        {tech.detection_method === 'summary' && (
-                          <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                            Summary
-                          </span>
-                        )}
+                  <div key={index} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300">
+                    <div className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <TechnologyIcon tech={tech} className="w-12 h-12 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 truncate">{tech.name}</h4>
+                          {tech.version && (
+                            <p className="text-sm text-gray-500 mt-1">v{tech.version}</p>
+                          )}
+                          {tech.detection_method === 'summary' && (
+                            <span className="inline-flex items-center mt-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Summary
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            (tech.confidence || 0.8) >= 0.8 ? 'bg-green-500' :
+                            (tech.confidence || 0.8) >= 0.5 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}></div>
+                          <span className="text-xs text-gray-500">Confidence</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          (tech.confidence || 0.8) >= 0.8 ? 'bg-green-100 text-green-700' :
+                          (tech.confidence || 0.8) >= 0.5 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {Math.round((tech.confidence || 0.8) * 100)}%
+                        </span>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      (tech.confidence || 0.8) >= 0.8 ? 'bg-green-100 text-green-800' :
-                      (tech.confidence || 0.8) >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {Math.round((tech.confidence || 0.8) * 100)}%
-                    </span>
                   </div>
                 ))}
               </div>
@@ -157,13 +233,16 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
           )}
         </>
       ) : (
-        <div className="text-center py-8">
-          <div className="text-gray-400 mb-2">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <p className="text-gray-600">No technologies detected</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Sorry, we can't detect any technologies</h3>
+          <p className="text-gray-500 max-w-sm mx-auto">
+            We couldn't identify any technologies on this website. This might be due to the site's structure or detection limitations.
+          </p>
         </div>
       )}
     </div>

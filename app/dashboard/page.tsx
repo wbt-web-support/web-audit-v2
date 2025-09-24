@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { DashboardSidebar, DashboardHeader, DashboardContent } from './components/dashboard-components'
@@ -8,7 +9,8 @@ import AnalysisTab from './components/tabs/AnalysisTab'
 import ConnectionStatus from './components/ConnectionStatus'
 
 export default function DashboardPage() {
-  const { user, userProfile, loading, getAuditProjectsOptimized } = useSupabase()
+  const { user, userProfile, loading, isAuthenticated, authChecked } = useAuth()
+  const { getAuditProjectsOptimized } = useSupabase()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
@@ -26,6 +28,14 @@ export default function DashboardPage() {
     scrapedPages: any[]
     lastFetchTime: number
   }>>(new Map())
+
+  // Handle authentication and redirect if not authenticated
+  useEffect(() => {
+    if (authChecked && !isAuthenticated) {
+      console.log('❌ User not authenticated, redirecting to login');
+      window.location.href = '/login';
+    }
+  }, [authChecked, isAuthenticated]);
 
   // Handle URL parameters for tab detection
   useEffect(() => {
@@ -141,7 +151,7 @@ export default function DashboardPage() {
   // Fetch projects data when user is available
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!user) {
+      if (!authChecked || !isAuthenticated || !user) {
         setProjectsLoading(false)
         return
       }
@@ -186,7 +196,7 @@ export default function DashboardPage() {
     }
 
     fetchProjects()
-  }, [user]) // Removed getAuditProjectsOptimized from dependencies
+  }, [authChecked, isAuthenticated, user]) // Enhanced dependencies for better auth checking
 
   // Refresh projects function
   const refreshProjects = async () => {

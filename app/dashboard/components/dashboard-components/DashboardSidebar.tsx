@@ -1,6 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface DashboardSidebarProps {
@@ -19,6 +20,7 @@ export default function DashboardSidebar({
   userProfile 
 }: DashboardSidebarProps) {
   const { signOut } = useSupabase()
+  const router = useRouter()
 
   const navigationItems = [
     {
@@ -63,6 +65,7 @@ export default function DashboardSidebar({
 
   const handleSignOut = async () => {
     await signOut()
+    router.push('/')
   }
 
   return (
