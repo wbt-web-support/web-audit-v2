@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function TrustSection() {
   return (
-    <section className="relative bg-white py-20">
+    <section className="relative bg-white py-20 mt-30 h-full ">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-12">
         
         {/* Top content (text) */}
@@ -44,22 +44,22 @@ export default function TrustSection() {
           className="flex flex-col md:flex-row gap-6 justify-center items-center"
         >
           {/* Left small image */}
-          <div className="relative w-60 h-72 border border-gray-100 rounded-xl shadow-md bg-white overflow-hidden">
+          <div className="relative w-60 h-72 mr-40    overflow-hidden">
             <Image
               src="/flow-diagram.png" // replace with your image
               alt="Flow Diagram"
               fill
-              className="object-contain p-4"
+              className="object-cover h-200"
             />
           </div>
 
           {/* Right bigger image */}
-          <div className="relative w-80 h-72 border border-gray-100 rounded-xl shadow-md bg-white overflow-hidden">
+          <div className="relative w-130    h-70   bg-white overflow-hidden">
             <Image
-              src="/table.png" // replace with your image
+              src="/tableImage.png" // replace with your image
               alt="Data Table"
               fill
-              className="object-contain p-4"
+              className="object-cover"
             />
           </div>
         </motion.div>

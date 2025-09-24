@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function SignupSection() {
   return (
-    <section className="relative bg-white py-20">
+    <section className="relative bg-white py-20 h-200  pt-50">
       <div className="max-w-md mx-auto text-center px-6">
         
         {/* Heading */}

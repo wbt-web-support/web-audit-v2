@@ -49,7 +49,7 @@ export default function RevenueSection() {
   const activeFeature = features.find((f) => f.id === active)!;
 
   return (
-    <section className="relative bg-white py-20 border-t border-gray-100">
+    <section className="relative bg-white py-20 border-t  border-gray-100 h-full">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
         {/* Left Content */}
@@ -91,11 +91,11 @@ export default function RevenueSection() {
         >
           <div className="relative w-full max-w-xl">
             <Image
-              src={activeFeature.image}
+              src='/revenueImage.png'
               alt={activeFeature.label}
               width={600}
               height={400}
-              className="rounded-xl shadow-lg border border-gray-100"
+              className="rounded-xl  border border-gray-100"
             />
           </div>
         </motion.div>

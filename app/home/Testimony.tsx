@@ -38,7 +38,7 @@ const testimonials = [
 
 export default function TestimonySection() {
   return (
-    <section className="relative bg-white py-20 ">
+    <section className="relative bg-white py-20 h-full">
       <div className="max-w-6xl mx-auto px-6 space-y-14">
         
         {/* Header */}
@@ -83,12 +83,12 @@ export default function TestimonySection() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               viewport={{ once: true }}
               className="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition"
-            >
+            >   <div>
+            <p className="font-semibold text-gray-900">{t.name}</p>
+            <p className="text-sm text-gray-500">{t.role}</p>
+          </div>
               <p className="text-gray-700 mb-4">{t.text}</p>
-              <div>
-                <p className="font-semibold text-gray-900">{t.name}</p>
-                <p className="text-sm text-gray-500">{t.role}</p>
-              </div>
+           
             </motion.div>
           ))}
         </div>

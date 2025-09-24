@@ -5,8 +5,8 @@ import { ArrowRight  } from "lucide-react";
 import Image from "next/image";
 
 export default function FeatureSection() {
-  return (
-    <section className="relative bg-white py-20">
+  return ( 
+    <section className="relative bg-white py-20  h-170 mt-40 pt-50  ">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
         {/* Left Content */}
@@ -55,11 +55,11 @@ export default function FeatureSection() {
         >
           <div className="relative w-full max-w-lg">
             <Image
-              src="/feature-image.png" // replace with your actual image path
+              src="/featureImage.png" // replace with your actual image path
               alt="Automation Preview"
               width={600}
               height={400}
-              className="rounded-xl shadow-lg"
+              className="rounded-xl "
             />
           </div>
         </motion.div>

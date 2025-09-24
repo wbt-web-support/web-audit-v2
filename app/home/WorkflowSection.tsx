@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function WorkflowSection() {
   return (
-    <section className="relative bg-white py-20">
+    <section className="relative bg-white py-20 mt-30 h-170">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
         {/* Left Content */}
@@ -43,7 +43,7 @@ export default function WorkflowSection() {
         >
           <div className="relative w-full max-w-lg">
             <Image
-              src="/workflow-card.png" // replace with your actual screenshot or UI component
+              src="/workflowImage.png" // replace with your actual screenshot or UI component
               alt="Workflow Preview"
               width={600}
               height={400}

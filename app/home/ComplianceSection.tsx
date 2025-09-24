@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function ComplianceSection() {
   return (
-    <section className="relative bg-white py-20">
+    <section className="relative bg-white py-20 h-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 ">
         
         {/* LEFT COLUMN */}
@@ -85,12 +85,12 @@ export default function ComplianceSection() {
           </motion.div>
 
           {/* Right Image Placeholder */}
-          <div className="relative w-full h-40 border border-gray-200 rounded-xl shadow-sm bg-gray-50">
+          <div className="relative w-full h-40   ">
             <Image
-              src="/right-placeholder.png" // replace with actual image
+              src="/workSpace.png" // replace with actual image
               alt="Workspace Preview"
               fill
-              className="object-contain p-4 w-full  "
+              className="object-cover w-full  "
             />
           </div>
           <div>

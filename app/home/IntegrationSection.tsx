@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function IntegrationSection() {
   return (
-    <section className="relative bg-white py-20 shadow-xl w-full  m-auto ">
+    <section className="relative bg-white py-20 shadow-xl w-full  m-auto h-170">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
         {/* LEFT SIDE - Text */}
@@ -39,7 +39,7 @@ export default function IntegrationSection() {
             src="/integrations.png" // replace with actual integration graphic
             alt="Integration logos"
             fill
-            className="object-contain shadow-sm"
+            className="object-cover"
           />
         </motion.div>
       </div>
