@@ -2,9 +2,11 @@
 
 interface PagesSectionProps {
   scrapedPages: any[]
+  projectId?: string
+  onPageSelect?: (pageId: string) => void
 }
 
-export default function PagesSection({ scrapedPages }: PagesSectionProps) {
+export default function PagesSection({ scrapedPages, projectId, onPageSelect }: PagesSectionProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Scraped Pages</h3>
@@ -26,11 +28,28 @@ export default function PagesSection({ scrapedPages }: PagesSectionProps) {
               {page.description && (
                 <p className="text-sm text-gray-700 mb-3">{page.description}</p>
               )}
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{page.links_count} links</span>
-                <span>{page.images_count} images</span>
-                <span>{page.meta_tags_count} meta tags</span>
-                <span>{page.technologies_count} technologies</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span>{page.links_count} links</span>
+                  <span>{page.images_count} images</span>
+                  <span>{page.meta_tags_count} meta tags</span>
+                  <span>{page.technologies_count} technologies</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (page.id && onPageSelect) {
+                      onPageSelect(page.id)
+                    } else if (page.id) {
+                      // Fallback to URL navigation if no callback provided
+                      window.location.href = `/dashboard/page-analysis/${page.id}`
+                    } else {
+                      console.warn('No page ID available for analysis')
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Analyze
+                </button>
               </div>
             </div>
           ))}

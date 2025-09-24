@@ -13,20 +13,21 @@ interface SEOAnalysisSectionProps {
     seo_analysis?: SEOAnalysisResult | null
   }
   scrapedPages?: any[]
+  dataVersion?: number
 }
 
-export default function SEOAnalysisSection({ project, scrapedPages = [] }: SEOAnalysisSectionProps) {
+export default function SEOAnalysisSection({ project, scrapedPages = [], dataVersion }: SEOAnalysisSectionProps) {
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisResult | null>(project.seo_analysis || null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { updateAuditProject } = useSupabase()
 
   useEffect(() => {
-    // Update local state when project SEO analysis changes
+    // Update local state when project SEO analysis changes or data version changes
     if (project.seo_analysis) {
       setSeoAnalysis(project.seo_analysis)
     }
-  }, [project.seo_analysis])
+  }, [project.seo_analysis, dataVersion])
 
   useEffect(() => {
     // Only run local analysis if we have scraped pages and no existing analysis

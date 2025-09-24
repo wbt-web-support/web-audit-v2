@@ -27,12 +27,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(40)
 
-  console.log('🖼️ ImagesSection rendered with:', { 
-    project: !!project, 
-    projectSiteUrl: project?.site_url,
-    scrapedPagesCount: scrapedPages?.length || 0,
-    scrapedPages: scrapedPages
-  })
+  
 
   const getImageType = (url: string) => {
     const extension = url.split('.').pop()?.toLowerCase()

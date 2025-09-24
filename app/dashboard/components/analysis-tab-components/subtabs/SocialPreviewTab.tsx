@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { AuditProject } from '@/types/audit'
 
 interface SocialMetaData {
@@ -15,6 +15,9 @@ interface SocialPreviewTabProps {
 }
 
 export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
+  const [socialData, setSocialData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
   // Extract social meta tags from meta_tags_data
   const extractSocialMetaTags = (metaTagsData: any) => {
     if (!metaTagsData?.all_meta_tags) {
@@ -68,7 +71,30 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
     return { openGraph, twitter, presentTags, missingTags }
   }
 
-  const { openGraph, twitter, presentTags, missingTags } = extractSocialMetaTags(project.meta_tags_data)
+  // Effect to update social data when project changes
+  useEffect(() => {
+    if (project?.meta_tags_data) {
+      const extracted = extractSocialMetaTags(project.meta_tags_data)
+      setSocialData(extracted)
+      setIsLoading(false)
+    } else {
+      setSocialData({
+        openGraph: {},
+        twitter: {},
+        presentTags: [],
+        missingTags: []
+      })
+      setIsLoading(false)
+    }
+  }, [project?.meta_tags_data, project?.id])
+
+  // Use extracted data or fallback
+  const { openGraph, twitter, presentTags, missingTags } = socialData || {
+    openGraph: {},
+    twitter: {},
+    presentTags: [],
+    missingTags: []
+  }
 
   // Get the social preview data
   const socialTitle = openGraph.title || twitter.title || 'No title available'
@@ -77,10 +103,27 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
   const socialUrl = openGraph.url || project.site_url
 
   // Count present and missing tags
-  const openGraphPresent = presentTags.filter(tag => tag.startsWith('og:')).length
-  const twitterPresent = presentTags.filter(tag => tag.startsWith('twitter:')).length
-  const openGraphMissing = missingTags.filter(tag => tag.startsWith('og:')).length
-  const twitterMissing = missingTags.filter(tag => tag.startsWith('twitter:')).length
+  const openGraphPresent = presentTags.filter((tag: string) => tag.startsWith('og:')).length
+  const twitterPresent = presentTags.filter((tag: string) => tag.startsWith('twitter:')).length
+  const openGraphMissing = missingTags.filter((tag: string) => tag.startsWith('og:')).length
+  const twitterMissing = missingTags.filter((tag: string) => tag.startsWith('twitter:')).length
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -177,10 +220,10 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
         <div className="space-y-2">
           <p className="text-sm text-gray-600">
-            Open Graph meta tags present: {openGraphPresent > 0 ? Object.keys(openGraph).filter(key => openGraph[key as keyof SocialMetaData]).join(', ') : 'none'}
+            Open Graph meta tags present: {openGraphPresent > 0 ? Object.keys(openGraph).filter((key: string) => openGraph[key as keyof SocialMetaData]).join(', ') : 'none'}
           </p>
           <p className="text-sm text-gray-600">
-            Twitter meta tags present: {twitterPresent > 0 ? Object.keys(twitter).filter(key => twitter[key as keyof SocialMetaData]).join(', ') : 'none'}
+            Twitter meta tags present: {twitterPresent > 0 ? Object.keys(twitter).filter((key: string) => twitter[key as keyof SocialMetaData]).join(', ') : 'none'}
           </p>
         </div>
       </div>
@@ -205,7 +248,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 {Object.entries(twitter).map(([key, value]) => (
                   <div key={key} className="text-sm">
                     <span className="font-medium text-gray-600">{key}:</span>
-                    <span className="ml-2 text-gray-900">{value}</span>
+                    <span className="ml-2 text-gray-900">{String(value)}</span>
                   </div>
                 ))}
                 {Object.keys(twitter).length === 0 && (
@@ -219,8 +262,8 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 <h4 className="text-sm font-medium text-red-700 mb-2">Missing Tags:</h4>
                 <div className="space-y-1">
                   {missingTags
-                    .filter(tag => tag.startsWith('twitter:'))
-                    .map(tag => (
+                    .filter((tag: string) => tag.startsWith('twitter:'))
+                    .map((tag: string) => (
                       <div key={tag} className="text-sm text-red-600">
                         {tag}
                       </div>
@@ -249,7 +292,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 {Object.entries(openGraph).map(([key, value]) => (
                   <div key={key} className="text-sm">
                     <span className="font-medium text-gray-600">{key}:</span>
-                    <span className="ml-2 text-gray-900 break-all">{value}</span>
+                    <span className="ml-2 text-gray-900 break-all">{String(value)}</span>
                   </div>
                 ))}
                 {Object.keys(openGraph).length === 0 && (
@@ -263,8 +306,8 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 <h4 className="text-sm font-medium text-red-700 mb-2">Missing Tags:</h4>
                 <div className="space-y-1">
                   {missingTags
-                    .filter(tag => tag.startsWith('og:'))
-                    .map(tag => (
+                    .filter((tag: string) => tag.startsWith('og:'))
+                    .map((tag: string) => (
                       <div key={tag} className="text-sm text-red-600">
                         {tag}
                       </div>

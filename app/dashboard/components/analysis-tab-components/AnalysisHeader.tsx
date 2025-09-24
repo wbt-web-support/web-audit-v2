@@ -6,9 +6,13 @@ interface AnalysisHeaderProps {
   project: AuditProject
   activeSection: string
   onSectionChange: (section: string) => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
+  customTabs?: Array<{ id: string; name: string; icon: string }>
+  pageTitle?: string
 }
 
-export default function AnalysisHeader({ project, activeSection, onSectionChange }: AnalysisHeaderProps) {
+export default function AnalysisHeader({ project, activeSection, onSectionChange, onRefresh, isRefreshing, customTabs, pageTitle }: AnalysisHeaderProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -48,11 +52,35 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {getProjectName(project.site_url)}
+            {pageTitle || getProjectName(project.site_url)}
           </h1>
           <p className="text-gray-600">{project.site_url}</p>
         </div>
         <div className="flex items-center space-x-4">
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? (
+                <>
+                  <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </button>
+          )}
           <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(project.status)}`}>
             {getStatusDisplayName(project.status)}
           </span>
@@ -68,7 +96,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-            {[
+            {(customTabs || [
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'pages', name: 'Pages', icon: '📄' },
               { id: 'technologies', name: 'Technical', icon: '⚙️' },
@@ -77,8 +105,8 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               { id: 'seo', name: 'SEO', icon: '🔍' },
               { id: 'images', name: 'Images', icon: '🖼️' },
               { id: 'links', name: 'Links', icon: '🔗' },
-              { id: 'extracted-keys', name: 'Data Keys', icon: '🔑' }
-            ].map((tab) => (
+              
+            ]).map((tab) => (
             <button
               key={tab.id}
               onClick={() => onSectionChange(tab.id)}

@@ -6,6 +6,7 @@ import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { DashboardSidebar, DashboardHeader, DashboardContent } from './components/dashboard-components'
 import AnalysisTab from './components/tabs/AnalysisTab'
+import PageAnalysisTab from './components/tabs/PageAnalysisTab'
 import ConnectionStatus from './components/ConnectionStatus'
 
 export default function DashboardPage() {
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
   
   // Projects data state
   const [projects, setProjects] = useState<AuditProject[]>([])
@@ -42,10 +44,11 @@ export default function DashboardPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const tabParam = urlParams.get('tab')
     const projectId = urlParams.get('projectId')
+    const pageId = urlParams.get('pageId')
     
     
     
-    if (tabParam && ['dashboard', 'projects', 'profile', 'admin', 'analysis'].includes(tabParam)) {
+    if (tabParam && ['dashboard', 'projects', 'profile', 'admin', 'analysis', 'page-analysis'].includes(tabParam)) {
       
       setActiveTab(tabParam)
     }
@@ -64,16 +67,27 @@ export default function DashboardPage() {
         window.history.replaceState({}, '', url.toString())
       }
     }
+    
+    if (pageId) {
+      
+      setSelectedPageId(pageId)
+      
+      // If we have a pageId but no tab specified, default to page-analysis
+      if (!tabParam) {
+        
+        setActiveTab('page-analysis')
+        // Update URL to include the tab parameter
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', 'page-analysis')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
   }, [])
 
   // Debug AnalysisTab rendering
   useEffect(() => {
     if (activeTab === 'analysis' && selectedProjectId) {
-      console.log('🔍 Dashboard: Rendering AnalysisTab with:', { 
-        activeTab, 
-        selectedProjectId, 
-        cachedData: getCachedAnalysisData(selectedProjectId) 
-      })
+     
     }
   }, [activeTab, selectedProjectId])
 
@@ -124,6 +138,10 @@ export default function DashboardPage() {
       url.searchParams.delete('projectId')
       setSelectedProjectId(null)
     }
+    if (tab !== 'page-analysis') {
+      url.searchParams.delete('pageId')
+      setSelectedPageId(null)
+    }
     window.history.pushState({}, '', url.toString())
   }
 
@@ -135,6 +153,17 @@ export default function DashboardPage() {
     const url = new URL(window.location.href)
     url.searchParams.set('tab', 'analysis')
     url.searchParams.set('projectId', projectId)
+    window.history.pushState({}, '', url.toString())
+  }
+
+  // Handle page selection for page analysis
+  const handlePageSelect = (pageId: string) => {
+    setSelectedPageId(pageId)
+    setActiveTab('page-analysis')
+    // Update URL with both tab and pageId
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', 'page-analysis')
+    url.searchParams.set('pageId', pageId)
     window.history.pushState({}, '', url.toString())
   }
 
@@ -312,6 +341,14 @@ export default function DashboardPage() {
               projectId={selectedProjectId}
               cachedData={getCachedAnalysisData(selectedProjectId)}
               onDataUpdate={(project, scrapedPages) => setCachedAnalysisData(selectedProjectId, project, scrapedPages)}
+              onPageSelect={handlePageSelect}
+            />
+          </div>
+        ) : activeTab === 'page-analysis' && selectedPageId ? (
+          <div className="p-6">
+            <PageAnalysisTab 
+              key={selectedPageId} // Prevent unnecessary re-mounting
+              pageId={selectedPageId}
             />
           </div>
         ) : (

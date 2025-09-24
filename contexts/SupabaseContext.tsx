@@ -85,6 +85,7 @@ interface SupabaseContextType {
   // Scraped Pages CRUD operations
   createScrapedPage: (pageData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<{ data: ScrapedPage | null; error: any }>
   getScrapedPages: (auditProjectId: string) => Promise<{ data: ScrapedPage[] | null; error: any }>
+  getScrapedPage: (id: string) => Promise<{ data: ScrapedPage | null; error: any }>
   updateScrapedPage: (id: string, updates: Partial<ScrapedPage>) => Promise<{ data: ScrapedPage | null; error: any }>
   deleteScrapedPage: (id: string) => Promise<{ data: ScrapedPage | null; error: any }>
   // Bulk operations
@@ -181,11 +182,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   // Function to create user profile if it doesn't exist
   const createUserProfile = async (user: User) => {
     try {
-      console.log('Creating user profile for:', {
-        id: user.id,
-        email: user.email,
-        metadata: user.user_metadata
-      })
+     
 
       // Test database access first
       const dbAccessible = await testDatabaseAccess()
@@ -861,6 +858,31 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const getScrapedPage = async (id: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('scraped_pages')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching scraped page:', error)
+        return { data: null, error }
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error fetching scraped page:', error)
+      return { data: null, error }
+    }
+  }
+
   const updateScrapedPage = async (id: string, updates: Partial<ScrapedPage>) => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
@@ -977,13 +999,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       const metaTagsData = processAllMetaTags(scrapedPages)
       const socialMetaTagsData = processAllSocialMetaTags(scrapedPages)
       
-      console.log('📊 Meta tags data processed:', {
-        totalMetaTags: metaTagsData.total_count,
-        standardTags: Object.keys(metaTagsData.standard_meta_tags).length,
-        socialTags: socialMetaTagsData.total_social_tags,
-        platforms: socialMetaTagsData.platforms_detected
-      })
-
+      
       // Update the audit project with aggregated meta tags data
       // Use a more flexible approach that handles missing columns
       const updateData: any = {}
@@ -1254,6 +1270,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     deleteAuditProject,
     createScrapedPage,
     getScrapedPages,
+    getScrapedPage,
     updateScrapedPage,
     deleteScrapedPage,
     createScrapedPages,

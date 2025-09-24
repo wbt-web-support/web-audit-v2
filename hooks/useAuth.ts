@@ -79,12 +79,7 @@ export function useAuth() {
   // Monitor authentication state changes
   useEffect(() => {
     if (authChecked) {
-      console.log('🔍 Auth state:', {
-        isAuthenticated,
-        isEmailConfirmed,
-        userRole,
-        loading
-      })
+     
     }
   }, [authChecked, isAuthenticated, isEmailConfirmed, userRole, loading])
 

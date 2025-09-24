@@ -20,7 +20,6 @@ const PerformanceSection = lazy(() => import('../analysis-tab-components/Perform
 const ImagesSection = lazy(() => import('../analysis-tab-components/ImagesSection'))
 const LinksSection = lazy(() => import('../analysis-tab-components/LinksSection'))
 const SEOAnalysisSection = lazy(() => import('../analysis-tab-components/SEOAnalysisSection'))
-// const ExtractedKeysSection = lazy(() => import('../analysis-tab-components/ExtractedKeysSection'))
 
 interface AnalysisTabProps {
   projectId: string
@@ -30,9 +29,10 @@ interface AnalysisTabProps {
     lastFetchTime: number
   } | null
   onDataUpdate?: (project: AuditProject | null, scrapedPages: any[]) => void
+  onPageSelect?: (pageId: string) => void
 }
 
-export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: AnalysisTabProps) {
+export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPageSelect }: AnalysisTabProps) {
   const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject, processMetaTagsData, isConnected, connectionError } = useSupabase()
   const [project, setProject] = useState<AuditProject | null>(null)
   const [scrapedPages, setScrapedPages] = useState<any[]>([])
@@ -56,18 +56,143 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   
   // SEO Analysis states
   const [hasAutoStartedSeoAnalysis, setHasAutoStartedSeoAnalysis] = useState(false)
+  
+  // Data version for forcing re-renders
+  const [dataVersion, setDataVersion] = useState(0)
+  
+  // Debounce mechanism to prevent rapid refreshes
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Function to analyze page content for keys and patterns
+  const analyzePageForKeys = (htmlContent: string, pageUrl: string) => {
+    if (!htmlContent) {
+      return {
+        totalKeys: 0,
+        keyTypes: {},
+        detectedKeys: [],
+        patterns: [],
+        suspiciousText: []
+      }
+    }
+
+    const detectedKeys: any[] = []
+    const keyTypes: any = {}
+    const patterns: any[] = []
+    const suspiciousText: any[] = []
+
+    // 1. Google Tag Manager (GTM) patterns
+    const gtmScriptPattern = /\(function\(w,d,s,l,i\)\{w\[l\]=w\[l\]\|\|\[\];w\[l\]\.push\(\{'gtm\.start':/g
+    const gtmIdPattern = /GTM-[A-Z0-9]+/g
+    const gtmJsPattern = /googletagmanager\.com\/gtm\.js/g
+    const gtmNoscriptPattern = /<iframe[^>]+src=["']https:\/\/www\.googletagmanager\.com\/ns\.html\?id=GTM-[A-Z0-9]+/gi
+
+    // 2. Google Analytics (gtag.js) patterns
+    const gtagJsPattern = /googletagmanager\.com\/gtag\/js/g
+    const gaIdPattern = /GA-[A-Z0-9-]+/g
+    const gtagIdPattern = /gtag\('config',\s*'[A-Z0-9-]+'/g
+
+    // 3. Facebook Pixel patterns
+    const fbPixelPattern = /facebook\.net\/tr\?id=\d+/g
+    const fbPixelIdPattern = /fbq\('init',\s*'\d+'/g
+
+    // 4. ClickCease patterns
+    const clickceaseScriptPattern = /clickcease\.com\/monitor\/stat\.js/g
+    const clickceaseNoscriptImgPattern = /<img[^>]+src=['"]https:\/\/monitor\.clickcease\.com\/stats\/stats\.aspx/gi
+    const clickceaseNoscriptAnchorPattern = /<a[^>]+href=['"]https:\/\/www\.clickcease\.com/gi
+
+    // 5. API Keys and tokens patterns
+    const apiKeyPattern = /(api[_-]?key|apikey|access[_-]?token|secret[_-]?key|private[_-]?key)\s*[:=]\s*['"]?([A-Za-z0-9_-]{20,})['"]?/gi
+    const jwtPattern = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g
+    const stripeKeyPattern = /(pk_|sk_)[a-zA-Z0-9]{24,}/g
+    const paypalKeyPattern = /(AKIA|ASIA)[A-Z0-9]{16}/g
+
+    // 6. Social media tracking patterns
+    const twitterPixelPattern = /pixel\.twitter\.com\/i\/adsct/g
+    const linkedinPixelPattern = /snap\.licdn\.com\/li\.lms/g
+    const pinterestPixelPattern = /pintrk\.com\/track/g
+
+    // 7. Random long strings (potential keys)
+    const randomStringPattern = /\b[A-Za-z0-9_-]{20,}\b/g
+
+    // 8. Email patterns (might contain sensitive info)
+    const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
+
+    // Analyze patterns
+    const patternsToCheck = [
+      { name: 'GTM Script', pattern: gtmScriptPattern, type: 'tracking' },
+      { name: 'GTM ID', pattern: gtmIdPattern, type: 'tracking' },
+      { name: 'GTM JS', pattern: gtmJsPattern, type: 'tracking' },
+      { name: 'GTM Noscript', pattern: gtmNoscriptPattern, type: 'tracking' },
+      { name: 'Google Analytics', pattern: gtagJsPattern, type: 'analytics' },
+      { name: 'GA ID', pattern: gaIdPattern, type: 'analytics' },
+      { name: 'Gtag ID', pattern: gtagIdPattern, type: 'analytics' },
+      { name: 'Facebook Pixel', pattern: fbPixelPattern, type: 'tracking' },
+      { name: 'Facebook Pixel ID', pattern: fbPixelIdPattern, type: 'tracking' },
+      { name: 'ClickCease Script', pattern: clickceaseScriptPattern, type: 'security' },
+      { name: 'ClickCease Noscript', pattern: clickceaseNoscriptImgPattern, type: 'security' },
+      { name: 'API Key', pattern: apiKeyPattern, type: 'api' },
+      { name: 'JWT Token', pattern: jwtPattern, type: 'token' },
+      { name: 'Stripe Key', pattern: stripeKeyPattern, type: 'payment' },
+      { name: 'PayPal Key', pattern: paypalKeyPattern, type: 'payment' },
+      { name: 'Twitter Pixel', pattern: twitterPixelPattern, type: 'tracking' },
+      { name: 'LinkedIn Pixel', pattern: linkedinPixelPattern, type: 'tracking' },
+      { name: 'Pinterest Pixel', pattern: pinterestPixelPattern, type: 'tracking' },
+      { name: 'Email', pattern: emailPattern, type: 'contact' }
+    ]
+
+    patternsToCheck.forEach(({ name, pattern, type }) => {
+      const matches = htmlContent.match(pattern)
+      if (matches) {
+        matches.forEach(match => {
+          detectedKeys.push({
+            type: type,
+            name: name,
+            value: match,
+            confidence: 'high'
+          })
+        })
+        
+        if (!keyTypes[type]) keyTypes[type] = 0
+        keyTypes[type] += matches.length
+      }
+    })
+
+    // Check for random long strings
+    const randomMatches = htmlContent.match(randomStringPattern)
+    if (randomMatches) {
+      randomMatches.forEach(match => {
+        // Filter out common patterns and check if it looks like a key
+        if (match.length >= 20 && 
+            !match.includes('http') && 
+            !match.includes('www') && 
+            !match.includes('@') &&
+            !match.includes('.') &&
+            /[A-Z]/.test(match) && 
+            /[a-z]/.test(match) && 
+            /[0-9]/.test(match)) {
+          
+          suspiciousText.push({
+            type: 'suspicious',
+            name: 'Random String',
+            value: match,
+            confidence: 'medium'
+          })
+        }
+      })
+    }
+
+    return {
+      totalKeys: detectedKeys.length + suspiciousText.length,
+      keyTypes: keyTypes,
+      detectedKeys: detectedKeys,
+      patterns: patterns,
+      suspiciousText: suspiciousText,
+      analysisTimestamp: new Date().toISOString()
+    }
+  }
 
   
-  
-  console.log('🔍 AnalysisTab loading conditions:', { 
-    loading, 
-    isScraping, 
-    hasProject: !!project, 
-    projectStatus: project?.status,
-    pagespeedLoading: project?.pagespeed_insights_loading,
-    pagespeedData: !!project?.pagespeed_insights_data
-  })
-  
+
   // Performance monitoring
   useEffect(() => {
     const startTime = performance.now()
@@ -439,12 +564,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       
       if (!firstPage.html_content) {
         console.warn('⚠️ No HTML content available in first page for SEO analysis')
-        console.log('📊 First page data:', {
-          url: firstPage.url,
-          title: firstPage.title,
-          hasHtmlContent: !!firstPage.html_content,
-          htmlContentLength: firstPage.html_content?.length || 0
-        })
+       
         
         // Try to get HTML content from project's scraping_data as fallback
         if (project?.scraping_data?.pages?.[0]?.html) {
@@ -544,13 +664,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
       // Prepare scraped pages data
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
-        console.log('🔍 Processing page:', {
-          url: page.url,
-          hasHtml: !!page.html,
-          htmlLength: page.html?.length || 0,
-          statusCode: page.statusCode,
-          title: page.title
-        })
+        
         
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
@@ -576,6 +690,52 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           response_time: scrapingData.responseTime
         }
       })
+
+      // Create filtered pages data with key analysis
+      console.log('🔍 Creating filtered pages data with key analysis...')
+      const allPagesHtml = scrapingData.pages.map((page: any, index: number) => {
+        console.log(`📄 Processing page ${index + 1}/${scrapingData.pages.length}:`, {
+          url: page.url,
+          hasHtml: !!page.html,
+          htmlLength: page.html?.length || 0,
+          title: page.title,
+          statusCode: page.statusCode
+        })
+        
+        // Analyze page for keys and patterns
+        const pageAnalysis = analyzePageForKeys(page.html || '', page.url)
+        
+        // Create simplified page data structure with analysis
+        const pageData = {
+          pageName: page.title || `Page ${index + 1}`,
+          pageUrl: page.url,
+          pageHtml: page.html || '',
+          detectedKeys: pageAnalysis
+        }
+        
+        console.log(`✅ Page ${index + 1} processed successfully:`, {
+          pageName: pageData.pageName,
+          pageUrl: pageData.pageUrl,
+          htmlLength: pageData.pageHtml?.length || 0,
+          keysFound: pageAnalysis.totalKeys,
+          keyTypes: Object.keys(pageAnalysis.keyTypes)
+        })
+        
+        return pageData
+      })
+      
+      console.log('🎯 All pages HTML extraction completed!')
+      console.log('📈 Final allPagesHtml array:', {
+        totalPages: allPagesHtml.length,
+        pagesWithHtml: allPagesHtml.filter((p: any) => p.pageHtml).length,
+        totalHtmlLength: allPagesHtml.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0),
+        sampleUrls: allPagesHtml.slice(0, 3).map((p: any) => p.pageUrl)
+      })
+      
+      // Log first page HTML sample for debugging
+      if (allPagesHtml.length > 0 && allPagesHtml[0].pageHtml) {
+        console.log('🔍 First page HTML sample (first 500 chars):', allPagesHtml[0].pageHtml.substring(0, 500))
+      }
 
       // Save scraped pages to database
       const { data: savedPages, error: pagesError } = await createScrapedPages(scrapedPagesData)
@@ -618,6 +778,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
         total_response_time: scrapingData.performance?.totalTime || 0,
         scraping_completed_at: new Date().toISOString(),
+        all_pages_html: allPagesHtml, // Store filtered pages data in all_pages_html column
         scraping_data: {
           summary: scrapingData.summary,
           performance: scrapingData.performance,
@@ -632,7 +793,12 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         progress: 100
       }
 
-      
+      console.log('💾 Summary data prepared with allPagesHtml:', {
+        hasAllPagesHtml: !!summaryData.all_pages_html,
+        allPagesHtmlLength: summaryData.all_pages_html?.length || 0,
+        samplePageNames: summaryData.all_pages_html?.slice(0, 3).map((p: any) => p.pageName) || [],
+        totalHtmlSize: summaryData.all_pages_html?.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0) || 0
+      })
       
       
 
@@ -668,11 +834,82 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           
           onDataUpdate(project ? { ...project, ...summaryData } : null, scrapedPagesData)
         }
+        
+        // Force a re-render by updating a timestamp and data version
+        setLastFetchTime(Date.now())
+        setDataVersion(prev => prev + 1)
       }
 
     } catch (error) {
       console.error('❌ Error processing scraping data:', error)
       setScrapingError('Failed to process scraping data')
+    }
+  }
+
+  // Function to refresh data manually
+  const refreshData = async (forceRefresh = false) => {
+    if (!projectId || isRefreshing) return
+    
+    // Check if we need to refresh based on data age
+    const now = Date.now()
+    const timeSinceLastFetch = now - lastFetchTime
+    const REFRESH_THRESHOLD = 10 * 1000 // 10 seconds
+    
+    if (!forceRefresh && timeSinceLastFetch < REFRESH_THRESHOLD) {
+      console.log('✅ Data is fresh, skipping refresh')
+      return
+    }
+    
+    setIsRefreshing(true)
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // Fetch fresh project data
+      const { data: projectData, error: projectError } = await getAuditProject(projectId)
+      
+      if (projectError) {
+        console.error('Error refreshing project:', projectError)
+        setError('Failed to refresh project data')
+        return
+      }
+
+      if (projectData) {
+        // Only update if data actually changed
+        const hasDataChanged = JSON.stringify(project) !== JSON.stringify(projectData)
+        
+        if (hasDataChanged) {
+          console.log('📊 Data changed, updating components...')
+          setProject(projectData)
+          
+          // If project is completed, also refresh scraped pages
+          if (projectData.status === 'completed') {
+            const { data: pages, error: pagesError } = await getScrapedPages(projectId)
+            if (!pagesError && pages) {
+              setScrapedPages(pages)
+              setScrapedPagesLoaded(true)
+            }
+          }
+          
+          // Update parent cache
+          if (onDataUpdate) {
+            onDataUpdate(projectData, scrapedPages)
+          }
+          
+          setDataVersion(prev => prev + 1)
+        } else {
+          console.log('✅ No data changes detected, skipping update')
+        }
+        
+        setDataFetched(true)
+        setLastFetchTime(Date.now())
+      }
+    } catch (err) {
+      console.error('Error refreshing data:', err)
+      setError('Failed to refresh data')
+    } finally {
+      setLoading(false)
+      setIsRefreshing(false)
     }
   }
 
@@ -691,12 +928,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       // Check if we have cached data first
       if (cachedData) {
         
-        console.log('📋 AnalysisTab: Cached project data:', { 
-          hasProject: !!cachedData.project, 
-          projectId: cachedData.project?.id,
-          projectStatus: cachedData.project?.status,
-          pagesCount: cachedData.scrapedPages?.length || 0
-        })
+       
         setProject(cachedData.project)
         setScrapedPages(cachedData.scrapedPages)
         setLoading(false)
@@ -780,6 +1012,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         setDataFetched(true)
         setLastFetchTime(Date.now())
+        setDataVersion(prev => prev + 1)
       } catch (err) {
         console.error('Unexpected error:', err)
         setError('An unexpected error occurred while loading the project.')
@@ -791,6 +1024,43 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
     fetchData()
   }, [projectId, cachedData]) // Only depend on projectId and cachedData
+
+  // Auto-refresh effect for completed projects
+  useEffect(() => {
+    if (!project || project.status !== 'completed') return
+
+    // Set up periodic refresh for completed projects
+    const refreshInterval = setInterval(() => {
+      // Only refresh if data is older than 5 minutes
+      const now = Date.now()
+      const timeSinceLastFetch = now - lastFetchTime
+      const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
+      if (timeSinceLastFetch > REFRESH_INTERVAL) {
+        console.log('🔄 Auto-refreshing project data...')
+        refreshData(false) // Don't force refresh for auto-refresh
+      }
+    }, 60000) // Check every minute
+
+    return () => clearInterval(refreshInterval)
+  }, [project, lastFetchTime])
+
+  // Effect to handle scraping completion - only refresh if we don't have fresh data
+  useEffect(() => {
+    if (project && project.status === 'completed' && !isScraping && !loading) {
+      // Only refresh if the data is older than 30 seconds (indicating it just completed)
+      const now = Date.now()
+      const timeSinceLastFetch = now - lastFetchTime
+      const FRESH_DATA_THRESHOLD = 30 * 1000 // 30 seconds
+      
+      if (timeSinceLastFetch > FRESH_DATA_THRESHOLD) {
+        console.log('🔄 Scraping completed, refreshing data...')
+        refreshData()
+      } else {
+        console.log('✅ Data is already fresh, skipping refresh')
+      }
+    }
+  }, [project?.status, isScraping, loading, lastFetchTime])
 
   // Scraping effect - runs when project is pending and we have project data
   useEffect(() => {
@@ -1210,7 +1480,9 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       <AnalysisHeader 
         project={project} 
         activeSection={activeSection} 
-        onSectionChange={handleSectionChange} 
+        onSectionChange={handleSectionChange}
+        onRefresh={() => refreshData(true)}
+        isRefreshing={isRefreshing}
       />
 
       {/* Content Sections */}
@@ -1224,7 +1496,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         {activeSection === 'pages' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <PagesSection scrapedPages={scrapedPages} />
+            <PagesSection scrapedPages={scrapedPages} projectId={projectId} onPageSelect={onPageSelect} />
           </Suspense>
         )}
         
@@ -1265,7 +1537,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         {activeSection === 'seo' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <SEOAnalysisSection project={project} scrapedPages={scrapedPages} />
+            <SEOAnalysisSection project={project} scrapedPages={scrapedPages} dataVersion={dataVersion} />
           </Suspense>
         )}
       </motion.div>
