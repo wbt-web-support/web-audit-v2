@@ -57,7 +57,16 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // SEO Analysis states
   const [hasAutoStartedSeoAnalysis, setHasAutoStartedSeoAnalysis] = useState(false)
 
-  console.log('🔍 AnalysisTab rendered for project:', projectId, 'cachedData:', !!cachedData, 'loading:', loading)
+  console.log('🔍 AnalysisTab rendered for project:******************************************', projectId, 'cachedData:', !!cachedData, 'loading:', loading)
+  console.log('🔍 AnalysisTab props:', { projectId, hasCachedData: !!cachedData, loading, error })
+  console.log('🔍 AnalysisTab loading conditions:', { 
+    loading, 
+    isScraping, 
+    hasProject: !!project, 
+    projectStatus: project?.status,
+    pagespeedLoading: project?.pagespeed_insights_loading,
+    pagespeedData: !!project?.pagespeed_insights_data
+  })
   
   // Performance monitoring
   useEffect(() => {
@@ -677,11 +686,24 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // Main data fetching effect
   useEffect(() => {
     const fetchData = async () => {
-      if (!projectId) return
+      console.log('🔄 AnalysisTab useEffect triggered:', { projectId, cachedData: !!cachedData, loading, dataFetched })
+      
+      if (!projectId) {
+        console.log('❌ No projectId provided')
+        setError('No project ID provided')
+        setLoading(false)
+        return
+      }
 
       // Check if we have cached data first
       if (cachedData) {
         console.log('📋 AnalysisTab: Using cached data from parent')
+        console.log('📋 AnalysisTab: Cached project data:', { 
+          hasProject: !!cachedData.project, 
+          projectId: cachedData.project?.id,
+          projectStatus: cachedData.project?.status,
+          pagesCount: cachedData.scrapedPages?.length || 0
+        })
         setProject(cachedData.project)
         setScrapedPages(cachedData.scrapedPages)
         setLoading(false)
@@ -705,44 +727,71 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       }
 
       console.log('🚀 AnalysisTab: Fetching data for project:', projectId)
+      console.log('🔍 AnalysisTab: Current state before fetch:', { loading, error, project: !!project, dataFetched })
       setLoading(true)
       setError(null)
 
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error('⏰ AnalysisTab: Request timeout after 30 seconds')
+        setError('Request timed out. Please try again.')
+        setLoading(false)
+      }, 30000)
+
       try {
+        console.log('📡 AnalysisTab: Calling getAuditProject with:', projectId)
         // Fetch project details
         const { data: projectData, error: projectError } = await getAuditProject(projectId)
+        console.log('📡 AnalysisTab: Database response:', { hasData: !!projectData, hasError: !!projectError, error: projectError })
+        
+        clearTimeout(timeoutId)
         
         if (projectError) {
           console.error('Error fetching project:', projectError)
-          setError('Failed to load project details')
+          
+          // Handle specific error cases
+          if (projectError.message?.includes('No rows found') || projectError.message?.includes('not found')) {
+            setError('Project not found. It may have been deleted or you may not have access to it.')
+          } else if (projectError.message?.includes('permission denied') || projectError.message?.includes('access denied')) {
+            setError('You do not have permission to access this project.')
+          } else if (projectError.message?.includes('No user logged in')) {
+            setError('Please log in to access this project.')
+          } else {
+            setError('Failed to load project details. Please try again.')
+          }
           return
         }
 
-        if (projectData) {
-          console.log('✅ AnalysisTab: Project data fetched:', projectData.id)
-          setProject(projectData)
-          
-          const pagesData: any[] = []
-          
-          // Skip scraped pages fetch on initial load - load them on demand
-          if (projectData.status === 'completed') {
-            console.log('📄 AnalysisTab: Skipping initial scraped pages fetch - will load on demand')
-            setScrapedPagesLoaded(false)
-          }
-          
-          // Update parent cache
-          if (onDataUpdate) {
-            console.log('💾 AnalysisTab: Updating parent cache')
-            onDataUpdate(projectData, pagesData)
-          }
-          
-          setDataFetched(true)
-          setLastFetchTime(Date.now())
+        if (!projectData) {
+          console.error('No project data returned for ID:', projectId)
+          setError('Project not found. It may have been deleted or you may not have access to it.')
+          return
         }
+
+        console.log('✅ AnalysisTab: Project data fetched:', projectData.id)
+        setProject(projectData)
+        
+        const pagesData: any[] = []
+        
+        // Skip scraped pages fetch on initial load - load them on demand
+        if (projectData.status === 'completed') {
+          console.log('📄 AnalysisTab: Skipping initial scraped pages fetch - will load on demand')
+          setScrapedPagesLoaded(false)
+        }
+        
+        // Update parent cache
+        if (onDataUpdate) {
+          console.log('💾 AnalysisTab: Updating parent cache')
+          onDataUpdate(projectData, pagesData)
+        }
+        
+        setDataFetched(true)
+        setLastFetchTime(Date.now())
       } catch (err) {
         console.error('Unexpected error:', err)
-        setError('An unexpected error occurred')
+        setError('An unexpected error occurred while loading the project.')
       } finally {
+        clearTimeout(timeoutId)
         setLoading(false)
       }
     }
@@ -1053,13 +1102,15 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   }, [lastFetchTime, dataFetched])
 
 
-  if (loading || isScraping || (project?.pagespeed_insights_loading && !project?.pagespeed_insights_data)) {
+  // Show loader only if we're actually loading project data or scraping
+  if (loading || isScraping) {
+    console.log('🔄 AnalysisTab: Showing loader because:', { loading, isScraping })
     return (
       <ModernLoader 
         projectName={project?.site_url || 'Website'}
         totalPages={project?.total_pages || 0}
         currentPage={scrapedPages?.length || 0}
-        isScraping={isScraping || (project?.pagespeed_insights_loading && !project?.pagespeed_insights_data)}
+        isScraping={isScraping}
       />
     )
   }
@@ -1091,18 +1142,30 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
               Retry Scraping
             </button>
           )}
+          {!scrapingError && (
+            <button 
+              onClick={() => {
+                setError(null)
+                // Retry fetching the project
+                window.location.reload()
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry Loading
+            </button>
+          )}
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => window.location.href = '/dashboard?tab=projects'} 
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
-            Reload Page
+            View All Projects
           </button>
         </div>
       </div>
     )
   }
 
-  if (!project) {
+  if (!project && !loading && !error) {
     return (
       <div className="text-center py-12">
         <div className="text-gray-400 mb-4">
@@ -1111,13 +1174,27 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           </svg>
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Project Not Found</h3>
-        <p className="text-gray-600">The requested project could not be found.</p>
+        <p className="text-gray-600 mb-4">The requested project could not be found or you may not have access to it.</p>
+        <div className="flex gap-3 justify-center">
+          <button 
+            onClick={() => window.location.href = '/dashboard?tab=projects'} 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            View All Projects
+          </button>
+          <button 
+            onClick={() => window.location.href = '/dashboard'} 
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
       </div>
     )
   }
 
   // Show processing state if project is still in progress (but not scraping)
-  if (project.status === 'in_progress' || (project.status === 'pending' && !isScraping)) {
+  if (project && (project.status === 'in_progress' || (project.status === 'pending' && !isScraping))) {
     return (
       <ModernLoader 
         projectName={project.site_url || 'Website'}
@@ -1128,6 +1205,13 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     )
   }
 
+  // Ensure project exists before rendering
+  if (!project) {
+    console.log('❌ AnalysisTab: No project data available')
+    return null
+  }
+
+  console.log('✅ AnalysisTab: Rendering analysis interface for project:', project.id, 'status:', project.status)
   return (
     <div className="space-y-6">
       <AnalysisHeader 

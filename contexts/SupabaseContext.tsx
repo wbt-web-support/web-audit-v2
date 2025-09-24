@@ -603,11 +603,15 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   const getAuditProject = async (id: string) => {
+    console.log('🔍 getAuditProject called with:', { id, userId: user?.id, isAuthenticated: !!user })
+    
     if (!user) {
+      console.error('❌ getAuditProject: No user logged in')
       return { data: null, error: { message: 'No user logged in' } }
     }
 
     try {
+      console.log('📡 getAuditProject: Making database request for project:', id, 'user:', user.id)
       const { data, error } = await supabase
         .from('audit_projects')
         .select('*')
@@ -615,14 +619,17 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .single()
 
+      console.log('📡 getAuditProject: Database response:', { hasData: !!data, hasError: !!error, error })
+
       if (error) {
-        console.error('Error fetching audit project:', error)
+        console.error('❌ getAuditProject: Error fetching audit project:', error)
         return { data: null, error }
       }
 
+      console.log('✅ getAuditProject: Project found:', { id: data?.id, site_url: data?.site_url, status: data?.status })
       return { data: data as AuditProjectWithUserId, error: null }
     } catch (error) {
-      console.error('Unexpected error fetching audit project:', error)
+      console.error('❌ getAuditProject: Unexpected error fetching audit project:', error)
       return { data: null, error }
     }
   }

@@ -43,14 +43,39 @@ export default function DashboardPage() {
     const tabParam = urlParams.get('tab')
     const projectId = urlParams.get('projectId')
     
+    console.log('🔍 Dashboard: URL params detected:', { tabParam, projectId, fullUrl: window.location.href })
+    
     if (tabParam && ['dashboard', 'projects', 'profile', 'admin', 'analysis'].includes(tabParam)) {
+      console.log('✅ Dashboard: Setting activeTab to:', tabParam)
       setActiveTab(tabParam)
     }
     
     if (projectId) {
+      console.log('🔗 Direct URL access detected with projectId:', projectId)
       setSelectedProjectId(projectId)
+      
+      // If we have a projectId but no tab specified, default to analysis
+      if (!tabParam) {
+        console.log('🔄 Dashboard: No tab specified, defaulting to analysis')
+        setActiveTab('analysis')
+        // Update URL to include the tab parameter
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', 'analysis')
+        window.history.replaceState({}, '', url.toString())
+      }
     }
   }, [])
+
+  // Debug AnalysisTab rendering
+  useEffect(() => {
+    if (activeTab === 'analysis' && selectedProjectId) {
+      console.log('🔍 Dashboard: Rendering AnalysisTab with:', { 
+        activeTab, 
+        selectedProjectId, 
+        cachedData: getCachedAnalysisData(selectedProjectId) 
+      })
+    }
+  }, [activeTab, selectedProjectId])
 
   // Handle browser visibility changes to prevent unnecessary refetches
   useEffect(() => {
