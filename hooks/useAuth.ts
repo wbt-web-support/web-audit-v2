@@ -18,33 +18,33 @@ export function useAuth() {
 
   // Enhanced authentication checking with proper state management
   useEffect(() => {
-    console.log('🔍 useAuth useEffect - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user?.email);
+    
     
     if (!loading) {
       setAuthChecked(true)
       
       // Handle authentication state changes
       if (isAuthenticated) {
-        console.log('✅ User authenticated:', user?.email)
+        
         
         // Redirect to dashboard if on login page
         if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
-          console.log('🔄 Redirecting authenticated user to dashboard from:', window.location.pathname)
+          
           // Small delay to ensure auth state is fully updated
           setTimeout(() => {
-            console.log('🚀 Executing redirect to dashboard')
+            
             router.push('/dashboard')
           }, 100)
         }
       } else {
-        console.log('❌ User not authenticated')
+        
         
         // Redirect to login if on protected routes (optional)
         const protectedRoutes = ['/dashboard', '/profile', '/admin']
         const currentPath = window.location.pathname
         
         if (protectedRoutes.some(route => currentPath.startsWith(route))) {
-          console.log('🔄 Redirecting unauthenticated user to login from:', currentPath)
+          
           router.push('/login')
         }
       }
@@ -54,7 +54,7 @@ export function useAuth() {
   // Enhanced logout with proper cleanup
   const handleSignOut = async () => {
     try {
-      console.log('🚪 Logging out user...')
+      
       const { error } = await signOut()
       
       if (error) {
@@ -68,7 +68,7 @@ export function useAuth() {
       // Redirect to home page after logout
       router.push('/')
       
-      console.log('✅ Logout successful')
+      
       return { error: null }
     } catch (error) {
       console.error('❌ Unexpected logout error:', error)

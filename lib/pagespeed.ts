@@ -110,8 +110,8 @@ function generateMockPageSpeedData(url: string): PageSpeedInsightsData {
 export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsightsResponse> {
   try {
     // Debug: Log all environment variables that start with PAGESPEED
-    console.log('🔍 PageSpeed Environment variables check:')
-    console.log('NEXT_PUBLIC_PAGESPEED_API_KEY:', process.env.NEXT_PUBLIC_PAGESPEED_API_KEY ? 'Found' : 'Not found')
+    
+    
     
     const apiKey = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY
     
@@ -133,24 +133,24 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
       }
     }
 
-    console.log('🔍 Fetching PageSpeed Insights for URL:', url)
+    
     
     // Ensure URL has protocol
     const formattedUrl = url.startsWith('http') ? url : `https://${url}`
     
     const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(formattedUrl)}&key=${apiKey}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo&screenshot=true`
     
-    console.log('🌐 PageSpeed API URL:', apiUrl)
+    
     
     // Retry logic for PageSpeed Insights request
     const makePageSpeedRequest = async (retries = 3, delay = 1000): Promise<Response> => {
       for (let i = 0; i < retries; i++) {
         try {
-          console.log(`⏳ Making PageSpeed request (attempt ${i + 1}/${retries})...`)
+          
           
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
-            console.log('⏰ PageSpeed request timeout triggered')
+            
             controller.abort()
           }, 180000) // 3 minute timeout
           
@@ -166,8 +166,8 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
           
           clearTimeout(timeoutId)
           
-          console.log('📊 PageSpeed response status:', response.status)
-          console.log('📊 PageSpeed response ok:', response.ok)
+          
+          
           
           if (!response.ok) {
             const errorText = await response.text().catch(() => 'Unable to read error response')
@@ -222,7 +222,7 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
           
           // Wait before retrying with exponential backoff
           const waitTime = delay * Math.pow(2, i) // Exponential backoff
-          console.log(`⏳ Waiting ${waitTime}ms before PageSpeed retry...`)
+          
           await new Promise(resolve => setTimeout(resolve, waitTime))
         }
       }
@@ -233,7 +233,7 @@ export async function fetchPageSpeedInsights(url: string): Promise<PageSpeedInsi
     const response = await makePageSpeedRequest()
 
     const data = await response.json()
-    console.log('✅ PageSpeed Insights data received:', data)
+    
     
     return {
       data: data as PageSpeedInsightsData,

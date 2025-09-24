@@ -22,7 +22,7 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
   // Reanalyze function
   const handleReanalyze = async () => {
     try {
-      console.log('🔄 Starting PageSpeed reanalysis for:', project.site_url)
+      
       setIsReanalyzing(true)
       setReanalyzeError(null)
       
@@ -56,7 +56,7 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
           pagespeed_insights_data: null
         })
       } else if (data) {
-        console.log('✅ PageSpeed reanalysis data received:', data)
+        
         
         // Update project with new PageSpeed data
         const updatedProject = {

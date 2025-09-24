@@ -90,11 +90,11 @@ export default function DashboardOverview({
   // Test function to check database connection
   const testDatabaseConnection = async () => {
     try {
-      console.log('Testing database connection...')
+      
       
       // Use refreshProjects to test connection
       await refreshProjects()
-      console.log('Database connection test passed.')
+      
       return true
     } catch (error) {
       console.error('Database connection test error:', error)
@@ -105,35 +105,35 @@ export default function DashboardOverview({
 
   // Handle form submission from SiteCrawlForm
   const handleFormSubmit = async (formData: any) => {
-    console.log('🚀 Form submission started')
+    
     setIsSubmitting(true)
     setSubmitStatus('submitting')
     
     try {
       // Test database connection first
-      console.log('🔍 Step 1: Testing database connection...')
+      
       const dbConnected = await testDatabaseConnection()
-      console.log('📊 Database connection result:', dbConnected)
+      
       
       if (!dbConnected) {
         console.warn('⚠️ Database connection test failed, but continuing with form submission...')
       } else {
-        console.log('✅ Database connection successful')
+        
       }
 
       // Ensure the URL has https:// protocol
-      console.log('🔍 Step 2: Formatting URL...')
+      
       let formattedUrl = formData.siteUrl.trim()
-      console.log('📝 Original URL:', formData.siteUrl)
+      
       if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
         formattedUrl = `https://${formattedUrl}`
-        console.log('🔧 Added https:// prefix:', formattedUrl)
+        
       } else {
-        console.log('✅ URL already has protocol:', formattedUrl)
+        
       }
       
       // Prepare the project data
-      console.log('🔍 Step 3: Preparing project data...')
+      
       const projectData = {
         site_url: formattedUrl,
         page_type: formData.pageType,
@@ -180,13 +180,15 @@ export default function DashboardOverview({
         seo_analysis: null,
         // Meta tags fields
         meta_tags_data: null,
-        social_meta_tags_data: null
+        social_meta_tags_data: null,
+        // HTML content storage for all pages
+        all_pages_html: null
       }
 
-      console.log('📊 Project data prepared:', projectData)
+      
 
       // Create the audit project
-      console.log('🔍 Step 4: Creating audit project in database...')
+      
       const { data: createdProject, error: projectError } = await createAuditProject(projectData)
       
       if (projectError) {
@@ -203,14 +205,14 @@ export default function DashboardOverview({
         return
       }
 
-      console.log('✅ Audit project created successfully:', createdProject)
+      
       setSubmitStatus('success')
       
       // Refresh projects data to show the new project
       await refreshProjects()
       
       // Redirect to analysis tab immediately
-      console.log('🔄 Redirecting to analysis tab...')
+      
       if (onProjectSelect) {
         onProjectSelect(createdProject.id)
       }
@@ -220,7 +222,7 @@ export default function DashboardOverview({
       setSubmitStatus('error')
       alert(`An unexpected error occurred: ${error}`)
     } finally {
-      console.log('🏁 Form submission process completed')
+      
       setIsSubmitting(false)
       // Reset status after 3 seconds
       setTimeout(() => {

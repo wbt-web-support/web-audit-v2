@@ -19,9 +19,9 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log('🔍 Login useEffect - authChecked:', authChecked, 'isAuthenticated:', isAuthenticated);
+    
     if (authChecked && isAuthenticated) {
-      console.log('✅ User already authenticated, redirecting to dashboard');
+      
       router.push('/dashboard');
     }
   }, [authChecked, isAuthenticated, router]);

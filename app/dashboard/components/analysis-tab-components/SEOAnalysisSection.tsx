@@ -47,7 +47,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [] }: SEOAn
         setSeoAnalysis(analysis)
         
         // Store the analysis in the database
-        console.log('💾 Storing SEO analysis in database...')
+        
         const { error: updateError } = await updateAuditProject(project.id, {
           seo_analysis: analysis
         })
@@ -56,7 +56,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [] }: SEOAn
           console.error('❌ Failed to store SEO analysis:', updateError)
           setError('Analysis completed but failed to save to database')
         } else {
-          console.log('✅ SEO analysis stored successfully')
+          
         }
       } else {
         setError('No HTML content available for analysis')

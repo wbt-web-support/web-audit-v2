@@ -33,6 +33,8 @@ interface AuditProjectWithUserId extends AuditProject {
   pagespeed_insights_error: string | null
   meta_tags_data: MetaTagsData | null
   social_meta_tags_data: SocialMetaTagsData | null
+  // HTML content storage for all pages
+  all_pages_html: any[] | null
 }
 
 interface ScrapedPage {
@@ -107,14 +109,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const retryConnection = async (retries = 3, delay = 1000): Promise<boolean> => {
     for (let i = 0; i < retries; i++) {
       try {
-        console.log(`Connection attempt ${i + 1}/${retries}`)
+        
         const { data, error } = await supabase
           .from('users')
           .select('count')
           .limit(1)
         
         if (!error) {
-          console.log('✅ Database connection successful')
+          
           setIsConnected(true)
           setConnectionError(null)
           return true
@@ -142,18 +144,18 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   // Function to test database access
   const testDatabaseAccess = async () => {
     try {
-      console.log('Testing database access...')
-      console.log('Supabase client:', supabase)
-      console.log('Current user:', await supabase.auth.getUser())
+      
+      
+      
       
       // Test 1: Try to access any table
-      console.log('Test 1: Checking if we can access any table...')
+      
       const { data: testData, error: testError } = await supabase
         .from('users')
         .select('count')
         .limit(1)
       
-      console.log('Test 1 result:', { data: testData, error: testError })
+      
       
       if (testError) {
         console.error('Database access test failed:', testError)
@@ -166,7 +168,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         setConnectionError(null)
       }
       
-      console.log('Database access test passed')
+      
       return true
     } catch (error) {
       console.error('Database access test error:', error)
@@ -210,7 +212,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         email_confirmed: !!user.email_confirmed_at
       }
 
-      console.log('Profile data to insert:', profileData)
+      
 
       const { data, error } = await supabase
         .from('users')
@@ -229,7 +231,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         
         // Check if it's a duplicate key error (user already exists)
         if (error.code === '23505') {
-          console.log('User profile already exists, attempting to fetch it...')
+          
           return await fetchUserProfile(user.id)
         }
         
@@ -246,7 +248,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         } as UserProfile
       }
 
-      console.log('User profile created successfully:', data)
+      
       return data as UserProfile
     } catch (error) {
       console.error('Unexpected error creating user profile:', error)
@@ -266,7 +268,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   // Function to fetch user profile
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('Fetching user profile for ID:', userId)
+      
       
       // Try to fetch user profile
       const { data, error } = await supabase
@@ -295,10 +297,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data) {
-        console.log('User profile found:', data)
+        
         return data as UserProfile
       } else {
-        console.log('No user profile found for ID:', userId)
+        
         return null
       }
     } catch (error) {
@@ -313,7 +315,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     
     const initializeConnection = async () => {
       try {
-        console.log('🔄 Initializing Supabase connection...')
+        
         
         // Test database connection first
         const connectionTest = await testDatabaseAccess()
@@ -334,7 +336,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null)
           
           if (session?.user) {
-            console.log('✅ User session found:', session.user.id)
+            
             
             // Create a fallback profile immediately to avoid loading issues
             const fallbackProfile = {
@@ -358,21 +360,21 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
                   let profile = await fetchUserProfile(session.user.id)
                   
                   if (!profile) {
-                    console.log('No profile found, attempting to create user profile...')
+                    
                     profile = await createUserProfile(session.user)
                   }
                   
                   if (profile && isMounted) {
-                    console.log('Profile updated from database')
+                    
                     setUserProfile(profile)
                   }
                 } catch (error) {
-                  console.log('Background profile fetch failed, using fallback')
+                  
                 }
               }, 100)
             }
           } else {
-            console.log('No user session found')
+            
             setUserProfile(null)
           }
         }
@@ -391,7 +393,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     // Set a timeout to ensure loading state is always resolved
     loadingTimeout = setTimeout(() => {
       if (isMounted) {
-        console.log('Loading timeout reached, setting loading to false')
+        
         setLoading(false)
       }
     }, 5000) // Increased to 5 seconds
@@ -411,36 +413,36 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
       
-      console.log('🔄 Auth state change:', event, session?.user?.id)
+      
       
       // Handle different auth events
       switch (event) {
         case 'SIGNED_IN':
-          console.log('✅ User signed in:', session?.user?.email)
+          
           setSession(session)
           setUser(session?.user ?? null)
           break
           
         case 'SIGNED_OUT':
-          console.log('🚪 User signed out')
+          
           setSession(null)
           setUser(null)
           setUserProfile(null)
           break
           
         case 'TOKEN_REFRESHED':
-          console.log('🔄 Token refreshed')
+          
           setSession(session)
           break
           
         case 'USER_UPDATED':
-          console.log('👤 User updated:', session?.user?.email)
+          
           setSession(session)
           setUser(session?.user ?? null)
           break
           
         default:
-          console.log('🔄 Auth event:', event)
+          
           setSession(session)
           setUser(session?.user ?? null)
       }
@@ -453,11 +455,11 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           try {
             let profile = await fetchUserProfile(session.user.id)
             if (!profile) {
-              console.log('📝 Creating new user profile...')
+              
               profile = await createUserProfile(session.user)
             }
             if (profile && isMounted) {
-              console.log('✅ User profile loaded:', profile.email)
+              
               setUserProfile(profile)
             }
           } catch (error) {
@@ -524,7 +526,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('🚪 Starting logout process...')
+      
       
       // Clear local state first
       setUser(null)
@@ -539,7 +541,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         return { error }
       }
       
-      console.log('✅ Logout successful')
+      
       return { error: null }
     } catch (error) {
       console.error('❌ Unexpected logout error:', error)
@@ -603,7 +605,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   }
 
   const getAuditProject = async (id: string) => {
-    console.log('🔍 getAuditProject called with:', { id, userId: user?.id, isAuthenticated: !!user })
+    
     
     if (!user) {
       console.error('❌ getAuditProject: No user logged in')
@@ -611,7 +613,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      console.log('📡 getAuditProject: Making database request for project:', id, 'user:', user.id)
+      
       const { data, error } = await supabase
         .from('audit_projects')
         .select('*')
@@ -619,14 +621,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .single()
 
-      console.log('📡 getAuditProject: Database response:', { hasData: !!data, hasError: !!error, error })
+      
 
       if (error) {
         console.error('❌ getAuditProject: Error fetching audit project:', error)
         return { data: null, error }
       }
 
-      console.log('✅ getAuditProject: Project found:', { id: data?.id, site_url: data?.site_url, status: data?.status })
+      
       return { data: data as AuditProjectWithUserId, error: null }
     } catch (error) {
       console.error('❌ getAuditProject: Unexpected error fetching audit project:', error)
@@ -676,7 +678,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
 
       const queryStartTime = performance.now()
-      console.log('🔍 SupabaseContext: Starting optimized query for user:', user.id)
+      
 
       try {
         const { data, error } = await supabase
@@ -714,7 +716,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             pagespeed_insights_data,
             pagespeed_insights_loading,
             pagespeed_insights_error,
-            seo_analysis
+            seo_analysis,
+            all_pages_html
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -727,12 +730,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           return { data: null, error }
         }
 
-        console.log(`✅ SupabaseContext: Query completed in ${queryTime.toFixed(2)}ms`)
-        console.log(`📊 SupabaseContext: Retrieved ${data?.length || 0} projects`)
+        
+        
         
         if (data && data.length > 0) {
           const dataSize = JSON.stringify(data).length
-          console.log(`📦 SupabaseContext: Data size: ${(dataSize / 1024).toFixed(2)}KB`)
+          
         }
 
         // Add default values for meta tags fields if they don't exist
@@ -950,7 +953,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      console.log('🔍 Processing meta tags data for project:', auditProjectId)
+      
 
       // Get all scraped pages for this project
       const { data: scrapedPages, error: pagesError } = await supabase
@@ -965,12 +968,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!scrapedPages || scrapedPages.length === 0) {
-        console.log('No scraped pages found for meta tags processing')
+        
         return { data: null, error: null }
       }
 
       // Process meta tags data from homepage only
-      console.log('🏠 Processing meta tags data for homepage only...')
+      
       const metaTagsData = processAllMetaTags(scrapedPages)
       const socialMetaTagsData = processAllSocialMetaTags(scrapedPages)
       
@@ -1056,7 +1059,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
     }) || scrapedPages[0] // Fallback to first page if no homepage found
 
-    console.log('🏠 Processing meta tags for page:', homepage.url)
+    
 
     const allMetaTags: any[] = []
     const standardMetaTags: any = {}
@@ -1122,7 +1125,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
     }) || scrapedPages[0] // Fallback to first page if no homepage found
 
-    console.log('🏠 Processing social meta tags for page:', homepage.url)
+    
 
     const allSocialTags: any = {
       open_graph: {},
@@ -1214,7 +1217,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   // Manual trigger for meta tags processing (useful for existing projects)
   const triggerMetaTagsProcessing = async (auditProjectId: string) => {
     try {
-      console.log('🔄 Manually triggering meta tags processing for project:', auditProjectId)
+      
       
       const { data, error } = await processMetaTagsData(auditProjectId)
       
@@ -1223,7 +1226,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error }
       }
       
-      console.log('✅ Meta tags processing completed successfully')
+      
       return { success: true }
     } catch (error) {
       console.error('❌ Unexpected error in meta tags processing:', error)

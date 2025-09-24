@@ -57,8 +57,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // SEO Analysis states
   const [hasAutoStartedSeoAnalysis, setHasAutoStartedSeoAnalysis] = useState(false)
 
-  console.log('🔍 AnalysisTab rendered for project:******************************************', projectId, 'cachedData:', !!cachedData, 'loading:', loading)
-  console.log('🔍 AnalysisTab props:', { projectId, hasCachedData: !!cachedData, loading, error })
+  
+  
   console.log('🔍 AnalysisTab loading conditions:', { 
     loading, 
     isScraping, 
@@ -73,7 +73,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     const startTime = performance.now()
     return () => {
       const endTime = performance.now()
-      console.log(`⏱️ AnalysisTab render time: ${endTime - startTime}ms`)
+      
     }
   })
 
@@ -86,7 +86,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
     
     // Load scraped pages if needed for this section
     if ((section === 'pages' || section === 'images' || section === 'links') && !scrapedPagesLoaded && project?.status === 'completed') {
-      console.log('📄 Loading scraped pages for section:', section)
+      
       try {
         const { data: pages, error: pagesError } = await getScrapedPages(projectId)
         if (pagesError) {
@@ -94,7 +94,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         } else if (pages) {
           setScrapedPages(pages)
           setScrapedPagesLoaded(true)
-          console.log('✅ Scraped pages loaded:', pages.length)
+          
         }
       } catch (error) {
         console.error('Error loading scraped pages:', error)
@@ -349,7 +349,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // Function to handle PageSpeed Insights API call
   const handlePageSpeedInsights = async (url: string, projectId: string) => {
     try {
-      console.log('🚀 Starting PageSpeed Insights for URL:', url)
+      
       setIsPageSpeedLoading(true)
       setPageSpeedError(null)
       
@@ -383,7 +383,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           pagespeed_insights_data: null
         })
       } else if (data) {
-        console.log('✅ PageSpeed Insights data received:', data)
+        
         
         // Update project with PageSpeed data
         await updateAuditProject(projectId, {
@@ -419,9 +419,9 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // Function to handle SEO Analysis using scraped pages data
   const handleSeoAnalysis = async (projectId: string, scrapedPages: any[]) => {
     try {
-      console.log('🚀 Starting SEO Analysis for project:', projectId)
-      console.log('📊 Scraped pages data:', scrapedPages)
-      console.log('📊 Scraped pages count:', scrapedPages?.length || 0)
+      
+      
+      
       
       if (!scrapedPages || scrapedPages.length === 0) {
         console.warn('⚠️ No scraped pages available for SEO analysis')
@@ -430,7 +430,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       
       // Get the first page's HTML content from scraped pages
       const firstPage = scrapedPages.find(page => page.audit_project_id === projectId)
-      console.log('🔍 First page found:', firstPage)
+      
       
       if (!firstPage) {
         console.warn('⚠️ No page found with matching project ID for SEO analysis')
@@ -448,15 +448,15 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         // Try to get HTML content from project's scraping_data as fallback
         if (project?.scraping_data?.pages?.[0]?.html) {
-          console.log('🔄 Trying fallback HTML content from project scraping_data...')
+          
           const fallbackHtml = project.scraping_data.pages[0].html
-          console.log('📊 Fallback HTML content length:', fallbackHtml?.length || 0)
+          
           
           if (fallbackHtml) {
             // Perform SEO analysis with fallback HTML
             const seoAnalysis = analyzeSEO(fallbackHtml, project?.site_url || '')
             
-            console.log('✅ SEO Analysis completed with fallback HTML:', seoAnalysis)
+            
             
             // Update project with SEO analysis data
             await updateAuditProject(projectId, {
@@ -480,7 +480,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       // Perform SEO analysis
       const seoAnalysis = analyzeSEO(firstPage.html_content, project?.site_url || '')
       
-      console.log('✅ SEO Analysis completed:', seoAnalysis)
+      
       
       // Update project with SEO analysis data
       await updateAuditProject(projectId, {
@@ -501,7 +501,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // Function to process scraping data and save to database
   const processScrapingData = async (scrapingData: any, projectId: string) => {
     try {
-      console.log('🔍 Processing scraping data...', scrapingData)
+      
       
       if (!scrapingData.pages || !Array.isArray(scrapingData.pages)) {
         console.warn('⚠️ No pages data found in scraping response')
@@ -577,13 +577,6 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         }
       })
 
-      console.log('📊 Prepared scraped pages data:', scrapedPagesData)
-      console.log('📊 HTML content check:', scrapedPagesData.map((page: any) => ({
-        url: page.url,
-        hasHtmlContent: !!page.html_content,
-        htmlContentLength: page.html_content?.length || 0
-      })))
-
       // Save scraped pages to database
       const { data: savedPages, error: pagesError } = await createScrapedPages(scrapedPagesData)
       
@@ -592,16 +585,16 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         setScrapingError('Failed to save scraped pages')
         return
       } else {
-        console.log('✅ Scraped pages saved successfully:', savedPages?.length || 0, 'pages')
+        
       }
 
       // Process meta tags data from homepage
-      console.log('🏠 Processing meta tags data...')
+      
       const { data: metaTagsResult, error: metaTagsError } = await processMetaTagsData(projectId)
       if (metaTagsError) {
         console.warn('⚠️ Meta tags processing failed:', metaTagsError)
       } else {
-        console.log('✅ Meta tags data processed successfully')
+        
       }
 
       // Process CMS data to avoid repetition and extract unique information
@@ -639,14 +632,14 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         progress: 100
       }
 
-      console.log('📊 Updating audit project with summary data:', summaryData)
-      console.log('📊 Summary data keys:', Object.keys(summaryData))
-      console.log('📊 Scraping data size:', JSON.stringify(scrapingData).length, 'characters')
+      
+      
+      
 
       // Validate that the data can be serialized
       try {
         JSON.stringify(summaryData)
-        console.log('✅ Summary data is serializable')
+        
       } catch (serializationError) {
         console.error('❌ Summary data serialization error:', serializationError)
         setScrapingError('Failed to serialize summary data for database update')
@@ -661,18 +654,18 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         setScrapingError(`Failed to update project with summary data: ${updateError.message || 'Unknown error'}`)
         return
       } else {
-        console.log('✅ Audit project updated with summary data successfully')
+        
         
         // Update local state
         setProject(prev => prev ? { ...prev, ...summaryData } : null)
         
         // Start SEO Analysis after scraping is complete
-        console.log('🚀 Starting SEO Analysis after scraping completion...')
+        
         handleSeoAnalysis(projectId, scrapedPagesData)
         
         // Update parent cache
         if (onDataUpdate) {
-          console.log('💾 AnalysisTab: Updating parent cache with completed data')
+          
           onDataUpdate(project ? { ...project, ...summaryData } : null, scrapedPagesData)
         }
       }
@@ -686,10 +679,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
   // Main data fetching effect
   useEffect(() => {
     const fetchData = async () => {
-      console.log('🔄 AnalysisTab useEffect triggered:', { projectId, cachedData: !!cachedData, loading, dataFetched })
+      
       
       if (!projectId) {
-        console.log('❌ No projectId provided')
+        
         setError('No project ID provided')
         setLoading(false)
         return
@@ -697,7 +690,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
       // Check if we have cached data first
       if (cachedData) {
-        console.log('📋 AnalysisTab: Using cached data from parent')
+        
         console.log('📋 AnalysisTab: Cached project data:', { 
           hasProject: !!cachedData.project, 
           projectId: cachedData.project?.id,
@@ -720,14 +713,14 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
 
         if (timeSinceLastFetch < CACHE_DURATION) {
-          console.log('📋 AnalysisTab: Using local cached data')
+          
           setLoading(false)
           return
         }
       }
 
-      console.log('🚀 AnalysisTab: Fetching data for project:', projectId)
-      console.log('🔍 AnalysisTab: Current state before fetch:', { loading, error, project: !!project, dataFetched })
+      
+      
       setLoading(true)
       setError(null)
 
@@ -739,10 +732,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       }, 30000)
 
       try {
-        console.log('📡 AnalysisTab: Calling getAuditProject with:', projectId)
+        
         // Fetch project details
         const { data: projectData, error: projectError } = await getAuditProject(projectId)
-        console.log('📡 AnalysisTab: Database response:', { hasData: !!projectData, hasError: !!projectError, error: projectError })
+        
         
         clearTimeout(timeoutId)
         
@@ -768,20 +761,20 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           return
         }
 
-        console.log('✅ AnalysisTab: Project data fetched:', projectData.id)
+        
         setProject(projectData)
         
         const pagesData: any[] = []
         
         // Skip scraped pages fetch on initial load - load them on demand
         if (projectData.status === 'completed') {
-          console.log('📄 AnalysisTab: Skipping initial scraped pages fetch - will load on demand')
+          
           setScrapedPagesLoaded(false)
         }
         
         // Update parent cache
         if (onDataUpdate) {
-          console.log('💾 AnalysisTab: Updating parent cache')
+          
           onDataUpdate(projectData, pagesData)
         }
         
@@ -806,14 +799,14 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         return
       }
 
-      console.log('🚀 Starting scraping process for project:', project.id)
+      
       setIsScraping(true)
       setScrapingError(null)
       isProcessing.current = true
 
       // Check database connection before starting
       try {
-        console.log('🔍 Checking database connection...')
+        
         
         if (connectionError) {
           throw new Error(`Database connection error: ${connectionError}`)
@@ -831,7 +824,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       }
 
       // Start PageSpeed Insights in parallel (don't wait for it)
-      console.log('🚀 Starting PageSpeed Insights in parallel...')
+      
       handlePageSpeedInsights(project.site_url, project.id)
 
       try {
@@ -845,7 +838,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           detectTechnologiesFlag: true
         }
         
-        console.log('📊 Scraping request data:', scrapeFormData)
+        
         
         // Use HTTPS endpoint for production, fallback to environment variable
         const primaryEndpoint = process.env.NEXT_PUBLIC_SCRAPER_API_ENDPOINT || 'http://rkssksgc48wgkckwsco4swog.81.0.220.43.sslip.io/scrap'
@@ -855,8 +848,8 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
           // Add more fallback endpoints if available
         ]
         
-        console.log('🌐 Primary API endpoint:', primaryEndpoint)
-        console.log('🔄 Fallback endpoints available:', fallbackEndpoints.length)
+        
+        
         
         // Validate that we're using HTTPS in production
         if (typeof window !== 'undefined' && window.location.protocol === 'https:' && !primaryEndpoint.startsWith('https:')) {
@@ -866,16 +859,16 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         // Test basic connectivity to the primary endpoint
         try {
-          console.log('🔍 Testing basic connectivity...')
+          
             const connectivityTest = await fetch(primaryEndpoint, {
               method: 'HEAD',
               signal: AbortSignal.timeout(180000), // 3 minute timeout
               mode: 'cors'
             })
-          console.log('✅ Connectivity test passed:', connectivityTest.status)
+          
         } catch (connectivityError) {
           console.warn('⚠️ Connectivity test failed:', connectivityError)
-          console.log('🔄 Will proceed with retry logic...')
+          
         }
         
         // Retry logic for scraping request with endpoint fallback
@@ -886,9 +879,9 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
             
             for (const apiEndpoint of endpointsToTry) {
               try {
-                console.log(`⏳ Making fetch request (attempt ${i + 1}/${retries}) to ${apiEndpoint}...`)
-                console.log('🌐 API endpoint:', apiEndpoint)
-                console.log('📦 Request data size:', JSON.stringify(scrapeFormData).length, 'bytes')
+                
+                
+                
               
               // Test network connectivity first
               try {
@@ -896,7 +889,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
                   method: 'HEAD',
                   signal: AbortSignal.timeout(5000) // 5 second timeout for test
                 })
-                console.log('✅ Network connectivity test passed:', testResponse.status)
+                
               } catch (testError) {
                 console.warn('⚠️ Network connectivity test failed:', testError)
                 // Continue with the actual request anyway
@@ -904,11 +897,11 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
               
               const controller = new AbortController()
               const timeoutId = setTimeout(() => {
-                console.log('⏰ Request timeout triggered')
+                
                 controller.abort()
               }, 180000) // 3 minute timeout
               
-              console.log('🚀 Sending scraping request...')
+              
               const scrapeResponse = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
@@ -924,9 +917,9 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
               
               clearTimeout(timeoutId)
               
-              console.log('📊 Scraping response status:', scrapeResponse.status)
-              console.log('📊 Scraping response ok:', scrapeResponse.ok)
-              console.log('📊 Response headers:', Object.fromEntries(scrapeResponse.headers.entries()))
+              
+              
+              
               
               if (!scrapeResponse.ok) {
                 const errorText = await scrapeResponse.text().catch(() => 'Unable to read error response')
@@ -970,11 +963,11 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
                   
                   // Wait before retrying with exponential backoff
                   const waitTime = delay * Math.pow(2, i) // Exponential backoff
-                  console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+                  
                   await new Promise(resolve => setTimeout(resolve, waitTime))
                 } else {
                   // Try next endpoint immediately
-                  console.log(`🔄 Trying next endpoint...`)
+                  
                 }
               }
             }
@@ -985,9 +978,9 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         
         const scrapeResponse = await makeScrapingRequest()
         
-        console.log('⏳ Parsing JSON response...')
+        
         const scrapeData = await scrapeResponse.json()
-        console.log('✅ Scraping API response:', scrapeData)
+        
         
         // Process the scraping data
         await processScrapingData(scrapeData, project.id)
@@ -1032,7 +1025,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         !hasAutoStartedPageSpeed &&
         !isPageSpeedLoading
       ) {
-        console.log('🚀 Auto-starting PageSpeed analysis for completed project:', project.site_url)
+        
         setHasAutoStartedPageSpeed(true)
         await handlePageSpeedInsights(project.site_url, project.id)
       }
@@ -1051,7 +1044,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         !hasAutoStartedSeoAnalysis &&
         scrapedPages.length > 0
       ) {
-        console.log('🚀 Auto-starting SEO analysis for completed project:', project.site_url)
+        
         setHasAutoStartedSeoAnalysis(true)
         await handleSeoAnalysis(project.id, scrapedPages)
       }
@@ -1070,7 +1063,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
         const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
 
         if (timeSinceLastFetch > CACHE_DURATION && dataFetched) {
-          console.log('🔄 AnalysisTab: Refreshing stale data on visibility change')
+          
           // Trigger a refetch by resetting the cache flags
           setDataFetched(false)
           setLastFetchTime(0)
@@ -1085,7 +1078,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
       const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
 
       if (timeSinceLastFetch > CACHE_DURATION && dataFetched) {
-        console.log('🔄 AnalysisTab: Refreshing stale data on window focus')
+        
         // Trigger a refetch by resetting the cache flags
         setDataFetched(false)
         setLastFetchTime(0)
@@ -1104,7 +1097,7 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
   // Show loader only if we're actually loading project data or scraping
   if (loading || isScraping) {
-    console.log('🔄 AnalysisTab: Showing loader because:', { loading, isScraping })
+    
     return (
       <ModernLoader 
         projectName={project?.site_url || 'Website'}
@@ -1207,11 +1200,11 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate }: Ana
 
   // Ensure project exists before rendering
   if (!project) {
-    console.log('❌ AnalysisTab: No project data available')
+    
     return null
   }
 
-  console.log('✅ AnalysisTab: Rendering analysis interface for project:', project.id, 'status:', project.status)
+  
   return (
     <div className="space-y-6">
       <AnalysisHeader 

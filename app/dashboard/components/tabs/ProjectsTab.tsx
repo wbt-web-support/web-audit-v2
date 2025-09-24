@@ -26,24 +26,24 @@ export default function ProjectsTab({
   // Performance tracking
   useEffect(() => {
     if (projectsLoading) {
-      console.log('⏳ ProjectsTab: Loading state detected')
+      
     } else if (projectsError) {
-      console.log('❌ ProjectsTab: Error state detected:', projectsError)
+      
     } else if (projects.length === 0) {
-      console.log('📭 ProjectsTab: No projects found')
+      
     } else {
       const renderStartTime = performance.now()
-      console.log('🎨 ProjectsTab: Starting render with', projects.length, 'projects')
+      
       
       // Use requestAnimationFrame to measure after DOM updates
       requestAnimationFrame(() => {
         const renderEndTime = performance.now()
-        console.log(`🎨 ProjectsTab: Render completed in ${(renderEndTime - renderStartTime).toFixed(2)}ms`)
-        console.log(`📊 ProjectsTab: Successfully rendered ${projects.length} project cards`)
+        
+        
         
         // Log performance metrics
         const avgRenderTimePerCard = (renderEndTime - renderStartTime) / projects.length
-        console.log(`⚡ ProjectsTab: Average render time per card: ${avgRenderTimePerCard.toFixed(2)}ms`)
+        
       })
     }
   }, [projectsLoading, projectsError, projects.length])

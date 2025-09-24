@@ -93,22 +93,22 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
   // Extract images from original scraping data or HTML content
   const images = useMemo(() => {
-    console.log('🖼️ ImagesSection - Starting image extraction')
-    console.log('📊 scrapedPages:', scrapedPages)
-    console.log('🌐 project.site_url:', project.site_url)
-    console.log('🔍 originalScrapingData:', originalScrapingData)
+    
+    
+    
+    
     
     const allImages: ImageData[] = []
     
     // First, try to extract from original scraping data
     if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
-      console.log('📊 Using original scraping data for image extraction')
+      
       
       originalScrapingData.pages.forEach((page: any, pageIndex: number) => {
-        console.log(`📄 Processing page ${pageIndex + 1} from scraping data:`, page.url)
+        
         
         if (page.images && Array.isArray(page.images)) {
-          console.log(`🖼️ Found ${page.images.length} images in scraping data for page ${pageIndex + 1}`)
+          
           
           page.images.forEach((img: any, imgIndex: number) => {
             let src = img.src || img.url || ''
@@ -119,11 +119,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             
             // If we have fullTag, parse it to extract more accurate data
             if (img.fullTag) {
-              console.log(`🖼️ Parsing fullTag for image ${imgIndex + 1}:`, img.fullTag)
+              
               
               const parsedData = parseImageFromFullTag(img.fullTag)
               if (parsedData) {
-                console.log(`🖼️ Parsed from fullTag:`, parsedData)
+                
                 
                 // Use parsed values if available, fallback to original values
                 if (parsedData.src) src = parsedData.src
@@ -134,7 +134,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               }
             }
             
-            console.log(`🖼️ Image ${imgIndex + 1} from scraping data:`, { src, alt, title, width, height, rawImg: img })
+            
             
             if (src) {
               // Convert relative URLs to absolute
@@ -148,7 +148,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 }
               }
               
-              console.log('🔗 Image URL conversion from scraping data:', { src, absoluteUrl, page: page.url })
+              
               
               allImages.push({
                 url: absoluteUrl,
@@ -167,11 +167,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     
     // If no images found in scraping data, fall back to HTML parsing
     if (allImages.length === 0 && scrapedPages && scrapedPages.length > 0) {
-      console.log('📊 No images in scraping data, falling back to HTML parsing')
+      
       
       scrapedPages.forEach((page: any, pageIndex: number) => {
-        console.log(`📄 Processing page ${pageIndex + 1} from HTML:`, page.url)
-        console.log('📝 HTML content length:', page.html_content?.length || 0)
+        
+        
         
         if (page.html_content) {
           try {
@@ -184,13 +184,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             const doc = parser.parseFromString(page.html_content, 'text/html')
             const imgElements = doc.querySelectorAll('img')
             
-            console.log(`🖼️ Found ${imgElements.length} img elements in HTML for page ${pageIndex + 1}`)
+            
             
             imgElements.forEach((img: HTMLImageElement, imgIndex: number) => {
               const src = img.src || img.getAttribute('src') || ''
               const alt = img.alt || img.getAttribute('alt') || null
               const title = img.title || img.getAttribute('title') || null
-              console.log(`🖼️ Image ${imgIndex + 1} from HTML:`, { src, alt, title, rawElement: img })
+              
               
               if (src) {
                 // Convert relative URLs to absolute
@@ -204,7 +204,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   }
                 }
                 
-                console.log('🔗 Image URL conversion from HTML:', { src, absoluteUrl, page: page.url })
+                
                 
                 allImages.push({
                   url: absoluteUrl,
@@ -221,19 +221,19 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             console.warn('❌ Error parsing HTML for images:', error)
           }
         } else {
-          console.log('❌ No HTML content for page:', page.url)
+          
         }
       })
     }
     
-    console.log('✅ Total images extracted:', allImages.length)
-    console.log('🖼️ All images:', allImages)
+    
+    
     
     // Debug: Log images with and without alt text
     const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
     const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
-    console.log('🖼️ Images with alt text:', withAlt.length, withAlt)
-    console.log('🖼️ Images without alt text:', withoutAlt.length, withoutAlt)
+    
+    
     
     return allImages
   }, [scrapedPages, project.site_url, originalScrapingData])
@@ -398,7 +398,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                           }
                         }}
                         onLoad={() => {
-                          console.log('Image loaded successfully:', img.url)
+                          
                         }}
                       />
                     </div>

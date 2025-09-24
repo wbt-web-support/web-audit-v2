@@ -10,7 +10,7 @@ interface ScrapingServiceProps {
 }
 
 export default function ScrapingService({ projectId, scrapingData, onScrapingComplete }: ScrapingServiceProps) {
-  const { createScrapedPages, updateAuditProject, processMetaTagsData } = useSupabase()
+  const { createScrapedPages, updateAuditProject, processMetaTagsData, getAuditProject } = useSupabase()
   const isProcessing = useRef(false)
   const processedDataRef = useRef<string | null>(null)
 
@@ -268,7 +268,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
   // Function to process scraping data and save to database
   const processScrapingData = async (scrapingData: any, projectId: string) => {
     try {
-      console.log('🔍 Processing scraping data...', scrapingData)
+      
       
       if (!scrapingData.pages || !Array.isArray(scrapingData.pages)) {
         console.warn('⚠️ No pages data found in scraping response')
@@ -309,7 +309,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         return { socialMetaTags: extractedTags, count: extractedTags.length }
       }
 
-      // Prepare scraped pages data (without HTML content since it's stored in audit_projects)
+      // Prepare scraped pages data (including HTML content for individual pages)
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
@@ -319,6 +319,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           status_code: page.statusCode,
           title: page.title,
           description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
+          html_content: page.html, // Store HTML content in scraped_pages table
           html_content_length: page.htmlContentLength,
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
@@ -335,7 +336,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         }
       })
 
-      console.log('📊 Prepared scraped pages data:', scrapedPagesData)
+      
 
       // Save scraped pages to database
       const { data: savedPages, error: pagesError } = await createScrapedPages(scrapedPagesData)
@@ -345,16 +346,16 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         onScrapingComplete(false)
         return
       } else {
-        console.log('✅ Scraped pages saved successfully:', savedPages?.length || 0, 'pages')
+        
       }
 
       // Process meta tags data from homepage
-      console.log('🏠 Processing meta tags data...')
+      
       const { data: metaTagsResult, error: metaTagsError } = await processMetaTagsData(projectId)
       if (metaTagsError) {
         console.warn('⚠️ Meta tags processing failed:', metaTagsError)
       } else {
-        console.log('✅ Meta tags data processed successfully')
+        
       }
 
       // Process CMS data to avoid repetition and extract unique information
@@ -367,12 +368,28 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       )
       
       // Extract HTML content from all pages
-      const allPagesHtml = scrapingData.pages.map((page: any) => ({
-        url: page.url,
-        html: page.html,
-        title: page.title,
-        statusCode: page.statusCode
-      }))
+      const allPagesHtml = scrapingData.pages.map((page: any) => {
+        console.log('🔍 Processing page for all_pages_html:', {
+          url: page.url,
+          hasHtml: !!page.html,
+          htmlLength: page.html?.length || 0,
+          title: page.title,
+          statusCode: page.statusCode
+        })
+        
+        return {
+          url: page.url,
+          html: page.html,
+          title: page.title,
+          statusCode: page.statusCode
+        }
+      })
+      
+      console.log('📊 All pages HTML data prepared:', {
+        totalPages: allPagesHtml.length,
+        pagesWithHtml: allPagesHtml.filter((p: any) => p.html).length,
+        totalHtmlLength: allPagesHtml.reduce((sum: number, p: any) => sum + (p.html?.length || 0), 0)
+      })
 
       // Update audit project with summary data
       const summaryData = {
@@ -390,21 +407,97 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         total_response_time: scrapingData.performance?.totalTime || 0,
         all_pages_html: allPagesHtml, // Store all pages HTML in new column
         scraping_completed_at: new Date().toISOString(),
-        scraping_data: scrapingData,
+        scraping_data: {
+          ...scrapingData,
+          all_pages_html: allPagesHtml // Also store in scraping_data as backup
+        },
         status: 'completed' as const,
         progress: 100
       }
+      
+      // Log the exact data being sent to database
+      console.log('🔍 DEBUG: Summary data being sent to database:', {
+        hasAllPagesHtml: !!summaryData.all_pages_html,
+        allPagesHtmlLength: summaryData.all_pages_html?.length || 0,
+        firstPageHtmlLength: summaryData.all_pages_html?.[0]?.html?.length || 0,
+        scrapingDataHasAllPagesHtml: !!summaryData.scraping_data?.all_pages_html,
+        scrapingDataAllPagesHtmlLength: summaryData.scraping_data?.all_pages_html?.length || 0
+      })
 
-      console.log('📊 Updating audit project with summary data:', summaryData)
+      
+      console.log('🔍 All pages HTML in summary data:', {
+        allPagesHtmlField: summaryData.all_pages_html,
+        allPagesHtmlLength: summaryData.all_pages_html?.length || 0,
+        firstPageHtmlLength: summaryData.all_pages_html?.[0]?.html?.length || 0
+      })
 
       const { error: updateError } = await updateAuditProject(projectId, summaryData)
       
       if (updateError) {
         console.error('❌ Error updating audit project with summary:', updateError)
-        onScrapingComplete(false)
-        return
+        console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
+        
+        // Check if the error is related to the all_pages_html column not existing
+        if (updateError.message && updateError.message.includes('all_pages_html')) {
+          console.warn('⚠️ all_pages_html column may not exist in database')
+          console.warn('💡 You need to add this column to your audit_projects table:')
+          console.warn('   ALTER TABLE audit_projects ADD COLUMN all_pages_html JSONB;')
+          
+          // Try updating without the all_pages_html field
+          const { all_pages_html, ...summaryDataWithoutHtml } = summaryData
+          
+          
+          const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutHtml)
+          if (retryError) {
+            console.error('❌ Retry also failed:', retryError)
+            onScrapingComplete(false)
+            return
+          } else {
+            
+            
+          }
+        } else {
+          onScrapingComplete(false)
+          return
+        }
       } else {
-        console.log('✅ Audit project updated with summary data successfully')
+        
+        console.log('✅ All pages HTML saved:', {
+          totalPages: summaryData.all_pages_html?.length || 0,
+          firstPageUrl: summaryData.all_pages_html?.[0]?.url,
+          firstPageHtmlLength: summaryData.all_pages_html?.[0]?.html?.length || 0
+        })
+        
+        // Verify the data was saved by fetching it back
+        try {
+          const { data: verifyData, error: verifyError } = await getAuditProject(projectId)
+          if (verifyError) {
+            console.warn('⚠️ Could not verify saved data:', verifyError)
+          } else {
+            console.log('✅ Verification - All pages HTML in database:', {
+              hasAllPagesHtml: !!verifyData?.all_pages_html,
+              allPagesHtmlLength: verifyData?.all_pages_html?.length || 0,
+              firstPageHtmlLength: verifyData?.all_pages_html?.[0]?.html?.length || 0,
+              hasScrapingDataAllPagesHtml: !!verifyData?.scraping_data?.all_pages_html,
+              scrapingDataAllPagesHtmlLength: verifyData?.scraping_data?.all_pages_html?.length || 0
+            })
+            
+            // Check if HTML content is saved in any location
+            const htmlSavedInAllPagesHtml = verifyData?.all_pages_html && verifyData.all_pages_html.length > 0
+            const htmlSavedInScrapingData = verifyData?.scraping_data?.all_pages_html && verifyData.scraping_data.all_pages_html.length > 0
+            
+            if (htmlSavedInAllPagesHtml) {
+              console.log('✅ HTML content successfully saved in all_pages_html column')
+            } else if (htmlSavedInScrapingData) {
+              console.log('✅ HTML content successfully saved in scraping_data.all_pages_html (backup location)')
+            } else {
+              console.warn('⚠️ HTML content not found in either location - this indicates a database issue')
+            }
+          }
+        } catch (verifyErr) {
+          console.warn('⚠️ Verification failed:', verifyErr)
+        }
+        
         onScrapingComplete(true)
         
         // Redirect to dashboard with analysis tab after successful completion
@@ -430,7 +523,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
     
     // Check if we've already processed this exact data
     if (processedDataRef.current === dataKey) {
-      console.log('⚠️ Data already processed, skipping...')
+      
       return
     }
 

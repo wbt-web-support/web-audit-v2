@@ -36,6 +36,8 @@ export interface AuditProject {
   // Meta tags data storage
   meta_tags_data: MetaTagsData | null
   social_meta_tags_data: SocialMetaTagsData | null
+  // HTML content storage for all pages
+  all_pages_html: any[] | null
 }
 
 export interface SEOIssue {

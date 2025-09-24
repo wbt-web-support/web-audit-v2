@@ -32,7 +32,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     
     // First, try to extract from original scraping data
     if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
-      console.log('📊 Using original scraping data for link extraction')
+      
       
       originalScrapingData.pages.forEach((page: any) => {
         if (page.links && Array.isArray(page.links)) {
@@ -64,7 +64,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     
     // If no links found in scraping data, fall back to HTML parsing
     if (allLinks.length === 0 && scrapedPages && scrapedPages.length > 0) {
-      console.log('📊 No links in scraping data, falling back to HTML parsing')
+      
       
       scrapedPages.forEach((page: any) => {
         if (page.html_content) {

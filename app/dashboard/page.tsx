@@ -32,7 +32,7 @@ export default function DashboardPage() {
   // Handle authentication and redirect if not authenticated
   useEffect(() => {
     if (authChecked && !isAuthenticated) {
-      console.log('❌ User not authenticated, redirecting to login');
+      
       window.location.href = '/login';
     }
   }, [authChecked, isAuthenticated]);
@@ -43,20 +43,20 @@ export default function DashboardPage() {
     const tabParam = urlParams.get('tab')
     const projectId = urlParams.get('projectId')
     
-    console.log('🔍 Dashboard: URL params detected:', { tabParam, projectId, fullUrl: window.location.href })
+    
     
     if (tabParam && ['dashboard', 'projects', 'profile', 'admin', 'analysis'].includes(tabParam)) {
-      console.log('✅ Dashboard: Setting activeTab to:', tabParam)
+      
       setActiveTab(tabParam)
     }
     
     if (projectId) {
-      console.log('🔗 Direct URL access detected with projectId:', projectId)
+      
       setSelectedProjectId(projectId)
       
       // If we have a projectId but no tab specified, default to analysis
       if (!tabParam) {
-        console.log('🔄 Dashboard: No tab specified, defaulting to analysis')
+        
         setActiveTab('analysis')
         // Update URL to include the tab parameter
         const url = new URL(window.location.href)
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
         if (timeSinceLastFetch > CACHE_DURATION && projectsFetched) {
-          console.log('🔄 Dashboard: Refreshing stale data on visibility change')
+          
           refreshProjects()
         }
       }
@@ -100,7 +100,7 @@ export default function DashboardPage() {
       const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
       if (timeSinceLastFetch > CACHE_DURATION && projectsFetched) {
-        console.log('🔄 Dashboard: Refreshing stale data on window focus')
+        
         refreshProjects()
       }
     }
@@ -142,7 +142,7 @@ export default function DashboardPage() {
   const getCachedAnalysisData = (projectId: string) => {
     const cached = analysisCache.get(projectId)
     if (!cached) {
-      console.log('📋 No cached data for project:', projectId)
+      
       return null
     }
     
@@ -151,16 +151,16 @@ export default function DashboardPage() {
     const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
     
     if (timeSinceLastFetch < CACHE_DURATION) {
-      console.log('📋 Using cached data for project:', projectId, 'age:', Math.round(timeSinceLastFetch / 1000), 'seconds')
+      
       return cached
     }
     
-    console.log('📋 Cached data expired for project:', projectId, 'age:', Math.round(timeSinceLastFetch / 1000), 'seconds')
+    
     return null
   }
 
   const setCachedAnalysisData = (projectId: string, project: AuditProject | null, scrapedPages: any[]) => {
-    console.log('📋 Caching data for project:', projectId, 'pages:', scrapedPages.length, 'project status:', project?.status)
+    
     setAnalysisCache(prev => {
       const newCache = new Map(prev)
       newCache.set(projectId, {
@@ -168,7 +168,7 @@ export default function DashboardPage() {
         scrapedPages,
         lastFetchTime: Date.now()
       })
-      console.log('📋 Cache updated, total entries:', newCache.size)
+      
       return newCache
     })
   }
@@ -187,12 +187,12 @@ export default function DashboardPage() {
       const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
       if (projectsFetched && timeSinceLastFetch < CACHE_DURATION) {
-        console.log('📋 Dashboard: Using cached projects data')
+        
         setProjectsLoading(false)
         return
       }
 
-      console.log('🚀 Dashboard: Starting projects fetch...')
+      
       setProjectsLoading(true)
       setProjectsError(null)
 
@@ -206,7 +206,7 @@ export default function DashboardPage() {
         }
 
         if (data) {
-          console.log(`✅ Dashboard: Total projects loaded: ${data.length}`)
+          
           setProjects(data)
           setProjectsError(null)
           setProjectsFetched(true)
@@ -227,7 +227,7 @@ export default function DashboardPage() {
   const refreshProjects = async () => {
     if (!user) return
 
-    console.log('🔄 Dashboard: Refreshing projects...')
+    
     setProjectsLoading(true)
     setProjectsError(null)
 
@@ -241,7 +241,7 @@ export default function DashboardPage() {
       }
 
       if (data) {
-        console.log(`✅ Dashboard: Projects refreshed: ${data.length}`)
+        
         setProjects(data)
         setProjectsError(null)
         setProjectsFetched(true)
