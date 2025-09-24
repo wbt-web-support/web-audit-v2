@@ -16,7 +16,7 @@ export default function WorkflowSection() {
           className="space-y-6"
         >
           {/* Tag */}
-          <span className="inline-block px-3 py-1 text-sm font-medium   -700 bg-green-50 rounded-full">
+          <span className="inline-block px-3 py-1 text-sm font-medium-700 text-blue-700  bg-blue-50 rounded-lg  ">
             The Brullion Platform
           </span>
 
@@ -47,7 +47,7 @@ export default function WorkflowSection() {
               alt="Workflow Preview"
               width={600}
               height={400}
-              className="rounded-xl shadow-lg"
+              className="rounded-xl shadow-xl"
             />
           </div>
         </motion.div>
