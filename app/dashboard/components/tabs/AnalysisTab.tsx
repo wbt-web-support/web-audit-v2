@@ -12,6 +12,7 @@ import {
   OverviewSection,
   ModernLoader
 } from '../analysis-tab-components'
+import { AnalysisCacheProvider, useAnalysisCache } from '../contexts/AnalysisCache'
 
 // Lazy load heavy components
 const PagesSection = lazy(() => import('../analysis-tab-components/PagesSection'))
@@ -33,7 +34,7 @@ interface AnalysisTabProps {
   onPageSelect?: (pageId: string) => void
 }
 
-export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPageSelect }: AnalysisTabProps) {
+function AnalysisTabContent({ projectId, cachedData, onDataUpdate, onPageSelect }: AnalysisTabProps) {
   const { getAuditProject, getScrapedPages, createScrapedPages, updateAuditProject, processMetaTagsData, isConnected, connectionError } = useSupabase()
   const [project, setProject] = useState<AuditProject | null>(null)
   const [scrapedPages, setScrapedPages] = useState<any[]>([])
@@ -1610,6 +1611,19 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
         )}
       </motion.div>
     </div>
+  )
+}
+
+export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPageSelect }: AnalysisTabProps) {
+  return (
+    <AnalysisCacheProvider projectId={projectId}>
+      <AnalysisTabContent 
+        projectId={projectId} 
+        cachedData={cachedData} 
+        onDataUpdate={onDataUpdate} 
+        onPageSelect={onPageSelect} 
+      />
+    </AnalysisCacheProvider>
   )
 }
 

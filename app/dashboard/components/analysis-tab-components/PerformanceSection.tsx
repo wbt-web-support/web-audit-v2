@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
-import { formatPageSpeedScore, getScoreColor, getScoreBgColor, fetchPageSpeedInsights } from '@/lib/pagespeed'
-import { useSupabase } from '@/contexts/SupabaseContext'
+import { formatPageSpeedScore, getScoreColor, getScoreBgColor } from '@/lib/pagespeed'
+import { useAnalysisCache } from '../contexts/AnalysisCache'
 
 interface PerformanceSectionProps {
   project: AuditProject
@@ -11,94 +11,43 @@ interface PerformanceSectionProps {
 }
 
 export default function PerformanceSection({ project, onDataUpdate }: PerformanceSectionProps) {
-  const { updateAuditProject } = useSupabase()
+  const { data, refreshAnalysis } = useAnalysisCache()
   const [isReanalyzing, setIsReanalyzing] = useState(false)
-  const [reanalyzeError, setReanalyzeError] = useState<string | null>(null)
   
-  const pagespeedData = project.pagespeed_insights_data
-  const isLoading = project.pagespeed_insights_loading || isReanalyzing
-  const error = project.pagespeed_insights_error || reanalyzeError
+  const pagespeedData = data.pagespeedData
+  const isLoading = data.isPagespeedLoading || isReanalyzing
+  const error = data.pagespeedError
+
+  // Auto-trigger analysis if no data exists and not currently loading
+  useEffect(() => {
+    if (!pagespeedData && !isLoading && !error) {
+      console.log('🚀 PerformanceSection: No PageSpeed data, auto-triggering analysis...')
+      // Start analysis immediately
+      refreshAnalysis('pagespeed').catch(err => {
+        console.error('PerformanceSection auto-trigger failed:', err)
+      })
+    }
+  }, [pagespeedData, isLoading, error, refreshAnalysis])
+
+  // Additional fallback - ensure analysis starts when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!pagespeedData && !isLoading && !error) {
+        console.log('🚀 PerformanceSection fallback: Starting PageSpeed analysis...')
+        refreshAnalysis('pagespeed').catch(err => {
+          console.error('PerformanceSection fallback auto-trigger failed:', err)
+        })
+      }
+    }, 1000) // 1 second delay to allow cache to initialize
+
+    return () => clearTimeout(timer)
+  }, []) // Only run once when component mounts
 
   // Reanalyze function
   const handleReanalyze = async () => {
     try {
-      
       setIsReanalyzing(true)
-      setReanalyzeError(null)
-      
-      // Update project with loading state
-      await updateAuditProject(project.id, {
-        pagespeed_insights_loading: true,
-        pagespeed_insights_error: null
-      })
-      
-      const { data, error } = await fetchPageSpeedInsights(project.site_url)
-      
-      if (error) {
-        console.error('❌ PageSpeed reanalysis error:', error)
-        
-        // Provide more user-friendly error messages
-        let userFriendlyError = error
-        if (error.includes('Lighthouse processing issues')) {
-          userFriendlyError = 'PageSpeed Insights is temporarily unavailable due to server issues. Please try again in a few minutes.'
-        } else if (error.includes('500')) {
-          userFriendlyError = 'PageSpeed Insights server is experiencing issues. Please try again later.'
-        } else if (error.includes('Failed to fetch')) {
-          userFriendlyError = 'Unable to connect to PageSpeed Insights. Please check your internet connection and try again.'
-        }
-        
-        setReanalyzeError(userFriendlyError)
-        
-        // Update project with error state
-        await updateAuditProject(project.id, {
-          pagespeed_insights_loading: false,
-          pagespeed_insights_error: userFriendlyError,
-          pagespeed_insights_data: null
-        })
-      } else if (data) {
-        
-        
-        // Update project with new PageSpeed data
-        const updatedProject = {
-          ...project,
-          pagespeed_insights_data: data,
-          pagespeed_insights_loading: false,
-          pagespeed_insights_error: null
-        }
-        
-        await updateAuditProject(project.id, {
-          pagespeed_insights_data: data,
-          pagespeed_insights_loading: false,
-          pagespeed_insights_error: null
-        })
-        
-        // Update parent component
-        if (onDataUpdate) {
-          onDataUpdate(updatedProject)
-        }
-      }
-    } catch (error) {
-      console.error('❌ PageSpeed reanalysis unexpected error:', error)
-      const errorMessage = `Reanalysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      
-      // Provide more user-friendly error messages
-      let userFriendlyError = errorMessage
-      if (errorMessage.includes('Lighthouse processing issues')) {
-        userFriendlyError = 'PageSpeed Insights is temporarily unavailable due to server issues. Please try again in a few minutes.'
-      } else if (errorMessage.includes('500')) {
-        userFriendlyError = 'PageSpeed Insights server is experiencing issues. Please try again later.'
-      } else if (errorMessage.includes('Failed to fetch')) {
-        userFriendlyError = 'Unable to connect to PageSpeed Insights. Please check your internet connection and try again.'
-      }
-      
-      setReanalyzeError(userFriendlyError)
-      
-      // Update project with error state
-      await updateAuditProject(project.id, {
-        pagespeed_insights_loading: false,
-        pagespeed_insights_error: userFriendlyError,
-        pagespeed_insights_data: null
-      })
+      await refreshAnalysis('pagespeed')
     } finally {
       setIsReanalyzing(false)
     }
@@ -114,6 +63,24 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
               <span className="text-sm text-gray-600">Analyzing performance...</span>
+            </div>
+          </div>
+          
+          {/* Enhanced loading message */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Performance Analysis in Progress</h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>We're running comprehensive performance tests on your website. This typically takes 30-60 seconds to complete.</p>
+                  <p className="mt-1 text-xs text-blue-600">Please don't close this page while the analysis is running.</p>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -326,25 +293,6 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
               Desktop Analysis • {new Date(lighthouseResult.fetchTime).toLocaleString()}
             </p>
           </div>
-          <button
-            onClick={handleReanalyze}
-            disabled={isReanalyzing}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isReanalyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                Reanalyzing...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Reanalyze
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -508,14 +456,15 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Real User Experience</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(loadingExperience.metrics).map(([key, metric]) => {
-              const hasValue = metric.percentile !== undefined && metric.percentile !== null
+              const metricData = metric as any
+              const hasValue = metricData.percentile !== undefined && metricData.percentile !== null
               return (
                 <MetricCard
                   key={key}
                   title={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  value={hasValue ? `${metric.percentile}ms` : 'N/A'}
-                  score={metric.category === 'FAST' ? 0.9 : metric.category === 'AVERAGE' ? 0.7 : 0.4}
-                  description={`Real user data - ${metric.category}`}
+                  value={hasValue ? `${metricData.percentile}ms` : 'N/A'}
+                  score={metricData.category === 'FAST' ? 0.9 : metricData.category === 'AVERAGE' ? 0.7 : 0.4}
+                  description={`Real user data - ${metricData.category}`}
                 />
               )
             })}

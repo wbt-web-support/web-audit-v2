@@ -7,12 +7,13 @@ import { useGeminiStream } from "@/hooks/useGeminiStream"
 
 interface GrammarContentTabProps {
   page: any
+  cachedAnalysis?: any
 }
 
 type TabType = 'grammar' | 'punctuation' | 'structure' | 'style' | 'spelling' | 'uk-english' | 'content'
 
-export default function GrammarContentTab({ page }: GrammarContentTabProps) {
-  const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(page.gemini_analysis || null)
+export default function GrammarContentTab({ page, cachedAnalysis }: GrammarContentTabProps) {
+  const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page.gemini_analysis || null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('grammar')
   const { streamStatus, isStreaming, startAnalysis, reset } = useGeminiStream()

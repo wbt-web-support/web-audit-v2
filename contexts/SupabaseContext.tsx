@@ -64,6 +64,7 @@ interface ScrapedPage {
   social_meta_tags_count: number
   is_external: boolean
   response_time: number | null
+  performance_analysis: any | null // Store PageSpeed Insights analysis results
   created_at: string
   updated_at: string
 }

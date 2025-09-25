@@ -17,11 +17,12 @@ interface SEOAnalysisSectionProps {
   // For single page analysis
   page?: any
   isPageAnalysis?: boolean
+  cachedAnalysis?: SEOAnalysisResult | null
 }
 
-export default function SEOAnalysisSection({ project, scrapedPages = [], dataVersion, page, isPageAnalysis = false }: SEOAnalysisSectionProps) {
+export default function SEOAnalysisSection({ project, scrapedPages = [], dataVersion, page, isPageAnalysis = false, cachedAnalysis }: SEOAnalysisSectionProps) {
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisResult | null>(
-    isPageAnalysis ? null : (project?.seo_analysis || null)
+    cachedAnalysis || (isPageAnalysis ? null : (project?.seo_analysis || null))
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

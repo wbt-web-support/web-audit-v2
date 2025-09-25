@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSupabase } from '@/contexts/SupabaseContext'
+import { useState } from 'react'
 import { AuditProject } from '@/types/audit'
 import AnalysisHeader from '../analysis-tab-components/AnalysisHeader'
 import {
@@ -15,27 +14,24 @@ import {
 import SEOAnalysisSection from '../analysis-tab-components/SEOAnalysisSection'
 import ImagesSection from '../analysis-tab-components/ImagesSection'
 import LinksSection from '../analysis-tab-components/LinksSection'
+import { PageAnalysisCacheProvider, usePageAnalysisCache } from '../contexts/PageAnalysisCache'
 
 interface PageAnalysisTabProps {
   pageId: string
 }
 
-export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
-  const { getScrapedPage, getAuditProject } = useSupabase()
-  const [page, setPage] = useState<any>(null)
-  const [project, setProject] = useState<AuditProject | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+function PageAnalysisContent({ pageId }: PageAnalysisTabProps) {
+  const { data } = usePageAnalysisCache()
   const [activeTab, setActiveTab] = useState('overview')
 
   // Create a mock project object for the AnalysisHeader
-  const mockProject: AuditProject = project ? {
-    ...project,
+  const mockProject: AuditProject = data.project ? {
+    ...data.project,
     score: 85, // You can calculate this based on page analysis
     status: 'completed' as const
   } : {
     id: 'mock',
-    site_url: page?.url || 'Unknown URL',
+    site_url: data.page?.url || 'Unknown URL',
     status: 'completed' as const,
     score: 85,
     progress: 100,
@@ -65,7 +61,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     pagespeed_insights_loading: false,
     pagespeed_insights_error: null,
     scraping_data: null,
-    seo_analysis: null,
+    seo_analysis: data.seoAnalysis,
     meta_tags_data: null,
     social_meta_tags_data: null,
     all_pages_html: null,
@@ -75,53 +71,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     updated_at: new Date().toISOString()
   }
 
-  useEffect(() => {
-    const fetchPageData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // Get the specific scraped page by ID
-        const { data: foundPage, error: pageError } = await getScrapedPage(pageId)
-        
-        if (pageError) {
-          console.error('Error fetching scraped page:', pageError)
-          setError('Failed to load page data')
-          return
-        }
-
-        if (!foundPage) {
-          setError('Page not found')
-          return
-        }
-
-        setPage(foundPage)
-
-        // Get the project data for context
-        if (foundPage.audit_project_id) {
-          const { data: projectData, error: projectError } = await getAuditProject(foundPage.audit_project_id)
-          
-          if (projectError) {
-            console.error('Error fetching project:', projectError)
-          } else {
-            setProject(projectData)
-          }
-        }
-
-      } catch (err) {
-        console.error('Unexpected error:', err)
-        setError('An unexpected error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (pageId) {
-      fetchPageData()
-    }
-  }, [pageId])
-
-  if (loading) {
+  if (!data.page) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -132,51 +82,31 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     )
   }
 
-  if (error || !page) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-red-500 mb-4">
-          <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Page Not Found</h3>
-        <p className="text-gray-600 mb-4">{error || 'The requested page could not be found.'}</p>
-        <button 
-          onClick={() => window.history.back()} 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Go Back
-        </button>
-      </div>
-    )
-  }
-
   const renderActiveTab = () => {
     // Create a mock scrapedPages array with the current page for the sections
-    const scrapedPages = page ? [page] : []
+    const scrapedPages = data.page ? [data.page] : []
     
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab page={page} project={project} />
+        return <OverviewTab page={data.page} project={data.project} />
       case 'links':
-        return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={page?.scraping_data} />
+        return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={data.page?.scraping_data} />
       case 'images':
-        return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={page?.scraping_data} />
+        return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={data.page?.scraping_data} />
       case 'grammar-content':
-        return <GrammarContentTab page={page} />
+        return <GrammarContentTab page={data.page} cachedAnalysis={data.geminiAnalysis} />
       case 'seo-structure':
-        return <SEOAnalysisSection page={page} isPageAnalysis={true} />
+        return <SEOAnalysisSection page={data.page} isPageAnalysis={true} cachedAnalysis={data.seoAnalysis} />
       case 'ui-quality':
-        return <UIQualityTab page={page} />
+        return <UIQualityTab page={data.page} />
       case 'technical':
-        return <TechnicalTab page={page} />
+        return <TechnicalTab page={data.page} />
       case 'performance':
-        return <PerformanceTab page={page} />
+        return <PerformanceTab page={data.page} cachedAnalysis={data.performanceAnalysis} />
       case 'accessibility':
-        return <AccessibilityTab page={page} />
+        return <AccessibilityTab page={data.page} />
       default:
-        return <OverviewTab page={page} project={project} />
+        return <OverviewTab page={data.page} project={data.project} />
     }
   }
 
@@ -201,7 +131,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         activeSection={activeTab}
         onSectionChange={setActiveTab}
         customTabs={pageAnalysisTabs}
-        pageTitle={page?.title || 'Untitled Page'}
+        pageTitle={data.page?.title || 'Untitled Page'}
       />
 
       {/* Tab Content */}
@@ -209,5 +139,13 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         {renderActiveTab()}
       </div>
     </div>
+  )
+}
+
+export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
+  return (
+    <PageAnalysisCacheProvider pageId={pageId}>
+      <PageAnalysisContent pageId={pageId} />
+    </PageAnalysisCacheProvider>
   )
 }

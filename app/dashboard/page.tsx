@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
+import { useSearchParams } from 'next/navigation'
 import { DashboardSidebar, DashboardHeader, DashboardContent } from './components/dashboard-components'
 import AnalysisTab from './components/tabs/AnalysisTab'
 import PageAnalysisTab from './components/tabs/PageAnalysisTab'
@@ -12,6 +13,7 @@ import ConnectionStatus from './components/ConnectionStatus'
 export default function DashboardPage() {
   const { user, userProfile, loading, isAuthenticated, authChecked } = useAuth()
   const { getAuditProjectsOptimized } = useSupabase()
+  const searchParams = useSearchParams()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
@@ -41,10 +43,9 @@ export default function DashboardPage() {
 
   // Handle URL parameters for tab detection
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const tabParam = urlParams.get('tab')
-    const projectId = urlParams.get('projectId')
-    const pageId = urlParams.get('pageId')
+    const tabParam = searchParams.get('tab')
+    const projectId = searchParams.get('projectId')
+    const pageId = searchParams.get('pageId')
     
     
     
@@ -82,7 +83,7 @@ export default function DashboardPage() {
         window.history.replaceState({}, '', url.toString())
       }
     }
-  }, [])
+  }, [searchParams])
 
   // Debug AnalysisTab rendering
   useEffect(() => {
@@ -323,6 +324,7 @@ export default function DashboardPage() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         userProfile={userProfile}
+        selectedProjectId={selectedProjectId}
       />
 
       {/* Main Content */}
