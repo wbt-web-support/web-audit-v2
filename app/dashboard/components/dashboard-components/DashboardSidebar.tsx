@@ -3,6 +3,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { useState, useEffect } from 'react'
+import { roleVerifier } from '@/lib/role-utils'
 
 interface DashboardSidebarProps {
   isOpen: boolean
@@ -21,8 +23,45 @@ export default function DashboardSidebar({
   userProfile,
   selectedProjectId
 }: DashboardSidebarProps) {
-  const { signOut } = useSupabase()
+  const { signOut, user } = useSupabase()
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [roleLoading, setRoleLoading] = useState(true)
+
+  // Real-time role verification
+  useEffect(() => {
+    const verifyRole = async () => {
+      if (!user) {
+        setIsAdmin(false)
+        setRoleLoading(false)
+        return
+      }
+
+      try {
+        setRoleLoading(true)
+        console.log('🔍 Sidebar: Verifying admin role for user:', user.id)
+        
+        const result = await roleVerifier.verifyUserRole(user.id, false) // Use cache if available
+        const adminStatus = result.isAdmin && result.verified
+        
+        console.log('🔍 Sidebar: Role verification result:', { 
+          userId: user.id, 
+          isAdmin: adminStatus, 
+          role: result.role,
+          verified: result.verified 
+        })
+        
+        setIsAdmin(adminStatus)
+      } catch (error) {
+        console.error('Sidebar role verification error:', error)
+        setIsAdmin(false)
+      } finally {
+        setRoleLoading(false)
+      }
+    }
+
+    verifyRole()
+  }, [user])
 
   const navigationItems = [
     {
@@ -62,16 +101,16 @@ export default function DashboardSidebar({
         </svg>
       )
     },
-    {
+    // Show Admin tab based on real-time verification
+    ...(isAdmin === true ? [{
       id: 'admin',
       name: 'Admin',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
-      ),
-      adminOnly: true
-    }
+      )
+    }] : [])
   ]
 
   const handleSignOut = async () => {
@@ -138,22 +177,26 @@ export default function DashboardSidebar({
                         : userProfile?.email || 'User'
                       }
                     </p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {userProfile?.role || 'user'}
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-xs text-gray-500 capitalize">
+                        {userProfile?.role || 'user'}
+                      </p>
+                      {roleLoading && (
+                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                      {isAdmin === true && (
+                        <span className="text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full">
+                          Admin
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Navigation */}
               <nav className="flex-1 px-4 py-6 space-y-2">
-                {navigationItems.map((item) => {
-                  // Hide admin tab if user is not admin
-                  if (item.adminOnly && userProfile?.role !== 'admin') {
-                    return null
-                  }
-
-                  return (
+                {navigationItems.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => {
@@ -171,8 +214,7 @@ export default function DashboardSidebar({
                       </span>
                       <span className="font-medium">{item.name}</span>
                     </button>
-                  )
-                })}
+                ))}
               </nav>
 
               {/* Sign Out Button */}
@@ -220,22 +262,26 @@ export default function DashboardSidebar({
                     : userProfile?.email || 'User'
                   }
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {userProfile?.role || 'user'}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-xs text-gray-500 capitalize">
+                    {userProfile?.role || 'user'}
+                  </p>
+                  {roleLoading && (
+                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  {isAdmin === true && (
+                    <span className="text-xs bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full">
+                      Admin
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigationItems.map((item) => {
-              // Hide admin tab if user is not admin
-              if (item.adminOnly && userProfile?.role !== 'admin') {
-                return null
-              }
-
-              return (
+            {navigationItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
@@ -250,8 +296,7 @@ export default function DashboardSidebar({
                   </span>
                   <span className="font-medium">{item.name}</span>
                 </button>
-              )
-            })}
+            ))}
           </nav>
 
           {/* Sign Out Button */}

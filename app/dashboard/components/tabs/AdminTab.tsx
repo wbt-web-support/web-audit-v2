@@ -1,13 +1,21 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSupabase } from '@/contexts/SupabaseContext'
+import { supabase } from '@/lib/supabase'
+import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
 
 interface AdminTabProps {
   userProfile: any
 }
 
 export default function AdminTab({ userProfile }: AdminTabProps) {
+  const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
+
   const [users] = useState([
     {
       id: 1,
@@ -56,6 +64,58 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
     resolvedIssues: 1204
   })
 
+  // Enhanced admin role verification
+  useEffect(() => {
+    const verifyAdminRole = async () => {
+      try {
+        setIsLoading(true)
+        setVerificationError(null)
+        
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError || !user) {
+          console.error('Auth user error:', userError)
+          setVerificationError('Authentication failed')
+          setIsAdminVerified(false)
+          return
+        }
+
+        console.log('🔍 Starting comprehensive role verification for user:', user.id)
+        
+        // Use the enhanced role verification system
+        const result = await roleVerifier.verifyUserRole(user.id, true)
+        setRoleVerificationResult(result)
+        
+        if (!result.verified) {
+          console.error('Role verification failed:', result.error)
+          setVerificationError(result.error || 'Role verification failed')
+          setIsAdminVerified(false)
+          return
+        }
+
+        // Test admin access specifically
+        const adminTest = await roleTester.testAdminAccess(user.id)
+        console.log('🧪 Admin access test:', adminTest)
+        
+        setIsAdminVerified(adminTest.hasAccess)
+        
+        if (!adminTest.hasAccess) {
+          setVerificationError(`Access denied. User role: ${result.role}`)
+        }
+        
+      } catch (error) {
+        console.error('Error verifying admin role:', error)
+        setVerificationError(`Unexpected error: ${error}`)
+        setIsAdminVerified(false)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    verifyAdminRole()
+  }, [])
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
@@ -75,8 +135,23 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
       : 'bg-gray-100 text-gray-800'
   }
 
-  // Check if user is admin
-  if (userProfile?.role !== 'admin') {
+  // Show loading state while verifying admin role
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-12 h-12 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Access</h2>
+        <p className="text-gray-600">Checking your admin permissions...</p>
+      </div>
+    )
+  }
+
+  // Check if user is admin (database verified)
+  if (!isAdminVerified) {
     return (
       <div className="text-center py-12">
         <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -85,7 +160,8 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-600">You don&apos;t have permission to access the admin panel.</p>
+        <p className="text-gray-600">You don&apos;t have admin permissions to access this panel.</p>
+        <p className="text-sm text-gray-500 mt-2">Database verification failed.</p>
       </div>
     )
   }

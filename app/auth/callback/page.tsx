@@ -15,7 +15,7 @@ export default function AuthCallbackPage() {
     const timer = setTimeout(() => {
       if (isAuthenticated) {
         if (isEmailConfirmed) {
-          router.push('/');
+          router.push('/dashboard');
         } else {
           router.push('/login?message=Please confirm your email before signing in');
         }

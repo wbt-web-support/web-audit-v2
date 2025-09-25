@@ -78,6 +78,7 @@ interface SupabaseContextType {
   isConnected: boolean
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: AuthError | null; message?: string }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resendConfirmation: (email: string) => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: AuthError | PostgrestError | null }>
@@ -523,6 +524,16 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    })
+    return { error }
+  }
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
     })
     return { error }
   }
@@ -1265,6 +1276,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     isConnected,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     resendConfirmation,
     updateProfile,
