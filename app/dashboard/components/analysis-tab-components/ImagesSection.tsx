@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { AuditProject } from '@/types/audit'
 
 interface ImagesSectionProps {
@@ -25,7 +25,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const [altFilter, setAltFilter] = useState<'all' | 'with-alt' | 'without-alt'>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(40)
+  const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   
 
@@ -88,11 +91,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
   // Extract images from original scraping data or HTML content
   const images = useMemo(() => {
-    
-    
-    
-    
-    
+    setIsProcessing(true)
     const allImages: ImageData[] = []
     
     // First, try to extract from original scraping data
@@ -228,8 +227,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
     const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
     
-    
-    
+    setIsProcessing(false)
     return allImages
   }, [scrapedPages, project.site_url, originalScrapingData])
 
@@ -281,13 +279,43 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     return { total, withAlt, withoutAlt }
   }, [images])
 
+
+  // Debounced search handler
+  const debouncedSearch = useCallback((value: string) => {
+    const timeoutId = setTimeout(() => {
+      setSearchTerm(value)
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [])
+
+  // Handle image click to open modal
+  const handleImageClick = (image: ImageData) => {
+    setSelectedImage(image)
+    setShowModal(true)
+  }
+
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false)
+    setSelectedImage(null)
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Images Analysis</h3>
         <div className="text-sm text-gray-500">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredImages.length)} of {filteredImages.length} images
-          {filteredImages.length !== stats.total && ` (${stats.total} total)`}
+          {isProcessing ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+              Processing images...
+            </span>
+          ) : (
+            <>
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredImages.length)} of {filteredImages.length} images
+              {filteredImages.length !== stats.total && ` (${stats.total} total)`}
+            </>
+          )}
         </div>
       </div>
 
@@ -316,7 +344,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             type="text"
             placeholder="Search images..."
             value={searchTerm}
-            onChange={(e) => handleFilterChange(e.target.value, altFilter, typeFilter)}
+            onChange={(e) => {
+              const value = e.target.value
+              debouncedSearch(value)
+              handleFilterChange(value, altFilter, typeFilter)
+            }}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
@@ -379,7 +411,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               {paginatedImages.map((img, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
+                    <div 
+                      className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                      onClick={() => handleImageClick(img)}
+                    >
                       <img
                         src={img.url}
                         alt={img.alt || 'No alt text'}
@@ -391,9 +426,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                           if (parent) {
                             parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">Failed to load</div>'
                           }
-                        }}
-                        onLoad={() => {
-                          
                         }}
                       />
                     </div>
@@ -512,6 +544,150 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             >
               Next
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {showModal && selectedImage && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden border border-gray-300 shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Image Details</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Large Image */}
+                <div className="space-y-4">
+                  <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+                    <img
+                      src={selectedImage.url}
+                      alt={selectedImage.alt || 'No alt text'}
+                      className="max-w-full max-h-[400px] object-contain rounded-lg shadow-sm"
+                      onError={(e) => {
+                        const target = e.currentTarget
+                        target.style.display = 'none'
+                        const parent = target.parentElement
+                        if (parent) {
+                          parent.innerHTML = '<div class="text-center text-gray-400">Failed to load image</div>'
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Image Actions */}
+                  <div className="flex gap-2">
+                    <a
+                      href={selectedImage.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
+                    >
+                      Open in New Tab
+                    </a>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(selectedImage.url)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                </div>
+
+                {/* Image Details */}
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Image Information</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">URL:</label>
+                        <p className="text-sm text-gray-900 break-all mt-1">{selectedImage.url}</p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Alt Text:</label>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {selectedImage.alt && selectedImage.alt.trim() !== '' ? selectedImage.alt : 'No alt text provided'}
+                        </p>
+                      </div>
+                      
+                      {selectedImage.title && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Title:</label>
+                          <p className="text-sm text-gray-900 mt-1">{selectedImage.title}</p>
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Type:</label>
+                          <p className="text-sm text-gray-900 mt-1">{selectedImage.type || 'Unknown'}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Dimensions:</label>
+                          <p className="text-sm text-gray-900 mt-1">
+                            {selectedImage.width && selectedImage.height 
+                              ? `${selectedImage.width} × ${selectedImage.height}` 
+                              : 'N/A'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {selectedImage.page_url && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Found on Page:</label>
+                          <a
+                            href={selectedImage.page_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 break-all block mt-1"
+                          >
+                            {selectedImage.page_url}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Accessibility Check */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Accessibility</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {selectedImage.alt && selectedImage.alt.trim() !== '' ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✓ Has Alt Text
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            ✗ Missing Alt Text
+                          </span>
+                        )}
+                      </div>
+                      
+                      {selectedImage.alt && selectedImage.alt.trim() !== '' && (
+                        <div className="text-sm text-gray-600">
+                          <strong>Alt Text:</strong> "{selectedImage.alt}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
