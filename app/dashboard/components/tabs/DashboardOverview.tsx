@@ -182,7 +182,10 @@ export default function DashboardOverview({
         meta_tags_data: null,
         social_meta_tags_data: null,
         // HTML content storage for all pages
-        all_pages_html: null
+        all_pages_html: null,
+        // Required fields for createAuditProject
+        images: null,
+        links: null
       }
 
       
