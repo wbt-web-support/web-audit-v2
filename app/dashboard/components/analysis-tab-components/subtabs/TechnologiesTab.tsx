@@ -9,6 +9,9 @@ interface TechnologiesTabProps {
 // Technology icon fallback component
 const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?: string }) => {
   const getInitials = (name: string) => {
+    if (!name || typeof name !== 'string') {
+      return '??'
+    }
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -40,7 +43,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?
       <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
         <img 
           src={tech.icon} 
-          alt={tech.name}
+          alt={tech.name || 'Technology'}
           className="w-6 h-6 object-contain"
           onError={(e) => {
             // Hide the image and show fallback
@@ -49,7 +52,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?
             if (parent) {
               parent.innerHTML = `
                 <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center">
-                  <span class="text-xs font-semibold text-slate-600">${getInitials(tech.name)}</span>
+                  <span class="text-xs font-semibold text-slate-600">${getInitials(tech.name || 'Unknown')}</span>
                 </div>
               `
             }
@@ -62,7 +65,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?
   return (
     <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
       <div className={`w-6 h-6 rounded flex items-center justify-center ${getCategoryColor(tech.category)}`}>
-        <span className="text-xs font-semibold">{getInitials(tech.name)}</span>
+        <span className="text-xs font-semibold">{getInitials(tech.name || 'Unknown')}</span>
       </div>
     </div>
   )
@@ -154,7 +157,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
                             <div className="flex items-center space-x-3">
                               <TechnologyIcon tech={tech} className="w-10 h-10 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <h5 className="font-medium text-gray-900 truncate">{tech.name}</h5>
+                                <h5 className="font-medium text-gray-900 truncate">{tech.name || 'Unknown Technology'}</h5>
                                 {tech.version && (
                                   <p className="text-sm text-gray-500">v{tech.version}</p>
                                 )}
@@ -193,7 +196,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
                       <div className="flex items-start space-x-4">
                         <TechnologyIcon tech={tech} className="w-12 h-12 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 truncate">{tech.name}</h4>
+                          <h4 className="font-semibold text-gray-900 truncate">{tech.name || 'Unknown Technology'}</h4>
                           {tech.version && (
                             <p className="text-sm text-gray-500 mt-1">v{tech.version}</p>
                           )}

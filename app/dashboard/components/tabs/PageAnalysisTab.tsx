@@ -6,15 +6,15 @@ import { AuditProject } from '@/types/audit'
 import AnalysisHeader from '../analysis-tab-components/AnalysisHeader'
 import {
   OverviewTab,
-  LinksTab,
-  ImagesTab,
   GrammarContentTab,
-  SEOStructureTab,
   UIQualityTab,
   TechnicalTab,
   PerformanceTab,
   AccessibilityTab
 } from '../page-analysis-components'
+import SEOAnalysisSection from '../analysis-tab-components/SEOAnalysisSection'
+import ImagesSection from '../analysis-tab-components/ImagesSection'
+import LinksSection from '../analysis-tab-components/LinksSection'
 
 interface PageAnalysisTabProps {
   pageId: string
@@ -153,17 +153,20 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   }
 
   const renderActiveTab = () => {
+    // Create a mock scrapedPages array with the current page for the sections
+    const scrapedPages = page ? [page] : []
+    
     switch (activeTab) {
       case 'overview':
         return <OverviewTab page={page} project={project} />
       case 'links':
-        return <LinksTab page={page} />
+        return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={page?.scraping_data} />
       case 'images':
-        return <ImagesTab page={page} />
+        return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={page?.scraping_data} />
       case 'grammar-content':
         return <GrammarContentTab page={page} />
       case 'seo-structure':
-        return <SEOStructureTab page={page} />
+        return <SEOAnalysisSection page={page} isPageAnalysis={true} />
       case 'ui-quality':
         return <UIQualityTab page={page} />
       case 'technical':

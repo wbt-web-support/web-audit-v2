@@ -6,6 +6,7 @@ import { AuditProject } from '@/types/audit'
 import { motion } from 'framer-motion'
 import { fetchPageSpeedInsights } from '@/lib/pagespeed'
 import { analyzeSEO } from '@/lib/seo-analysis'
+import { filterHtmlContent } from '@/lib/html-content-filter'
 import {
   AnalysisHeader,
   OverviewSection,
@@ -664,7 +665,24 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
 
       // Prepare scraped pages data
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
+        console.log('🔍 Processing page HTML for filtering:', {
+          url: page.url,
+          hasHtml: !!page.html,
+          htmlLength: page.html?.length || 0,
+          htmlPreview: page.html?.substring(0, 200) + '...'
+        })
         
+        // Filter HTML content to get pure text content
+        const filteredContent = filterHtmlContent(page.html)
+        
+        console.log('✅ HTML filtering completed:', {
+          url: page.url,
+          originalLength: page.html?.length || 0,
+          filteredLength: filteredContent.filteredLength,
+          wordCount: filteredContent.wordCount,
+          characterCount: filteredContent.characterCount,
+          contentPreview: filteredContent.pureContent.substring(0, 200) + '...'
+        })
         
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
@@ -674,8 +692,10 @@ export default function AnalysisTab({ projectId, cachedData, onDataUpdate, onPag
           status_code: page.statusCode,
           title: page.title,
           description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
-          html_content: page.html,
-          html_content_length: page.htmlContentLength,
+          html_content: page.html, // Keep original HTML content
+          html_content_length: page.htmlContentLength, // Keep original HTML length
+          filtered_content: filteredContent.pureContent, // Store filtered pure text content in new column
+          filtered_content_length: filteredContent.filteredLength, // Store filtered content length
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
           links: page.links || null, // Store actual links data

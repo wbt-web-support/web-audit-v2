@@ -31,7 +31,40 @@ export default function KeysTab({ project }: KeysTabProps) {
         console.log('🔍 Starting key analysis for project:', project.id)
         console.log('📊 Pages to analyze:', project.all_pages_html.length)
 
-        const result = await detectKeysInPages(project.all_pages_html)
+        // Normalize the data format to support both project and page-specific formats
+        const normalizedPages = project.all_pages_html.map((page: any, index: number) => {
+          // If page already has the expected format (pageName, pageUrl, pageHtml)
+          if (page.pageName && page.pageUrl && page.pageHtml) {
+            return page
+          }
+          
+          // If page has pageUrl and pageHtml (new format)
+          if (page.pageUrl && page.pageHtml) {
+            return {
+              pageName: `Page ${index + 1}`,
+              pageUrl: page.pageUrl,
+              pageHtml: page.pageHtml
+            }
+          }
+          
+          // If page is a full page object with html_content
+          if (page.html_content) {
+            return {
+              pageName: page.title || page.page_title || `Page ${index + 1}`,
+              pageUrl: page.url || page.page_url || 'Unknown URL',
+              pageHtml: page.html_content
+            }
+          }
+          
+          // Fallback for any other format
+          return {
+            pageName: `Page ${index + 1}`,
+            pageUrl: 'Unknown URL',
+            pageHtml: ''
+          }
+        })
+
+        const result = await detectKeysInPages(normalizedPages)
         
         setDetectedKeys(result.allKeys)
         setAnalysisResult(result.summary)

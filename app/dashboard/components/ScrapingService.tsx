@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { filterHtmlContent } from '@/lib/html-content-filter'
 
 interface ScrapingServiceProps {
   projectId: string | null
@@ -314,14 +315,34 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
+        // Filter HTML content to get pure text content
+        console.log('🔍 Processing page HTML for filtering:', {
+          url: page.url,
+          hasHtml: !!page.html,
+          htmlLength: page.html?.length || 0,
+          htmlPreview: page.html?.substring(0, 200) + '...'
+        })
+        
+        const filteredContent = filterHtmlContent(page.html)
+        
+        console.log('✅ HTML filtering completed:', {
+          url: page.url,
+          originalLength: page.html?.length || 0,
+          filteredLength: filteredContent.filteredLength,
+          wordCount: filteredContent.wordCount,
+          characterCount: filteredContent.characterCount,
+          contentPreview: filteredContent.pureContent.substring(0, 200) + '...'
+        })
         return {
           audit_project_id: projectId,
           url: page.url,
           status_code: page.statusCode,
           title: page.title,
           description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
-          html_content: page.html, // Store HTML content in scraped_pages table
-          html_content_length: page.htmlContentLength,
+          html_content: page.html, // Keep original HTML content
+          html_content_length: page.htmlContentLength, // Keep original HTML length
+          filtered_content: filteredContent.pureContent, // Store filtered pure text content in new column
+          filtered_content_length: filteredContent.filteredLength, // Store filtered content length
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
           links: page.links || null, // Store actual links data

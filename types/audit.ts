@@ -52,14 +52,24 @@ export interface SEOIssue {
   impact: 'high' | 'medium' | 'low'
 }
 
+export interface SEOHighlight {
+  type: 'achievement' | 'good-practice' | 'optimization'
+  category: string
+  title: string
+  description: string
+  impact: 'high' | 'medium' | 'low'
+}
+
 export interface SEOAnalysisResult {
   score: number
   issues: SEOIssue[]
+  highlights: SEOHighlight[]
   summary: {
     totalIssues: number
     errors: number
     warnings: number
     info: number
+    totalHighlights: number
   }
   recommendations: string[]
 }
