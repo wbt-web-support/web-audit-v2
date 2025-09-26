@@ -574,7 +574,7 @@ export function analyzeSEO(htmlContent: string, url: string): SEOAnalysisResult 
           (Array.isArray(schemaData) && schemaData.some((item: any) => item['@type'] === 'BreadcrumbList'))) {
         hasBreadcrumbSchema = true
       }
-    } catch (e) {
+    } catch {
       // Invalid JSON, ignore
     }
   }
@@ -628,7 +628,7 @@ export function analyzeSEO(htmlContent: string, url: string): SEOAnalysisResult 
   }
 
   // Check for keyword density (basic analysis)
-  const titleKeywords = titleText.toLowerCase().split(/\s+/)
+  // const titleKeywords = titleText.toLowerCase().split(/\s+/)
   const bodyKeywords = bodyText.toLowerCase().split(/\s+/)
   const totalWords = bodyKeywords.length
   

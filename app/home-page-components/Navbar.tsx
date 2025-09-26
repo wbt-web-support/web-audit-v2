@@ -10,7 +10,7 @@ export default function Navbar() {
   const [isHidden, setIsHidden] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const { user, loading, isAuthenticated, authChecked } = useAuth();
+  const { loading, isAuthenticated, authChecked } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {

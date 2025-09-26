@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
-import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
+import { roleVerifier, roleTester } from '@/lib/role-utils'
 
 interface RoleTestPanelProps {
   userProfile: any

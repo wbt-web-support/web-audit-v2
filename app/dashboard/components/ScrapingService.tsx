@@ -363,7 +363,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       
 
       // Save scraped pages to database
-      const { data: savedPages, error: pagesError } = await createScrapedPages(scrapedPagesData)
+      const { error: pagesError } = await createScrapedPages(scrapedPagesData)
       
       if (pagesError) {
         console.error('❌ Error saving scraped pages:', pagesError)
@@ -375,7 +375,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
       // Process meta tags data from homepage
       
-      const { data: metaTagsResult, error: metaTagsError } = await processMetaTagsData(projectId)
+      const { error: metaTagsError } = await processMetaTagsData(projectId)
       if (metaTagsError) {
         console.warn('⚠️ Meta tags processing failed:', metaTagsError)
       } else {
@@ -536,7 +536,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           console.warn('   ALTER TABLE audit_projects ADD COLUMN links JSONB;')
           
           // Try updating without the problematic fields
-          const { all_pages_html, images, links, ...summaryDataWithoutNewFields } = summaryData
+          const { all_pages_html: _all_pages_html, images: _images, links: _links, ...summaryDataWithoutNewFields } = summaryData
           
           
           const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutNewFields)
@@ -633,7 +633,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
     processScrapingData(scrapingData, projectId).finally(() => {
       isProcessing.current = false
     })
-  }, [projectId, scrapingData])
+  }, [projectId, scrapingData, processScrapingData])
 
   return null // This component doesn't render anything
 }

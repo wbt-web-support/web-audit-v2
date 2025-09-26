@@ -13,22 +13,91 @@ interface GrammarContentTabProps {
 type TabType = 'grammar' | 'punctuation' | 'structure' | 'style' | 'spelling' | 'uk-english' | 'content'
 
 export default function GrammarContentTab({ page, cachedAnalysis }: GrammarContentTabProps) {
-  const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page.gemini_analysis || null)
+  const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page?.gemini_analysis || null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('grammar')
   const { streamStatus, isStreaming, startAnalysis, reset } = useGeminiStream()
 
+  // Debug page data
+  console.log('GrammarContentTab received page data:', {
+    hasPage: !!page,
+    pageId: page?.id,
+    pageUrl: page?.url,
+    hasHtmlContent: !!page?.html_content,
+    htmlContentLength: page?.html_content?.length || 0
+  })
+
   // Use filtered content if available, otherwise filter HTML content
-  const filteredContent = page.filtered_content || filterHtmlContent(page.html_content || '')
-  const textContent = typeof filteredContent === 'string' ? filteredContent : filteredContent.pureContent
+  const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '')
+  const textContent = typeof filteredContent === 'string' ? filteredContent : filteredContent?.pureContent || ''
+
+  // Function to trigger Gemini analysis
+  const handleReAnalyze = async () => {
+    try {
+      setAnalysisError(null)
+      reset()
+      
+      // Validate required fields
+      if (!page.id) {
+        throw new Error('Page ID is missing')
+      }
+      
+      if (!page.url) {
+        throw new Error('Page URL is missing')
+      }
+      
+      if (!textContent || textContent.trim().length === 0) {
+        throw new Error('No content available for analysis')
+      }
+      
+      console.log('Starting Gemini analysis with:', {
+        pageId: page.id,
+        url: page.url,
+        contentLength: textContent.length
+      })
+      
+      const analysis = await startAnalysis(page.id, textContent, page.url)
+      if (analysis) {
+        setGeminiAnalysis(analysis)
+      }
+    } catch (error) {
+      console.error('Error during analysis:', error)
+      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze content. Please try again.')
+    }
+  }
 
   // Auto-trigger analysis if no analysis exists
   useEffect(() => {
-    if (!geminiAnalysis && !isStreaming && textContent && textContent.trim().length > 0) {
+    if (!geminiAnalysis && !isStreaming && textContent && textContent.trim().length > 0 && page?.id && page?.url) {
       console.log('No analysis found, auto-triggering analysis...')
       handleReAnalyze()
     }
-  }, [geminiAnalysis, isStreaming, textContent])
+  }, [geminiAnalysis, isStreaming, textContent, page?.id, page?.url, handleReAnalyze])
+
+  // Show error if page data is incomplete
+  if (!page) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">No page data available for analysis.</p>
+      </div>
+    )
+  }
+
+  if (!page.id || !page.url) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">Page data is incomplete. Missing ID or URL.</p>
+      </div>
+    )
+  }
+
+  if (!textContent || textContent.trim().length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-gray-500">No content available for analysis.</p>
+      </div>
+    )
+  }
 
   // Update analysis when streaming completes
   useEffect(() => {
@@ -102,22 +171,6 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
       day: 'numeric', 
       year: 'numeric' 
     })
-  }
-
-  // Function to trigger Gemini analysis
-  const handleReAnalyze = async () => {
-    try {
-      setAnalysisError(null)
-      reset()
-      
-      const analysis = await startAnalysis(page.id, textContent, page.url)
-      if (analysis) {
-        setGeminiAnalysis(analysis)
-      }
-    } catch (error) {
-      console.error('Error during analysis:', error)
-      setAnalysisError('Failed to analyze content. Please try again.')
-    }
   }
 
   // Render issues for current tab

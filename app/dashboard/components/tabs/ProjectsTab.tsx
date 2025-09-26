@@ -72,7 +72,7 @@ export default function ProjectsTab({
         
         
         // Log performance metrics
-        const avgRenderTimePerCard = (renderEndTime - renderStartTime) / projects.length
+        // const avgRenderTimePerCard = (renderEndTime - renderStartTime) / projects.length
         
       })
     }

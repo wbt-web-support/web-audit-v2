@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { fetchPageSpeedInsights } from '@/lib/pagespeed'
@@ -71,6 +71,115 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
     cmsError: null
   })
 
+  // Track if PageSpeed analysis is already running to prevent duplicates
+  const pagespeedRunningRef = useRef(false)
+
+  const refreshAnalysis = async (type: 'pagespeed' | 'seo' | 'technologies' | 'cms') => {
+    if (!data.project) return
+
+    switch (type) {
+      case 'pagespeed':
+        // Prevent duplicate PageSpeed analysis
+        if (pagespeedRunningRef.current) {
+          console.log('PageSpeed analysis already running, skipping...')
+          return
+        }
+
+        setPagespeedLoading(true)
+        setPagespeedError(null)
+        pagespeedRunningRef.current = true
+        
+        // Start PageSpeed analysis in background without blocking UI
+        const runPageSpeedAnalysis = async () => {
+          try {
+            // Update project with loading state
+            await updateAuditProject(data.project!.id, {
+              pagespeed_insights_loading: true,
+              pagespeed_insights_data: null
+            })
+
+            // Call PageSpeed API
+            const response = await fetch('/api/pagespeed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                projectId: data.project!.id,
+                url: data.project!.site_url 
+              })
+            })
+
+            if (!response.ok) {
+              throw new Error(`PageSpeed API error: ${response.status}`)
+            }
+
+            const result = await response.json()
+            if (result.success) {
+              updatePagespeedData(result.analysis)
+              // Update database
+              await updateAuditProject(data.project!.id, { 
+                pagespeed_insights_data: result.analysis,
+                pagespeed_insights_loading: false
+              })
+            } else {
+              setPagespeedError(result.error || 'PageSpeed analysis failed')
+            }
+          } catch (error) {
+            console.error('PageSpeed analysis error:', error)
+            setPagespeedError('Failed to perform PageSpeed analysis')
+          } finally {
+            setPagespeedLoading(false)
+            pagespeedRunningRef.current = false
+          }
+        }
+
+        // Run in background without blocking
+        runPageSpeedAnalysis()
+        break
+
+      case 'seo':
+        setSeoLoading(true)
+        setSeoError(null)
+        try {
+          // SEO analysis is typically done client-side
+          const { analyzeSEO } = await import('@/lib/seo-analysis')
+          const analysis = analyzeSEO(data.project.scraping_data?.html_content || '', data.project.site_url)
+          updateSeoAnalysis(analysis)
+          await updateAuditProject(data.project.id, { seo_analysis: analysis })
+        } catch {
+          setSeoError('Failed to perform SEO analysis')
+        } finally {
+          setSeoLoading(false)
+        }
+        break
+
+      case 'technologies':
+        setTechnologiesLoading(true)
+        setTechnologiesError(null)
+        try {
+          // Technologies analysis would go here
+          // For now, just mark as completed
+          setTechnologiesLoading(false)
+        } catch {
+          setTechnologiesError('Failed to perform technologies analysis')
+          setTechnologiesLoading(false)
+        }
+        break
+
+      case 'cms':
+        setCmsLoading(true)
+        setCmsError(null)
+        try {
+          // CMS analysis would go here
+          // For now, just mark as completed
+          setCmsLoading(false)
+        } catch {
+          setCmsError('Failed to perform CMS analysis')
+          setCmsLoading(false)
+        }
+        break
+    }
+  }
+
   // Load initial project data
   useEffect(() => {
     const loadProjectData = async () => {
@@ -110,13 +219,13 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
         const shouldStartSEO = !projectData.seo_analysis
 
         if (shouldStartPageSpeed) {
-          console.log('🚀 Auto-triggering PageSpeed analysis...')
-          // Start analysis immediately in background
+          console.log('🚀 Auto-triggering PageSpeed analysis in background...')
+          // Start analysis in background with longer delay to allow UI to render first
           setTimeout(() => {
             refreshAnalysis('pagespeed').catch(err => {
               console.error('Auto-triggered PageSpeed analysis failed:', err)
             })
-          }, 100) // Small delay to ensure state is updated
+          }, 2000) // 2 second delay to allow scraped data to show first
         }
 
         if (shouldStartSEO) {
@@ -137,7 +246,7 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
     if (projectId) {
       loadProjectData()
     }
-  }, [projectId, getAuditProject])
+  }, [projectId, getAuditProject, refreshAnalysis])
 
   const updatePagespeedData = (pagespeedData: any) => {
     setData(prev => ({ ...prev, pagespeedData }))
@@ -185,96 +294,6 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
 
   const setCmsError = (error: string | null) => {
     setData(prev => ({ ...prev, cmsError: error }))
-  }
-
-  const refreshAnalysis = async (type: 'pagespeed' | 'seo' | 'technologies' | 'cms') => {
-    if (!data.project) return
-
-    switch (type) {
-      case 'pagespeed':
-        setPagespeedLoading(true)
-        setPagespeedError(null)
-        try {
-          // Update project with loading state
-          await updateAuditProject(data.project.id, {
-            pagespeed_insights_loading: true,
-            pagespeed_insights_error: null
-          })
-
-          const { data: pagespeedResult, error } = await fetchPageSpeedInsights(data.project.site_url)
-          
-          if (error) {
-            console.error('❌ PageSpeed analysis error:', error)
-            setPagespeedError(error)
-            await updateAuditProject(data.project.id, {
-              pagespeed_insights_loading: false,
-              pagespeed_insights_error: error,
-              pagespeed_insights_data: null
-            })
-          } else if (pagespeedResult) {
-            updatePagespeedData(pagespeedResult)
-            await updateAuditProject(data.project.id, {
-              pagespeed_insights_data: pagespeedResult,
-              pagespeed_insights_loading: false,
-              pagespeed_insights_error: null
-            })
-          }
-        } catch (err) {
-          console.error('❌ PageSpeed analysis unexpected error:', err)
-          const errorMessage = `Analysis failed: ${err instanceof Error ? err.message : 'Unknown error'}`
-          setPagespeedError(errorMessage)
-          await updateAuditProject(data.project.id, {
-            pagespeed_insights_loading: false,
-            pagespeed_insights_error: errorMessage,
-            pagespeed_insights_data: null
-          })
-        } finally {
-          setPagespeedLoading(false)
-        }
-        break
-
-      case 'seo':
-        setSeoLoading(true)
-        setSeoError(null)
-        try {
-          // SEO analysis is typically done client-side
-          const { analyzeSEO } = await import('@/lib/seo-analysis')
-          const analysis = analyzeSEO(data.project.scraping_data?.html_content || '', data.project.site_url)
-          updateSeoAnalysis(analysis)
-          await updateAuditProject(data.project.id, { seo_analysis: analysis })
-        } catch (err) {
-          setSeoError('Failed to perform SEO analysis')
-        } finally {
-          setSeoLoading(false)
-        }
-        break
-
-      case 'technologies':
-        setTechnologiesLoading(true)
-        setTechnologiesError(null)
-        try {
-          // Technologies analysis would go here
-          // For now, just mark as completed
-          setTechnologiesLoading(false)
-        } catch (err) {
-          setTechnologiesError('Failed to perform technologies analysis')
-          setTechnologiesLoading(false)
-        }
-        break
-
-      case 'cms':
-        setCmsLoading(true)
-        setCmsError(null)
-        try {
-          // CMS analysis would go here
-          // For now, just mark as completed
-          setCmsLoading(false)
-        } catch (err) {
-          setCmsError('Failed to perform CMS analysis')
-          setCmsLoading(false)
-        }
-        break
-    }
   }
 
   const contextValue: AnalysisCacheContextType = {

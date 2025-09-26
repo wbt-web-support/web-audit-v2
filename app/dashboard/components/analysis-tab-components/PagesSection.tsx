@@ -6,7 +6,7 @@ interface PagesSectionProps {
   onPageSelect?: (pageId: string) => void
 }
 
-export default function PagesSection({ scrapedPages, projectId, onPageSelect }: PagesSectionProps) {
+export default function PagesSection({ scrapedPages, onPageSelect }: PagesSectionProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Scraped Pages</h3>

@@ -20,7 +20,7 @@ interface PageAnalysisTabProps {
   pageId: string
 }
 
-function PageAnalysisContent({ pageId }: PageAnalysisTabProps) {
+function PageAnalysisContent({ }: PageAnalysisTabProps) {
   const { data } = usePageAnalysisCache()
   const [activeTab, setActiveTab] = useState('overview')
 

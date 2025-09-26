@@ -98,13 +98,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
       
       
-      originalScrapingData.pages.forEach((page: any, pageIndex: number) => {
+      originalScrapingData.pages.forEach((page: any) => {
         
         
         if (page.images && Array.isArray(page.images)) {
           
           
-          page.images.forEach((img: any, imgIndex: number) => {
+          page.images.forEach((img: any) => {
             let src = img.src || img.url || ''
             let alt = img.alt || img.altText || img.alt_text || null
             let title = img.title || img.titleText || img.title_text || null
@@ -163,7 +163,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     if (allImages.length === 0 && scrapedPages && scrapedPages.length > 0) {
       
       
-      scrapedPages.forEach((page: any, pageIndex: number) => {
+      scrapedPages.forEach((page: any) => {
         
         
         
@@ -180,7 +180,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             
             
             
-            imgElements.forEach((img: HTMLImageElement, imgIndex: number) => {
+            imgElements.forEach((img: HTMLImageElement) => {
               const src = img.src || img.getAttribute('src') || ''
               const alt = img.alt || img.getAttribute('alt') || null
               const title = img.title || img.getAttribute('title') || null
@@ -224,8 +224,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     
     
     // Debug: Log images with and without alt text
-    const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
-    const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
+    // const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
+    // const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
     
     setIsProcessing(false)
     return allImages

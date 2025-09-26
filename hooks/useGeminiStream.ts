@@ -20,6 +20,19 @@ export function useGeminiStream() {
 
   const startAnalysis = useCallback(async (pageId: string, content: string, url: string) => {
     try {
+      // Validate required parameters
+      if (!pageId || pageId.trim() === '') {
+        throw new Error('Page ID is required')
+      }
+      
+      if (!content || content.trim() === '') {
+        throw new Error('Content is required')
+      }
+      
+      if (!url || url.trim() === '') {
+        throw new Error('URL is required')
+      }
+      
       setIsStreaming(true)
       setStreamStatus({
         status: 'idle',

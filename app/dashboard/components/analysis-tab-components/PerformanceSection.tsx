@@ -10,7 +10,7 @@ interface PerformanceSectionProps {
   onDataUpdate?: (updatedProject: AuditProject) => void
 }
 
-export default function PerformanceSection({ project, onDataUpdate }: PerformanceSectionProps) {
+export default function PerformanceSection({ }: PerformanceSectionProps) {
   const { data, refreshAnalysis } = useAnalysisCache()
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   
@@ -18,30 +18,8 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
   const isLoading = data.isPagespeedLoading || isReanalyzing
   const error = data.pagespeedError
 
-  // Auto-trigger analysis if no data exists and not currently loading
-  useEffect(() => {
-    if (!pagespeedData && !isLoading && !error) {
-      console.log('🚀 PerformanceSection: No PageSpeed data, auto-triggering analysis...')
-      // Start analysis immediately
-      refreshAnalysis('pagespeed').catch(err => {
-        console.error('PerformanceSection auto-trigger failed:', err)
-      })
-    }
-  }, [pagespeedData, isLoading, error, refreshAnalysis])
-
-  // Additional fallback - ensure analysis starts when component mounts
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!pagespeedData && !isLoading && !error) {
-        console.log('🚀 PerformanceSection fallback: Starting PageSpeed analysis...')
-        refreshAnalysis('pagespeed').catch(err => {
-          console.error('PerformanceSection fallback auto-trigger failed:', err)
-        })
-      }
-    }, 1000) // 1 second delay to allow cache to initialize
-
-    return () => clearTimeout(timer)
-  }, []) // Only run once when component mounts
+  // Note: PageSpeed analysis is auto-triggered by AnalysisCache, not here
+  // This prevents duplicate requests
 
   // Reanalyze function
   const handleReanalyze = async () => {

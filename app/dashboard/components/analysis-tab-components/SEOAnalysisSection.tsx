@@ -35,18 +35,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
     }
   }, [project?.seo_analysis, dataVersion, isPageAnalysis])
 
-  useEffect(() => {
-    // For page analysis, analyze immediately if we have page data
-    if (isPageAnalysis && page?.html_content && !seoAnalysis) {
-      analyzePage()
-    }
-    // For project analysis, only run if we have scraped pages and no existing analysis
-    else if (!isPageAnalysis && scrapedPages.length > 0 && !project?.seo_analysis) {
-      analyzePage()
-    }
-  }, [scrapedPages, project?.seo_analysis, page, isPageAnalysis, seoAnalysis])
-
-  const analyzePage = async (forceReanalyze = false) => {
+  const analyzePage = async () => {
     setLoading(true)
     setError(null)
 
@@ -97,6 +86,17 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
     }
   }
 
+  useEffect(() => {
+    // For page analysis, analyze immediately if we have page data
+    if (isPageAnalysis && page?.html_content && !seoAnalysis) {
+      analyzePage()
+    }
+    // For project analysis, only run if we have scraped pages and no existing analysis
+    else if (!isPageAnalysis && scrapedPages.length > 0 && !project?.seo_analysis) {
+      analyzePage()
+    }
+  }, [scrapedPages, project?.seo_analysis, page, isPageAnalysis, seoAnalysis, analyzePage])
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
     if (score >= 60) return 'text-yellow-600'
@@ -122,18 +122,18 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
     }
   }
 
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'high':
-        return 'text-red-600 bg-red-50 border-red-200'
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-      case 'low':
-        return 'text-blue-600 bg-blue-50 border-blue-200'
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200'
-    }
-  }
+  // const getImpactColor = (impact: string) => {
+  //   switch (impact) {
+  //     case 'high':
+  //       return 'text-red-600 bg-red-50 border-red-200'
+  //     case 'medium':
+  //       return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+  //     case 'low':
+  //       return 'text-blue-600 bg-blue-50 border-blue-200'
+  //     default:
+  //       return 'text-gray-600 bg-gray-50 border-gray-200'
+  //   }
+  // }
 
   if (loading) {
     return (

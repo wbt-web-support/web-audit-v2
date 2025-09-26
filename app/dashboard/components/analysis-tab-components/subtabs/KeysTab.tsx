@@ -85,7 +85,7 @@ export default function KeysTab({ project }: KeysTabProps) {
     }
 
     analyzeKeys()
-  }, [project?.id, project?.all_pages_html])
+       }, [project?.id, project?.all_pages_html, project])
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

@@ -31,8 +31,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   const hasTitleAttributes = content.includes('title=')
   
   // Color and contrast analysis (basic)
-  const hasColorStyles = content.includes('color:') || content.includes('background-color:')
-  const hasFontStyles = content.includes('font-family:') || content.includes('font-size:')
+  // const hasColorStyles = content.includes('color:') || content.includes('background-color:')
+  // const hasFontStyles = content.includes('font-family:') || content.includes('font-size:')
 
   return (
     <div className="space-y-6">

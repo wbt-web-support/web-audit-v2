@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,7 +20,7 @@ export default function SignupPage() {
   const [success, setSuccess] = useState("");
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
 
-  const { signUp, signInWithGoogle, resendConfirmation, isAuthenticated, authChecked } = useAuth();
+  const { signUp, signInWithGoogle, resendConfirmation } = useAuth();
   const router = useRouter();
 
   // Redirect is handled by useAuth hook

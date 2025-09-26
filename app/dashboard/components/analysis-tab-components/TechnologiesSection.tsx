@@ -9,7 +9,7 @@ interface TechnologiesSectionProps {
   scrapedPages?: any[]
 }
 
-export default function TechnologiesSection({ project, scrapedPages = [] }: TechnologiesSectionProps) {
+export default function TechnologiesSection({ project }: TechnologiesSectionProps) {
   const [activeTab, setActiveTab] = useState('technologies')
 
   const tabs = [

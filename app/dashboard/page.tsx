@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
@@ -9,8 +9,9 @@ import { DashboardSidebar, DashboardHeader, DashboardContent } from './component
 import AnalysisTab from './components/tabs/AnalysisTab'
 import PageAnalysisTab from './components/tabs/PageAnalysisTab'
 import ConnectionStatus from './components/ConnectionStatus'
+import { ScrapedPage } from './components/analysis-tab/types'
 
-export default function DashboardPage() {
+function DashboardContentWrapper() {
   const { user, userProfile, loading, isAuthenticated, authChecked } = useAuth()
   const { getAuditProjectsOptimized } = useSupabase()
   const searchParams = useSearchParams()
@@ -29,7 +30,7 @@ export default function DashboardPage() {
   // Analysis data cache
   const [analysisCache, setAnalysisCache] = useState<Map<string, {
     project: AuditProject | null
-    scrapedPages: any[]
+    scrapedPages: ScrapedPage[]
     lastFetchTime: number
   }>>(new Map())
 
@@ -92,6 +93,38 @@ export default function DashboardPage() {
     }
   }, [activeTab, selectedProjectId])
 
+  // Refresh projects function
+  const refreshProjects = useCallback(async () => {
+    if (!user) return
+
+    
+    setProjectsLoading(true)
+    setProjectsError(null)
+
+    try {
+      const { data, error } = await getAuditProjectsOptimized()
+
+      if (error) {
+        console.error('❌ Dashboard: Error refreshing projects:', error)
+        setProjectsError('Failed to refresh projects')
+        return
+      }
+
+      if (data) {
+        
+        setProjects(data)
+        setProjectsError(null)
+        setProjectsFetched(true)
+        setLastFetchTime(Date.now())
+      }
+    } catch (err) {
+      console.error('❌ Dashboard: Unexpected error refreshing projects:', err)
+      setProjectsError('Failed to refresh projects')
+    } finally {
+      setProjectsLoading(false)
+    }
+  }, [user, getAuditProjectsOptimized])
+
   // Handle browser visibility changes to prevent unnecessary refetches
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -127,7 +160,7 @@ export default function DashboardPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [lastFetchTime, projectsFetched])
+  }, [lastFetchTime, projectsFetched, refreshProjects])
 
   // Handle tab changes with URL updates
   const handleTabChange = (tab: string) => {
@@ -169,7 +202,11 @@ export default function DashboardPage() {
   }
 
   // Analysis cache management
-  const getCachedAnalysisData = (projectId: string) => {
+  const getCachedAnalysisData = (projectId: string): {
+    project: AuditProject | null
+    scrapedPages: ScrapedPage[]
+    lastFetchTime: number
+  } | null => {
     const cached = analysisCache.get(projectId)
     if (!cached) {
       
@@ -189,7 +226,7 @@ export default function DashboardPage() {
     return null
   }
 
-  const setCachedAnalysisData = (projectId: string, project: AuditProject | null, scrapedPages: any[]) => {
+  const setCachedAnalysisData = (projectId: string, project: AuditProject | null, scrapedPages: ScrapedPage[]) => {
     
     setAnalysisCache(prev => {
       const newCache = new Map(prev)
@@ -251,39 +288,7 @@ export default function DashboardPage() {
     }
 
     fetchProjects()
-  }, [authChecked, isAuthenticated, user]) // Enhanced dependencies for better auth checking
-
-  // Refresh projects function
-  const refreshProjects = async () => {
-    if (!user) return
-
-    
-    setProjectsLoading(true)
-    setProjectsError(null)
-
-    try {
-      const { data, error } = await getAuditProjectsOptimized()
-
-      if (error) {
-        console.error('❌ Dashboard: Error refreshing projects:', error)
-        setProjectsError('Failed to refresh projects')
-        return
-      }
-
-      if (data) {
-        
-        setProjects(data)
-        setProjectsError(null)
-        setProjectsFetched(true)
-        setLastFetchTime(Date.now())
-      }
-    } catch (err) {
-      console.error('❌ Dashboard: Unexpected error refreshing projects:', err)
-      setProjectsError('Failed to refresh projects')
-    } finally {
-      setProjectsLoading(false)
-    }
-  }
+  }, [authChecked, isAuthenticated, user, getAuditProjectsOptimized, lastFetchTime, projectsFetched]) // Enhanced dependencies for better auth checking
 
   // Show loading state
   if (loading) {
@@ -367,5 +372,20 @@ export default function DashboardPage() {
       </div>
       <ConnectionStatus />
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContentWrapper />
+    </Suspense>
   )
 }

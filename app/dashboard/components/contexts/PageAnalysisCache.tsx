@@ -62,60 +62,6 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
     seoError: null
   })
 
-  // Load initial page data
-  useEffect(() => {
-    const loadPageData = async () => {
-      try {
-        const { data: foundPage, error: pageError } = await getScrapedPage(pageId)
-        
-        if (pageError) {
-          console.error('Error fetching scraped page:', pageError)
-          return
-        }
-
-        if (!foundPage) {
-          return
-        }
-
-        setData(prev => ({
-          ...prev,
-          page: foundPage,
-          geminiAnalysis: (foundPage as any).gemini_analysis || null,
-          performanceAnalysis: (foundPage as any).performance_analysis || null
-        }))
-
-        // Auto-trigger performance analysis if no cached data exists
-        if (!(foundPage as any).performance_analysis) {
-          console.log('🚀 PageAnalysisCache: No performance analysis found, auto-triggering...')
-          setTimeout(() => {
-            refreshAnalysis('performance').catch(err => {
-              console.error('PageAnalysisCache auto-trigger failed:', err)
-            })
-          }, 1000) // 1 second delay to allow cache to initialize
-        }
-
-        // Get project data if available
-        if (foundPage.audit_project_id) {
-          const { data: projectData, error: projectError } = await getAuditProject(foundPage.audit_project_id)
-          
-          if (!projectError && projectData) {
-            setData(prev => ({
-              ...prev,
-              project: projectData,
-              seoAnalysis: projectData.seo_analysis || null
-            }))
-          }
-        }
-      } catch (err) {
-        console.error('Error loading page data:', err)
-      }
-    }
-
-    if (pageId) {
-      loadPageData()
-    }
-  }, [pageId, getScrapedPage, getAuditProject])
-
   const updateGeminiAnalysis = (analysis: any) => {
     setData(prev => ({ ...prev, geminiAnalysis: analysis }))
   }
@@ -178,7 +124,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           } else {
             setGeminiError(result.error || 'Analysis failed')
           }
-        } catch (err) {
+        } catch {
           setGeminiError('Failed to perform analysis')
         } finally {
           setGeminiLoading(false)
@@ -205,7 +151,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           } else {
             setPerformanceError(result.error || 'Analysis failed')
           }
-        } catch (err) {
+        } catch {
           setPerformanceError('Failed to perform analysis')
         } finally {
           setPerformanceLoading(false)
@@ -220,7 +166,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           const { analyzeSEO } = await import('@/lib/seo-analysis')
           const analysis = analyzeSEO(data.page.html_content, data.page.url)
           updateSeoAnalysis(analysis)
-        } catch (err) {
+        } catch {
           setSeoError('Failed to perform SEO analysis')
         } finally {
           setSeoLoading(false)
@@ -228,6 +174,60 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
         break
     }
   }
+
+  // Load initial page data
+  useEffect(() => {
+    const loadPageData = async () => {
+      try {
+        const { data: foundPage, error: pageError } = await getScrapedPage(pageId)
+        
+        if (pageError) {
+          console.error('Error fetching scraped page:', pageError)
+          return
+        }
+
+        if (!foundPage) {
+          return
+        }
+
+        setData(prev => ({
+          ...prev,
+          page: foundPage,
+          geminiAnalysis: (foundPage as any).gemini_analysis || null,
+          performanceAnalysis: (foundPage as any).performance_analysis || null
+        }))
+
+        // Auto-trigger performance analysis if no cached data exists
+        if (!(foundPage as any).performance_analysis) {
+          console.log('🚀 PageAnalysisCache: No performance analysis found, auto-triggering...')
+          setTimeout(() => {
+            refreshAnalysis('performance').catch(err => {
+              console.error('PageAnalysisCache auto-trigger failed:', err)
+            })
+          }, 1000) // 1 second delay to allow cache to initialize
+        }
+
+        // Get project data if available
+        if (foundPage.audit_project_id) {
+          const { data: projectData, error: projectError } = await getAuditProject(foundPage.audit_project_id)
+          
+          if (!projectError && projectData) {
+            setData(prev => ({
+              ...prev,
+              project: projectData,
+              seoAnalysis: projectData.seo_analysis || null
+            }))
+          }
+        }
+      } catch (err) {
+        console.error('Error loading page data:', err)
+      }
+    }
+
+    if (pageId) {
+      loadPageData()
+    }
+  }, [pageId, getScrapedPage, getAuditProject, refreshAnalysis])
 
   const contextValue: PageAnalysisCacheContextType = {
     data,

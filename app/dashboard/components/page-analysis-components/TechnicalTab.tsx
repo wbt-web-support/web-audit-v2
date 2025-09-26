@@ -40,10 +40,10 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
   const hasTitleTag = content.includes('<title')
   const hasMetaCharset = content.includes('charset=') || content.includes('charset =')
   const hasMetaViewport = content.includes('viewport')
-  const hasMetaDescription = content.includes('description')
-  const hasMetaKeywords = content.includes('keywords')
-  const hasCanonical = content.includes('canonical')
-  const hasRobots = content.includes('robots')
+  // const hasMetaDescription = content.includes('description')
+  // const hasMetaKeywords = content.includes('keywords')
+  // const hasCanonical = content.includes('canonical')
+  // const hasRobots = content.includes('robots')
   const hasLang = content.includes('lang=')
   
   // Count various elements
@@ -57,8 +57,8 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
   const hasInlineStyles = content.includes('<style>')
   const hasDeprecatedTags = content.includes('<center>') || content.includes('<font>') || content.includes('<marquee>')
   const hasTableLayout = content.includes('<table')
-  const hasDivLayout = content.includes('<div')
-  const hasSemanticTags = content.includes('<header') || content.includes('<nav') || content.includes('<main') || content.includes('<section') || content.includes('<article') || content.includes('<aside') || content.includes('<footer')
+  // const hasDivLayout = content.includes('<div')
+  // const hasSemanticTags = content.includes('<header') || content.includes('<nav') || content.includes('<main') || content.includes('<section') || content.includes('<article') || content.includes('<aside') || content.includes('<footer')
   
   // Check for modern web standards
   const hasHTTPS = page.url && page.url.startsWith('https://')

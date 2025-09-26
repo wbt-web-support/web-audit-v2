@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { useSupabase } from '@/contexts/SupabaseContext'
+// import { useSupabase } from '@/contexts/SupabaseContext'
 import { supabase } from '@/lib/supabase'
 import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
 
@@ -10,11 +10,11 @@ interface AdminTabProps {
   userProfile: any
 }
 
-export default function AdminTab({ userProfile }: AdminTabProps) {
+export default function AdminTab({ }: AdminTabProps) {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
-  const [verificationError, setVerificationError] = useState<string | null>(null)
+  const [_roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
+  const [_verificationError, setVerificationError] = useState<string | null>(null)
 
   const [users] = useState([
     {

@@ -10,7 +10,7 @@ interface PerformanceTabProps {
 }
 
 export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabProps) {
-  const { updateScrapedPage } = useSupabase()
+  // const { updateScrapedPage } = useSupabase()
   const { data, refreshAnalysis } = usePageAnalysisCache()
   const [performanceData, setPerformanceData] = useState<any>(cachedAnalysis || null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -37,18 +37,18 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   const hasGzip = page.content_encoding && page.content_encoding.includes('gzip')
   
   // Calculate performance score
-  const performanceScore = Math.round((
-    (responseTime < 1000 ? 1 : responseTime < 2000 ? 0.5 : 0) +
-    (contentLength < 100000 ? 1 : contentLength < 500000 ? 0.5 : 0) +
-    (largeImages.length === 0 ? 1 : largeImages.length < imageCount * 0.3 ? 0.5 : 0) +
-    (hasLazyLoading ? 1 : 0) +
-    (hasModernFormats ? 1 : 0) +
-    (hasAsyncScripts ? 1 : 0) +
-    (hasMinifiedCSS ? 1 : 0) +
-    (hasMinifiedJS ? 1 : 0) +
-    (hasCDN ? 1 : 0) +
-    (hasGzip ? 1 : 0)
-  ) / 10 * 100)
+  // const performanceScore = Math.round((
+  //   (responseTime < 1000 ? 1 : responseTime < 2000 ? 0.5 : 0) +
+  //   (contentLength < 100000 ? 1 : contentLength < 500000 ? 0.5 : 0) +
+  //   (largeImages.length === 0 ? 1 : largeImages.length < imageCount * 0.3 ? 0.5 : 0) +
+  //   (hasLazyLoading ? 1 : 0) +
+  //   (hasModernFormats ? 1 : 0) +
+  //   (hasAsyncScripts ? 1 : 0) +
+  //   (hasMinifiedCSS ? 1 : 0) +
+  //   (hasMinifiedJS ? 1 : 0) +
+  //   (hasCDN ? 1 : 0) +
+  //   (hasGzip ? 1 : 0)
+  // ) / 10 * 100)
 
   // Use cache context data
   useEffect(() => {
@@ -203,7 +203,7 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   }
 
   // Extract PageSpeed data
-  const { lighthouseResult, loadingExperience } = performanceData
+  const { lighthouseResult } = performanceData
   const { categories, audits } = lighthouseResult
 
   return (
