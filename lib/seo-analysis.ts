@@ -571,7 +571,7 @@ export function analyzeSEO(htmlContent: string, url: string): SEOAnalysisResult 
     try {
       const schemaData = JSON.parse(breadcrumbSchema.textContent || '')
       if (schemaData['@type'] === 'BreadcrumbList' || 
-          (Array.isArray(schemaData) && schemaData.some((item: any) => item['@type'] === 'BreadcrumbList'))) {
+          (Array.isArray(schemaData) && schemaData.some((item: Record<string, unknown>) => item['@type'] === 'BreadcrumbList'))) {
         hasBreadcrumbSchema = true
       }
     } catch {

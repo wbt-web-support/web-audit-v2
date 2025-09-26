@@ -1,7 +1,12 @@
 'use client'
 
 interface AccessibilityTabProps {
-  page: any
+  page: {
+    html_content: string | null;
+    title: string | null;
+    description: string | null;
+    images: Array<{ alt?: string; src: string }> | null;
+  }
 }
 
 export default function AccessibilityTab({ page }: AccessibilityTabProps) {
@@ -16,7 +21,7 @@ export default function AccessibilityTab({ page }: AccessibilityTabProps) {
   // const hasH3 = content.includes('<h3>')
   const hasLang = content.includes('lang=')
   const hasViewport = content.includes('viewport')
-  const hasAltText = images.some((img: any) => img.alt && img.alt.trim() !== '')
+  const hasAltText = images.some((img: { alt?: string; src: string }) => img.alt && img.alt.trim() !== '')
   const hasTitleAttributes = content.includes('title=')
   const hasLabels = content.includes('<label')
   const hasFormElements = content.includes('<form') || content.includes('<input') || content.includes('<select') || content.includes('<textarea')
@@ -40,7 +45,7 @@ export default function AccessibilityTab({ page }: AccessibilityTabProps) {
   const h2Count = (content.match(/<h2[^>]*>/gi) || []).length
   const h3Count = (content.match(/<h3[^>]*>/gi) || []).length
   const imageCount = images.length
-  const imagesWithAlt = images.filter((img: any) => img.alt && img.alt.trim() !== '').length
+  const imagesWithAlt = images.filter((img: { alt?: string; src: string }) => img.alt && img.alt.trim() !== '').length
   const imagesWithoutAlt = imageCount - imagesWithAlt
   const linkCount = (content.match(/<a[^>]*>/gi) || []).length
   const buttonCount = (content.match(/<button[^>]*>/gi) || []).length

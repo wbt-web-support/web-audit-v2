@@ -2,10 +2,20 @@
 
 import { AuditProject } from "@/types/audit";
 import SEOAnalysisSection from "./SEOAnalysisSection";
+import Image from "next/image";
 
 interface OverviewSectionProps {
   project: AuditProject;
-  scrapedPages?: any[];
+  scrapedPages?: Array<{
+    id: string;
+    url: string;
+    title: string | null;
+    status_code: number | null;
+    created_at: string;
+    links_count: number;
+    images_count: number;
+    meta_tags_count: number;
+  }>;
 }
 
 export default function OverviewSection({ project, scrapedPages = [] }: OverviewSectionProps) {
@@ -99,16 +109,18 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {project.technologies
                 .slice(0, 6)
-                .map((tech: any, index: number) => (
+                .map((tech: { name: string; version?: string; category?: string; confidence?: number; icon?: string }, index: number) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div className="flex items-center">
                       {tech.icon && (
-                        <img
+                        <Image
                           src={tech.icon}
                           alt={tech.name}
+                          width={20}
+                          height={20}
                           className="w-5 h-5 mr-2 rounded"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -121,14 +133,14 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                     </div>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tech.confidence >= 0.8
+                        (tech.confidence || 0) >= 0.8
                           ? "bg-green-100 text-green-800"
-                          : tech.confidence >= 0.5
+                          : (tech.confidence || 0) >= 0.5
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {Math.round(tech.confidence * 100)}%
+                      {Math.round((tech.confidence || 0) * 100)}%
                     </span>
                   </div>
                 ))}
@@ -229,11 +241,11 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                       {page.title || 'Untitled'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
-                      page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
+                      page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
+                      page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {page.status_code}
+                      {page.status_code || 'N/A'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mb-2 truncate">{page.url}</p>

@@ -5,7 +5,14 @@ import KeysTab from '../analysis-tab-components/subtabs/KeysTab'
 import TechnologiesTab from '../analysis-tab-components/subtabs/TechnologiesTab'
 
 interface TechnicalTabProps {
-  page: any
+  page: {
+    id: string
+    url: string
+    html_content: string | null
+    technologies?: string[] | null
+    technologies_metadata?: Record<string, unknown>
+    page_url?: string
+  }
 }
 
 export default function TechnicalTab({ page }: TechnicalTabProps) {
@@ -15,7 +22,7 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
   // Convert string array to technology objects if needed
   const rawTechnologies = page.technologies || []
   const technologies = Array.isArray(rawTechnologies) 
-    ? rawTechnologies.map((tech: any) => {
+    ? rawTechnologies.map((tech: string | { name: string; version?: string | null; category?: string; confidence?: number; detection_method?: string; description?: string | null; website?: string | null; icon?: string | null }) => {
         if (typeof tech === 'string') {
           return {
             name: tech,
@@ -247,9 +254,45 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
         return (
           <TechnologiesTab 
             project={{
-              ...page,
+              id: page.id,
+              site_url: page.url,
+              status: 'completed' as const,
+              progress: 100,
+              last_audit_at: new Date().toISOString(),
+              issues_count: 0,
+              score: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              total_pages: 1,
+              total_links: 0,
+              total_images: 0,
+              total_meta_tags: 0,
+              technologies_found: technologies.length,
+              cms_detected: false,
+              cms_type: null,
+              cms_version: null,
+              cms_plugins: null,
+              cms_themes: null,
+              cms_components: null,
+              cms_confidence: 0,
+              cms_detection_method: null,
+              cms_metadata: null,
               technologies: technologies,
-              technologies_metadata: page.technologies_metadata || null
+              technologies_confidence: 0,
+              technologies_detection_method: null,
+              technologies_metadata: page.technologies_metadata || null,
+              total_html_content: 0,
+              average_html_per_page: 0,
+              pagespeed_insights_data: null,
+              pagespeed_insights_loading: false,
+              pagespeed_insights_error: null,
+              scraping_data: null,
+              seo_analysis: null,
+              meta_tags_data: null,
+              social_meta_tags_data: null,
+              all_pages_html: null,
+              images: null,
+              links: null
             }} 
           />
         )
@@ -257,12 +300,48 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
         return (
           <KeysTab 
             project={{
-              ...page,
+              id: page.id,
+              site_url: page.url,
+              status: 'completed' as const,
+              progress: 100,
+              last_audit_at: new Date().toISOString(),
+              issues_count: 0,
+              score: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              total_pages: 1,
+              total_links: 0,
+              total_images: 0,
+              total_meta_tags: 0,
+              technologies_found: 0,
+              cms_detected: false,
+              cms_type: null,
+              cms_version: null,
+              cms_plugins: null,
+              cms_themes: null,
+              cms_components: null,
+              cms_confidence: 0,
+              cms_detection_method: null,
+              cms_metadata: null,
+              technologies: null,
+              technologies_confidence: 0,
+              technologies_detection_method: null,
+              technologies_metadata: null,
+              total_html_content: 0,
+              average_html_per_page: 0,
+              pagespeed_insights_data: null,
+              pagespeed_insights_loading: false,
+              pagespeed_insights_error: null,
+              scraping_data: null,
+              seo_analysis: null,
+              meta_tags_data: null,
+              social_meta_tags_data: null,
               all_pages_html: [{
                 pageUrl: page.url || page.page_url || 'Unknown URL',
                 pageHtml: page.html_content || ''
-              }], // Pass only the current page for page-specific analysis
-              id: page.id || 'page-analysis'
+              }],
+              images: null,
+              links: null
             }} 
           />
         )

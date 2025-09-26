@@ -1,11 +1,37 @@
 'use client'
 
+import { AuditProject } from '@/types/audit'
+
 interface OverviewTabProps {
-  page: any
-  project: any
+  page: {
+    id: string
+    url: string
+    title: string | null
+    description: string | null
+    status_code: number | null
+    html_content_length: number | null
+    links_count: number
+    images_count: number
+    meta_tags_count: number
+    technologies_count: number
+    response_time: number | null
+    created_at: string
+  } | null
+  project: AuditProject | null
 }
 
 export default function OverviewTab({ page, project }: OverviewTabProps) {
+  if (!page) {
+    return (
+      <div className="min-h-96 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading page data...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -17,11 +43,11 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
           </div>
           <div className="flex items-center space-x-4">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
-              page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
+              page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
+              page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
               'bg-red-100 text-red-800'
             }`}>
-              {page.status_code}
+              {page.status_code || 'N/A'}
             </span>
             {project && (
               <span className="text-sm text-gray-500">
@@ -70,9 +96,9 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
               <span className="font-medium">{page.response_time || 'N/A'}ms</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Last Updated:</span>
+              <span className="text-gray-600">Created:</span>
               <span className="font-medium">
-                {page.updated_at ? new Date(page.updated_at).toLocaleDateString() : 'N/A'}
+                {new Date(page.created_at).toLocaleDateString()}
               </span>
             </div>
           </div>
@@ -84,21 +110,21 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
             <div className="flex justify-between">
               <span className="text-gray-600">Status:</span>
               <span className={`font-medium ${
-                page.status_code >= 200 && page.status_code < 300 ? 'text-green-600' :
-                page.status_code >= 300 && page.status_code < 400 ? 'text-yellow-600' :
+                page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'text-green-600' :
+                page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'text-yellow-600' :
                 'text-red-600'
               }`}>
-                {page.status_code >= 200 && page.status_code < 300 ? 'Healthy' :
-                 page.status_code >= 300 && page.status_code < 400 ? 'Redirect' : 'Error'}
+                {page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'Healthy' :
+                 page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'Redirect' : 'Error'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Content Type:</span>
-              <span className="font-medium">{page.content_type || 'Unknown'}</span>
+              <span className="text-gray-600">Technologies:</span>
+              <span className="font-medium">{page.technologies_count || 0} detected</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Language:</span>
-              <span className="font-medium">{page.language || 'Unknown'}</span>
+              <span className="text-gray-600">Meta Tags:</span>
+              <span className="font-medium">{page.meta_tags_count || 0} found</span>
             </div>
           </div>
         </div>

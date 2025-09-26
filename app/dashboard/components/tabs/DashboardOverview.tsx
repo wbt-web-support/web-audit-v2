@@ -7,8 +7,19 @@ import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 
+interface UserProfile {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  role: 'user' | 'admin' | 'moderator'
+  email_confirmed: boolean
+  created_at: string
+  updated_at?: string
+}
+
 interface DashboardOverviewProps {
-  userProfile: any
+  userProfile: UserProfile | null
   projects: AuditProject[]
   projectsLoading: boolean
   projectsError: string | null
@@ -104,7 +115,21 @@ export default function DashboardOverview({
 
 
   // Handle form submission from SiteCrawlForm
-  const handleFormSubmit = async (formData: any) => {
+  const handleFormSubmit = async (formData: {
+    siteUrl: string
+    pageType: 'single' | 'multiple'
+    brandConsistency: boolean
+    hiddenUrls: boolean
+    keysCheck: boolean
+    brandData: {
+      companyName: string
+      phoneNumber: string
+      emailAddress: string
+      address: string
+      additionalInformation: string
+    }
+    hiddenUrlsList: Array<{ id: string; url: string }>
+  }) => {
     
     setIsSubmitting(true)
     setSubmitStatus('submitting')
@@ -141,7 +166,7 @@ export default function DashboardOverview({
         hidden_urls: formData.hiddenUrls,
         keys_check: formData.keysCheck,
         brand_data: formData.brandConsistency ? formData.brandData : null,
-        hidden_urls_data: formData.hiddenUrls ? formData.hiddenUrlsList.filter((url: any) => url.url.trim() !== '') : null,
+        hidden_urls_data: formData.hiddenUrls ? formData.hiddenUrlsList.filter(url => url.url.trim() !== '') : null,
         status: 'pending' as const,
         progress: 0,
         score: 0,

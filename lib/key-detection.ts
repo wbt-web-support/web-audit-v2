@@ -166,9 +166,8 @@ function determineKeyStatus(key: string, context: string): 'exposed' | 'secure' 
 }
 
 // Function to check if a key is a false positive
-function isFalsePositive(key: string, context: string): boolean {
+function isFalsePositive(key: string): boolean {
   const lowerKey = key.toLowerCase()
-  // const lowerContext = context.toLowerCase()
   
   // Skip file paths and URLs
   if (lowerKey.includes('/') || 
@@ -199,7 +198,7 @@ function isFalsePositive(key: string, context: string): boolean {
 }
 
 // Function to calculate confidence score
-function calculateConfidence(key: string, type: string, _context: string): number {
+function calculateConfidence(key: string, type: string): number {
   let confidence = 0.5 // Base confidence
   
   // Increase confidence for specific patterns
@@ -247,10 +246,10 @@ export async function detectKeysInHtml(htmlContent: string): Promise<KeyDetectio
       const context = extractContext(htmlContent, match)
       
       // Skip if it's a false positive
-      if (isFalsePositive(key, context)) continue
+      if (isFalsePositive(key)) continue
       
       const status = determineKeyStatus(key, context)
-      const confidence = calculateConfidence(key, patternConfig.type, context)
+      const confidence = calculateConfidence(key, patternConfig.type)
       
       // Skip if confidence is too low
       if (confidence < 0.3) continue

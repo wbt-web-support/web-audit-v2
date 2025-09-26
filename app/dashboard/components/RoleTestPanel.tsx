@@ -2,15 +2,72 @@
 
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
-import { roleVerifier, roleTester } from '@/lib/role-utils'
+import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
+
+interface UserProfile {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  role: 'user' | 'admin' | 'moderator'
+  email_confirmed: boolean
+  created_at: string
+}
+
+interface AdminTestResult {
+  hasAccess: boolean
+  isAdmin: boolean
+  error?: string
+}
+
+interface ModeratorTestResult {
+  hasAccess: boolean
+  isModerator: boolean
+  isAdmin: boolean
+  error?: string
+}
+
+interface FullRoleTestResult {
+  success: boolean
+  result: RoleVerificationResult
+  tests: {
+    isAdmin: boolean
+    isModerator: boolean
+    isUser: boolean
+    roleMatch: boolean
+  }
+}
+
+interface RoleTestResults {
+  timestamp: string
+  userId: string
+  userEmail: string
+  profileRole: string
+  tests: {
+    basicVerification: RoleVerificationResult
+    adminTest: AdminTestResult
+    moderatorTest: ModeratorTestResult
+    fullRoleTest: FullRoleTestResult
+    cachedVerification: RoleVerificationResult
+  }
+  summary: {
+    isAdmin: boolean
+    isModerator: boolean
+    isUser: boolean
+    verified: boolean
+    role: string
+    hasAdminAccess: boolean
+    hasModeratorAccess: boolean
+  }
+}
 
 interface RoleTestPanelProps {
-  userProfile: any
+  userProfile: UserProfile
 }
 
 export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
   const { user } = useSupabase()
-  const [testResults, setTestResults] = useState<any>(null)
+  const [testResults, setTestResults] = useState<RoleTestResults | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,7 +102,7 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
       const results = {
         timestamp: new Date().toISOString(),
         userId: user.id,
-        userEmail: user.email,
+        userEmail: user.email || 'Not available',
         profileRole: userProfile?.role,
         tests: {
           basicVerification,

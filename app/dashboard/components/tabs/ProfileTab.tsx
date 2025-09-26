@@ -5,10 +5,22 @@ import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface ProfileTabProps {
-  userProfile: any
+  userProfile: {
+    id: string
+    email: string
+    first_name: string | null
+    last_name: string | null
+    full_name?: string
+    avatar_url?: string
+    role: 'user' | 'admin' | 'moderator'
+    email_confirmed: boolean
+    created_at: string
+    updated_at?: string
+  }
 }
 
-export default function ProfileTab({ userProfile }: ProfileTabProps) {
+export default function 
+ProfileTab({ userProfile }: ProfileTabProps) {
   const { updateProfile } = useSupabase()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({

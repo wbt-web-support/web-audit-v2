@@ -7,7 +7,6 @@ import { useScraping } from './hooks/useScraping'
 import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
 import ErrorState from './components/ErrorState'
-import NotFoundState from './components/NotFoundState'
 import SectionSkeleton from './components/SectionSkeleton'
 
 // Lazy load heavy components

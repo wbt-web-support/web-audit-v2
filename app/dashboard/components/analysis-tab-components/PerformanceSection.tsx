@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { formatPageSpeedScore, getScoreColor, getScoreBgColor } from '@/lib/pagespeed'
 import { useAnalysisCache } from '../contexts/AnalysisCache'
@@ -55,8 +56,8 @@ export default function PerformanceSection({ }: PerformanceSectionProps) {
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-blue-800">Performance Analysis in Progress</h3>
                 <div className="mt-2 text-sm text-blue-700">
-                  <p>We're running comprehensive performance tests on your website. This typically takes 30-60 seconds to complete.</p>
-                  <p className="mt-1 text-xs text-blue-600">Please don't close this page while the analysis is running.</p>
+                  <p>We&apos;re running comprehensive performance tests on your website. This typically takes 30-60 seconds to complete.</p>
+                  <p className="mt-1 text-xs text-blue-600">Please don&apos;t close this page while the analysis is running.</p>
                 </div>
               </div>
             </div>
@@ -395,9 +396,11 @@ export default function PerformanceSection({ }: PerformanceSectionProps) {
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Full Page Screenshot</h4>
                 <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                  <img
+                  <Image
                     src={`data:${fullPageScreenshot.mime_type};base64,${fullPageScreenshot.data}`}
                     alt="Full page screenshot"
+                    width={fullPageScreenshot.width}
+                    height={fullPageScreenshot.height}
                     className="w-full h-auto"
                     style={{ maxHeight: '600px', objectFit: 'contain' }}
                   />
@@ -412,9 +415,11 @@ export default function PerformanceSection({ }: PerformanceSectionProps) {
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Viewport Screenshot</h4>
                 <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                  <img
+                  <Image
                     src={`data:${screenshots.mime_type};base64,${screenshots.data}`}
                     alt="Page screenshot"
+                    width={screenshots.width}
+                    height={screenshots.height}
                     className="w-full h-auto"
                     style={{ maxHeight: '400px', objectFit: 'contain' }}
                   />
@@ -434,7 +439,7 @@ export default function PerformanceSection({ }: PerformanceSectionProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Real User Experience</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(loadingExperience.metrics).map(([key, metric]) => {
-              const metricData = metric as any
+              const metricData = metric as { percentile?: number; category?: string }
               const hasValue = metricData.percentile !== undefined && metricData.percentile !== null
               return (
                 <MetricCard

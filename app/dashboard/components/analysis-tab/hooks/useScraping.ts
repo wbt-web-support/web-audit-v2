@@ -25,7 +25,24 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
       })
 
       // Update project status to 'completed' IMMEDIATELY to show data
-      const pages = scrapingData.pages as any[]
+      const pages = scrapingData.pages as Array<{
+        url: string;
+        title?: string;
+        statusCode?: number;
+        metaDescription?: string;
+        htmlContent?: string;
+        links?: Array<{ url: string; text: string; isExternal: boolean }>;
+        images?: Array<{ src: string; alt?: string; title?: string }>;
+        metaTags?: Record<string, string>;
+        technologies?: Array<{ name: string; confidence: number }>;
+        cmsType?: string;
+        cmsVersion?: string;
+        cmsPlugins?: Array<{ name: string; confidence: number }>;
+        socialMetaTags?: Record<string, string>;
+        isExternal?: boolean;
+        responseTime?: number;
+        performanceAnalysis?: Record<string, unknown>;
+      }>
       const summary = scrapingData.summary as Record<string, unknown> | undefined
       
       const immediateUpdate = {
@@ -75,12 +92,12 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
                 images_count: page.images?.length || 0,
                 links: page.links || [],
                 images: page.images || [],
-                meta_tags_count: page.metaTags?.length || 0,
+                meta_tags_count: Number(page.metaTags?.length || 0),
                 technologies_count: page.technologies?.length || 0,
-                technologies: page.technologies || [],
+                technologies: page.technologies?.map(tech => tech.name) || [],
                 cms_type: page.cmsType || null,
                 cms_version: page.cmsVersion || null,
-                cms_plugins: page.cmsPlugins || [],
+                cms_plugins: page.cmsPlugins?.map(plugin => plugin.name) || [],
                 social_meta_tags: page.socialMetaTags || {},
                 social_meta_tags_count: Object.keys(page.socialMetaTags || {}).length,
                 is_external: page.isExternal || false,
@@ -114,7 +131,7 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
       console.error('❌ Error processing scraping data:', error)
       setScrapingError('Failed to process scraping data')
     }
-  }, [updateAuditProject, createScrapedPage])
+  }, [updateAuditProject, createScrapedPage, onDataUpdate, project])
 
   // Start scraping
   const startScraping = useCallback(async () => {
@@ -204,14 +221,14 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
       setIsScraping(false)
       isProcessing.current = false
     }
-  }, [project, processScrapingData])
+  }, [project, processScrapingData, connectionError, isConnected, isScraping])
 
   // Auto-start scraping when project is pending
   useEffect(() => {
     if (project && project.status === 'pending' && !isScraping && !isProcessing.current) {
       startScraping()
     }
-  }, [project, isScraping])
+  }, [project, isScraping, startScraping])
 
   return {
     isScraping,

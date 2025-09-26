@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { AuditProject } from '@/types/audit'
 import { TechnologiesTab, KeysTab, SocialPreviewTab } from './subtabs'
+import { ScrapedPage } from '../analysis-tab/types'
 
 interface TechnologiesSectionProps {
   project: AuditProject
-  scrapedPages?: any[]
+  scrapedPages?: ScrapedPage[]
 }
 
 export default function TechnologiesSection({ project }: TechnologiesSectionProps) {

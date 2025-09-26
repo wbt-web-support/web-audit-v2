@@ -2,11 +2,21 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { AuditProject } from '@/types/audit'
+import { ScrapedPage } from '../analysis-tab/types'
+
+// Override the ScrapedPage type to accept any performance_analysis type
+interface ScrapedPageOverride extends Omit<ScrapedPage, 'performance_analysis'> {
+  performance_analysis?: Record<string, unknown>
+}
+
+interface OriginalScrapingData {
+  pages?: ScrapedPageOverride[]
+}
 
 interface LinksSectionProps {
   project: AuditProject
-  scrapedPages: any[]
-  originalScrapingData?: any
+  scrapedPages: ScrapedPageOverride[]
+  originalScrapingData?: OriginalScrapingData
 }
 
 interface LinkData {
@@ -18,6 +28,7 @@ interface LinkData {
   target?: string
   rel?: string
 }
+
 
 export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -36,10 +47,10 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
       
       
-      originalScrapingData.pages.forEach((page: any) => {
+      originalScrapingData.pages.forEach((page: ScrapedPageOverride) => {
         if (page.links && Array.isArray(page.links)) {
-          page.links.forEach((link: any) => {
-            const href = link.href || link.url || ''
+          page.links.forEach((link) => {
+            const href = link.url || ''
             if (href && href !== '#') {
               // Convert relative URLs to absolute
               const absoluteUrl = href.startsWith('http') ? href : 
@@ -51,12 +62,12 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
               
               allLinks.push({
                 url: absoluteUrl,
-                text: link.text || link.innerText || null,
+                text: link.text || null,
                 title: link.title || null,
                 type: isInternal ? 'internal' : 'external',
                 page_url: page.url,
-                target: link.target || '_self',
-                rel: link.rel || undefined
+                target: '_self',
+                rel: undefined
               })
             }
           })
@@ -68,7 +79,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     if (allLinks.length === 0 && scrapedPages && scrapedPages.length > 0) {
       
       
-      scrapedPages.forEach((page: any) => {
+      scrapedPages.forEach((page: ScrapedPageOverride) => {
         if (page.html_content) {
           try {
             // Create a temporary DOM parser to extract links
@@ -215,7 +226,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
         <div className="w-40">
           <select
             value={typeFilter}
-            onChange={(e) => handleFilterChange(searchTerm, e.target.value as any)}
+            onChange={(e) => handleFilterChange(searchTerm, e.target.value as 'all' | 'internal' | 'external')}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Links</option>

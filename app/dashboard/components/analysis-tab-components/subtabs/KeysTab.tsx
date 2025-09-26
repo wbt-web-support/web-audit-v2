@@ -32,10 +32,25 @@ export default function KeysTab({ project }: KeysTabProps) {
         console.log('📊 Pages to analyze:', project.all_pages_html.length)
 
         // Normalize the data format to support both project and page-specific formats
-        const normalizedPages = project.all_pages_html.map((page: any, index: number) => {
+        const normalizedPages = project.all_pages_html.map((page: { 
+          pageName?: string; 
+          pageUrl?: string; 
+          pageHtml?: string; 
+          name?: string; 
+          url?: string; 
+          html?: string;
+          html_content?: string;
+          title?: string;
+          page_title?: string;
+          page_url?: string;
+        }, index: number) => {
           // If page already has the expected format (pageName, pageUrl, pageHtml)
           if (page.pageName && page.pageUrl && page.pageHtml) {
-            return page
+            return {
+              pageName: page.pageName,
+              pageUrl: page.pageUrl,
+              pageHtml: page.pageHtml
+            }
           }
           
           // If page has pageUrl and pageHtml (new format)

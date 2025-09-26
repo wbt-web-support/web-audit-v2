@@ -2,20 +2,29 @@
 
 import { SEOAnalysisResult, SEOHighlight } from '@/types/audit'
 import { analyzeSEO } from '@/lib/seo-analysis'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
+interface Project {
+  id: string
+  site_url: string
+  scraping_data?: Record<string, unknown>
+  seo_analysis?: SEOAnalysisResult | null
+}
+
+interface ScrapedPage {
+  html_content?: string | null
+  url?: string
+  audit_project_id?: string
+  performance_analysis?: Record<string, unknown>
+}
+
 interface SEOAnalysisSectionProps {
-  project?: {
-    id: string
-    site_url: string
-    scraping_data?: any
-    seo_analysis?: SEOAnalysisResult | null
-  }
-  scrapedPages?: any[]
+  project?: Project
+  scrapedPages?: ScrapedPage[]
   dataVersion?: number
   // For single page analysis
-  page?: any
+  page?: ScrapedPage
   isPageAnalysis?: boolean
   cachedAnalysis?: SEOAnalysisResult | null
 }
@@ -35,7 +44,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
     }
   }, [project?.seo_analysis, dataVersion, isPageAnalysis])
 
-  const analyzePage = async () => {
+  const analyzePage = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -84,7 +93,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
     } finally {
       setLoading(false)
     }
-  }
+  }, [isPageAnalysis, page, scrapedPages, project, updateAuditProject])
 
   useEffect(() => {
     // For page analysis, analyze immediately if we have page data
@@ -240,7 +249,7 @@ export default function SEOAnalysisSection({ project, scrapedPages = [], dataVer
       {/* Positive Highlights - Clean Row Format */}
       {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">✨ What's Working Well</h4>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">✨ What&apos;s Working Well</h4>
           <div className="space-y-2">
             {seoAnalysis.highlights.map((highlight: SEOHighlight, index: number) => (
               <div

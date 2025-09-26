@@ -37,7 +37,7 @@ export default function CmsSection({ project }: CmsSectionProps) {
             <div>
               <h4 className="text-md font-medium text-gray-700 mb-3">Detected Plugins</h4>
               <div className="space-y-2">
-                {project.cms_plugins.map((plugin: any, index: number) => (
+                {project.cms_plugins.map((plugin: { name: string; version?: string; active?: boolean; path?: string; description?: string; author?: string; confidence?: number; detection_method?: string }, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center">
                       <span className="font-medium text-gray-900">{plugin.name}</span>
@@ -53,11 +53,11 @@ export default function CmsSection({ project }: CmsSectionProps) {
                     <div className="flex items-center space-x-2">
                       <span className="text-gray-500 text-sm">{plugin.author || 'Unknown'}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        plugin.confidence >= 0.8 ? 'bg-green-100 text-green-800' :
-                        plugin.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                        (plugin.confidence || 0) >= 0.8 ? 'bg-green-100 text-green-800' :
+                        (plugin.confidence || 0) >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {Math.round(plugin.confidence * 100)}%
+                        {Math.round((plugin.confidence || 0) * 100)}%
                       </span>
                     </div>
                   </div>
@@ -71,7 +71,7 @@ export default function CmsSection({ project }: CmsSectionProps) {
             <div>
               <h4 className="text-md font-medium text-gray-700 mb-3">Detected Themes</h4>
               <div className="space-y-2">
-                {project.cms_themes.map((theme: any, index: number) => (
+                {project.cms_themes.map((theme: { name: string; version?: string; active?: boolean; path?: string; description?: string; author?: string; confidence?: number; detection_method?: string }, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center">
                       <span className="font-medium text-gray-900">{theme.name}</span>
@@ -85,11 +85,11 @@ export default function CmsSection({ project }: CmsSectionProps) {
                       )}
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      theme.confidence >= 0.8 ? 'bg-green-100 text-green-800' :
-                      theme.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                      (theme.confidence || 0) >= 0.8 ? 'bg-green-100 text-green-800' :
+                      (theme.confidence || 0) >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {Math.round(theme.confidence * 100)}%
+                      {Math.round((theme.confidence || 0) * 100)}%
                     </span>
                   </div>
                 ))}

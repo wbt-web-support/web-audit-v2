@@ -9,7 +9,16 @@ import AdminTab from '../tabs/AdminTab'
 
 interface DashboardContentProps {
   activeTab: string
-  userProfile: any
+  userProfile: {
+    id: string;
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    role: 'user' | 'admin' | 'moderator';
+    email_confirmed: boolean;
+    created_at: string;
+    updated_at?: string;
+  } | null
   projects: AuditProject[]
   projectsLoading: boolean
   projectsError: string | null
@@ -50,9 +59,9 @@ export default function DashboardContent({
           />
         )
       case 'profile':
-        return <ProfileTab userProfile={userProfile} />
+        return userProfile ? <ProfileTab userProfile={userProfile} /> : null
       case 'admin':
-        return <AdminTab userProfile={userProfile} />
+        return userProfile ? <AdminTab userProfile={userProfile} /> : null
       default:
         return (
           <DashboardOverview 

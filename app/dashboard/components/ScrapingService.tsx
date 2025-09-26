@@ -1,12 +1,160 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { filterHtmlContent } from '@/lib/html-content-filter'
 
+// Type definitions
+interface Plugin {
+  name: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  author: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface Theme {
+  name: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  author: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface Component {
+  name: string
+  type: string
+  version: string | null
+  active: boolean
+  path: string | null
+  description: string | null
+  confidence: number
+  detection_method: string
+}
+
+interface Technology {
+  name: string
+  version: string | null
+  category: string
+  confidence: number
+  detection_method: string
+  description: string | null
+  website: string | null
+  icon: string | null
+  first_seen?: string
+  last_seen?: string
+}
+
+interface SocialMetaTag {
+  name: string
+  property: string
+  content: string
+  httpEquiv?: string
+}
+
+interface MetaTag {
+  name: string
+  content: string
+}
+
+interface Link {
+  href: string
+  text: string
+  [key: string]: unknown
+}
+
+interface Image {
+  src: string
+  alt: string
+  [key: string]: unknown
+}
+
+interface Page {
+  url: string
+  statusCode: number
+  title: string
+  html: string
+  htmlContentLength: number
+  links?: Link[]
+  images?: Image[]
+  metaTags?: MetaTag[]
+  technologies?: Technology[]
+}
+
+interface CmsData {
+  type?: string
+  version?: string
+  plugins?: Plugin[]
+  themes?: Theme[]
+  components?: Component[]
+  confidence?: number
+  detection_method?: string
+  metadata?: Record<string, unknown>
+}
+
+interface ExtractedData {
+  cms?: CmsData
+  technologies?: Technology[]
+}
+
+interface Summary {
+  totalPages?: number
+  totalLinks?: number
+  totalImages?: number
+  totalMetaTags?: number
+  technologiesFound?: number
+  cmsDetected?: boolean
+  technologies?: string[]
+  totalHtmlContent?: number
+  averageHtmlPerPage?: number
+}
+
+interface Performance {
+  pagesPerSecond?: number
+  totalTime?: number
+}
+
+interface ScrapingData {
+  pages: Page[]
+  extractedData?: ExtractedData
+  summary?: Summary
+  performance?: Performance
+  responseTime?: number
+}
+
+interface PageData {
+  pageName: string
+  pageUrl: string
+  pageHtml: string
+}
+
+interface ProcessedCmsData {
+  cms_type: string | null
+  cms_version: string | null
+  cms_plugins: Plugin[] | null
+  cms_themes: Theme[] | null
+  cms_components: Component[] | null
+  cms_confidence: number
+  cms_detection_method: string | null
+  cms_metadata: Record<string, unknown> | null
+}
+
+interface ProcessedTechnologiesData {
+  technologies: Technology[] | null
+  technologies_confidence: number
+  technologies_detection_method: string | null
+  technologies_metadata: Record<string, unknown> | null
+}
+
 interface ScrapingServiceProps {
   projectId: string | null
-  scrapingData: any
+  scrapingData: ScrapingData
   onScrapingComplete: (success: boolean) => void
 }
 
@@ -16,7 +164,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
   const processedDataRef = useRef<string | null>(null)
 
   // Function to process CMS data and remove duplicates
-  const processCmsData = (cmsData: any) => {
+  const processCmsData = (cmsData: CmsData | undefined): ProcessedCmsData => {
     if (!cmsData) {
       return {
         cms_type: null,
@@ -32,7 +180,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process plugins - remove duplicates and add metadata
     const uniquePlugins = cmsData.plugins ? 
-      cmsData.plugins.reduce((acc: any[], plugin: any) => {
+      cmsData.plugins.reduce((acc: Plugin[], plugin: Plugin) => {
         const existing = acc.find(p => p.name === plugin.name)
         if (!existing) {
           acc.push({
@@ -64,7 +212,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process themes - remove duplicates and add metadata
     const uniqueThemes = cmsData.themes ? 
-      cmsData.themes.reduce((acc: any[], theme: any) => {
+      cmsData.themes.reduce((acc: Theme[], theme: Theme) => {
         const existing = acc.find(t => t.name === theme.name)
         if (!existing) {
           acc.push({
@@ -96,7 +244,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process components - remove duplicates and add metadata
     const uniqueComponents = cmsData.components ? 
-      cmsData.components.reduce((acc: any[], component: any) => {
+      cmsData.components.reduce((acc: Component[], component: Component) => {
         const existing = acc.find(c => c.name === component.name && c.type === component.type)
         if (!existing) {
           acc.push({
@@ -138,18 +286,18 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         total_plugins: uniquePlugins?.length || 0,
         total_themes: uniqueThemes?.length || 0,
         total_components: uniqueComponents?.length || 0,
-        active_plugins: uniquePlugins?.filter((p: any) => p.active).length || 0,
-        active_themes: uniqueThemes?.filter((t: any) => t.active).length || 0,
-        active_components: uniqueComponents?.filter((c: any) => c.active).length || 0,
+        active_plugins: uniquePlugins?.filter((p: Plugin) => p.active).length || 0,
+        active_themes: uniqueThemes?.filter((t: Theme) => t.active).length || 0,
+        active_components: uniqueComponents?.filter((c: Component) => c.active).length || 0,
         ...cmsData.metadata
       }
     }
   }
 
   // Function to process technologies data and remove duplicates
-  const processTechnologiesData = (technologiesData: any, summaryTechnologies: string[] = []) => {
+  const processTechnologiesData = (technologiesData: Technology[] | undefined, summaryTechnologies: string[] = []): ProcessedTechnologiesData => {
     // Combine both detailed technologies and summary technologies
-    const allTechnologies: any[] = []
+    const allTechnologies: Technology[] = []
     
     // Add detailed technologies if available
     if (technologiesData && Array.isArray(technologiesData)) {
@@ -199,7 +347,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
     }
 
     // Process technologies - remove duplicates and add metadata
-    const uniqueTechnologies = allTechnologies.reduce((acc: any[], tech: any) => {
+    const uniqueTechnologies = allTechnologies.reduce((acc: Technology[], tech: Technology) => {
       const existing = acc.find(t => t.name === tech.name && t.category === (tech.category || 'unknown'))
       
       if (!existing) {
@@ -241,7 +389,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       : 0
 
     // Group technologies by category
-    const technologiesByCategory = uniqueTechnologies.reduce((acc: any, tech: any) => {
+    const technologiesByCategory = uniqueTechnologies.reduce((acc: Record<string, Technology[]>, tech: Technology) => {
       const category = tech.category || 'unknown'
       if (!acc[category]) {
         acc[category] = []
@@ -259,16 +407,16 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         total_technologies: uniqueTechnologies.length,
         categories: Object.keys(technologiesByCategory),
         technologies_by_category: technologiesByCategory,
-        high_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence >= 0.8).length,
-        medium_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence >= 0.5 && t.confidence < 0.8).length,
-        low_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence < 0.5).length
+        high_confidence_technologies: uniqueTechnologies.filter((t: Technology) => t.confidence >= 0.8).length,
+        medium_confidence_technologies: uniqueTechnologies.filter((t: Technology) => t.confidence >= 0.5 && t.confidence < 0.8).length,
+        low_confidence_technologies: uniqueTechnologies.filter((t: Technology) => t.confidence < 0.5).length
       }
     }
   }
 
 
   // Function to process scraping data and save to database
-  const processScrapingData = async (scrapingData: any, projectId: string) => {
+  const processScrapingData = useCallback(async (scrapingData: ScrapingData, projectId: string) => {
     try {
       
       
@@ -297,7 +445,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           meta[name^="slack:"]
         `)
         
-        const extractedTags: any[] = []
+        const extractedTags: SocialMetaTag[] = []
         socialMetaTags.forEach((tag) => {
           const element = tag as HTMLMetaElement
           extractedTags.push({
@@ -312,7 +460,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       }
 
       // Prepare scraped pages data (including HTML content for individual pages)
-      const scrapedPagesData = scrapingData.pages.map((page: any) => {
+      const scrapedPagesData = scrapingData.pages.map((page: Page) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
         // Filter HTML content to get pure text content
@@ -338,7 +486,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           url: page.url,
           status_code: page.statusCode,
           title: page.title,
-          description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
+          description: page.metaTags?.find((tag: MetaTag) => tag.name === 'description')?.content || null,
           html_content: page.html, // Keep original HTML content
           html_content_length: page.htmlContentLength, // Keep original HTML length
           filtered_content: filteredContent.pureContent, // Store filtered pure text content in new column
@@ -349,14 +497,15 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           images: page.images || null, // Store actual images data
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
-          technologies: page.technologies || null,
+          technologies: page.technologies?.map(tech => tech.name) || null,
           cms_type: scrapingData.extractedData?.cms?.type || null,
           cms_version: scrapingData.extractedData?.cms?.version || null,
-          cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
+          cms_plugins: scrapingData.extractedData?.cms?.plugins?.map(plugin => plugin.name) || null,
           social_meta_tags: socialMetaTags, // Store full social meta tags data
           social_meta_tags_count: socialMetaTagsCount, // Store count as well
           is_external: false, // Main page is not external
-          response_time: scrapingData.responseTime
+          response_time: scrapingData.responseTime || null,
+          performance_analysis: null // Initialize as null, will be populated later
         }
       })
 
@@ -394,7 +543,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       console.log('🔍 Starting to process pages for HTML extraction...')
       console.log('📊 Total pages to process:', scrapingData.pages?.length || 0)
       
-      const allPagesHtml = scrapingData.pages.map((page: any, index: number) => {
+      const allPagesHtml = scrapingData.pages.map((page: Page, index: number): PageData => {
         console.log(`📄 Processing page ${index + 1}/${scrapingData.pages.length}:`, {
           url: page.url,
           hasHtml: !!page.html,
@@ -422,9 +571,9 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       console.log('🎯 All pages HTML extraction completed!')
       console.log('📈 Final allPagesHtml array:', {
         totalPages: allPagesHtml.length,
-        pagesWithHtml: allPagesHtml.filter((p: any) => p.pageHtml).length,
-        totalHtmlLength: allPagesHtml.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0),
-        sampleUrls: allPagesHtml.slice(0, 3).map((p: any) => p.pageUrl)
+        pagesWithHtml: allPagesHtml.filter((p: PageData) => p.pageHtml).length,
+        totalHtmlLength: allPagesHtml.reduce((sum: number, p: PageData) => sum + (p.pageHtml?.length || 0), 0),
+        sampleUrls: allPagesHtml.slice(0, 3).map((p: PageData) => p.pageUrl)
       })
       
       // Log first page HTML sample for debugging
@@ -437,16 +586,16 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       console.log('💾 Preparing to save allPagesHtml to database...')
       console.log('📊 allPagesHtml data summary:', {
         totalPages: allPagesHtml.length,
-        totalHtmlSize: allPagesHtml.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0),
-        urls: allPagesHtml.map((p: any) => p.pageUrl)
+        totalHtmlSize: allPagesHtml.reduce((sum: number, p: PageData) => sum + (p.pageHtml?.length || 0), 0),
+        urls: allPagesHtml.map((p: PageData) => p.pageUrl)
       })
       
       // Aggregate images and links from all pages
       console.log('🖼️ Aggregating images and links data from all pages...')
-      const allImages: any[] = []
-      const allLinks: any[] = []
+      const allImages: (Image & { page_url: string; page_title: string; page_index: number })[] = []
+      const allLinks: (Link & { page_url: string; page_title: string; page_index: number })[] = []
       
-      scrapingData.pages.forEach((page: any, index: number) => {
+      scrapingData.pages.forEach((page: Page, index: number) => {
         console.log(`📄 Processing page ${index + 1} for images and links:`, {
           url: page.url,
           imagesCount: page.images?.length || 0,
@@ -455,7 +604,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         
         // Add images with page context
         if (page.images && Array.isArray(page.images)) {
-          page.images.forEach((image: any) => {
+          page.images.forEach((image: Image) => {
             allImages.push({
               ...image,
               page_url: page.url,
@@ -467,7 +616,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         
         // Add links with page context
         if (page.links && Array.isArray(page.links)) {
-          page.links.forEach((link: any) => {
+          page.links.forEach((link: Link) => {
             allLinks.push({
               ...link,
               page_url: page.url,
@@ -536,7 +685,12 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           console.warn('   ALTER TABLE audit_projects ADD COLUMN links JSONB;')
           
           // Try updating without the problematic fields
-          const { all_pages_html: _all_pages_html, images: _images, links: _links, ...summaryDataWithoutNewFields } = summaryData
+          const { all_pages_html, images, links, ...summaryDataWithoutNewFields } = summaryData
+          
+          console.log('🔄 Retrying database update without new fields:', {
+            removedFields: { all_pages_html: !!all_pages_html, images: !!images, links: !!links },
+            remainingFields: Object.keys(summaryDataWithoutNewFields)
+          })
           
           
           const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutNewFields)
@@ -579,15 +733,15 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
               console.log('✅ HTML content successfully saved in all_pages_html column')
               console.log('📈 all_pages_html details:', {
                 totalPages: verifyData.all_pages_html?.length || 0,
-                sampleUrls: verifyData.all_pages_html?.slice(0, 3).map((p: any) => p.url) || [],
-                totalHtmlSize: verifyData.all_pages_html?.reduce((sum: number, p: any) => sum + (p.html?.length || 0), 0) || 0
+                sampleUrls: verifyData.all_pages_html?.slice(0, 3).map((p: PageData) => p.pageUrl) || [],
+                totalHtmlSize: verifyData.all_pages_html?.reduce((sum: number, p: PageData) => sum + (p.pageHtml?.length || 0), 0) || 0
               })
             } else if (htmlSavedInScrapingData) {
               console.log('✅ HTML content successfully saved in scraping_data.all_pages_html (backup location)')
               console.log('📈 scraping_data.all_pages_html details:', {
                 totalPages: verifyData.scraping_data.all_pages_html.length,
-                sampleUrls: verifyData.scraping_data.all_pages_html.slice(0, 3).map((p: any) => p.url),
-                totalHtmlSize: verifyData.scraping_data.all_pages_html.reduce((sum: number, p: any) => sum + (p.html?.length || 0), 0)
+                sampleUrls: verifyData.scraping_data.all_pages_html.slice(0, 3).map((p: PageData) => p.pageUrl),
+                totalHtmlSize: verifyData.scraping_data.all_pages_html.reduce((sum: number, p: PageData) => sum + (p.pageHtml?.length || 0), 0)
               })
             } else {
               console.warn('⚠️ HTML content not found in either location - this indicates a database issue')
@@ -609,7 +763,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       console.error('❌ Error processing scraping data:', error)
       onScrapingComplete(false)
     }
-  }
+  }, [onScrapingComplete, createScrapedPages, updateAuditProject, processMetaTagsData, getAuditProject])
 
   // Process data when component receives it using useEffect
   useEffect(() => {

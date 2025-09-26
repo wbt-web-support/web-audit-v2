@@ -24,7 +24,7 @@ export interface ScrapedPage {
   social_meta_tags_count: number
   is_external: boolean
   response_time: number | null
-  performance_analysis: Record<string, unknown> | null
+  performance_analysis: Record<string, unknown> | undefined
   created_at: string
   updated_at: string
 }

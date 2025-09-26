@@ -1,17 +1,69 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { AuditProject, SEOAnalysisResult } from '@/types/audit'
+import { GeminiAnalysisResult } from '@/lib/gemini'
+
+interface PerformanceAnalysisResult {
+  score: number
+  metrics: {
+    firstContentfulPaint: number
+    largestContentfulPaint: number
+    cumulativeLayoutShift: number
+    speedIndex: number
+    totalBlockingTime: number
+    interactive: number
+  }
+  recommendations: string[]
+  issues: Array<{
+    type: string
+    severity: 'high' | 'medium' | 'low'
+    description: string
+    fix: string
+  }>
+}
+
+interface ScrapedPageData {
+  id: string
+  audit_project_id: string
+  user_id: string
+  url: string
+  status_code: number | null
+  title: string | null
+  description: string | null
+  html_content: string | null
+  filtered_content?: string | null
+  html_content_length: number | null
+  links_count: number
+  images_count: number
+  links: Array<{url: string, text: string, isExternal: boolean}> | null
+  images: Array<{src: string, alt?: string, title?: string}> | null
+  meta_tags_count: number
+  technologies_count: number
+  technologies: string[] | null
+  cms_type: string | null
+  cms_version: string | null
+  cms_plugins: string[] | null
+  social_meta_tags: Record<string, string> | null
+  social_meta_tags_count: number
+  is_external: boolean
+  response_time: number | null
+  performance_analysis: Record<string, unknown> | undefined
+  gemini_analysis?: GeminiAnalysisResult | null
+  created_at: string
+  updated_at: string
+}
 
 interface PageAnalysisCacheData {
   // Page data
-  page: any
-  project: any
+  page: ScrapedPageData | null
+  project: AuditProject | null
   
   // Analysis results
-  geminiAnalysis: any
-  performanceAnalysis: any
-  seoAnalysis: any
+  geminiAnalysis: GeminiAnalysisResult | null
+  performanceAnalysis: PerformanceAnalysisResult | null
+  seoAnalysis: SEOAnalysisResult | null
   
   // Loading states
   isGeminiLoading: boolean
@@ -26,9 +78,9 @@ interface PageAnalysisCacheData {
 
 interface PageAnalysisCacheContextType {
   data: PageAnalysisCacheData
-  updateGeminiAnalysis: (analysis: any) => void
-  updatePerformanceAnalysis: (analysis: any) => void
-  updateSeoAnalysis: (analysis: any) => void
+  updateGeminiAnalysis: (analysis: GeminiAnalysisResult) => void
+  updatePerformanceAnalysis: (analysis: PerformanceAnalysisResult) => void
+  updateSeoAnalysis: (analysis: SEOAnalysisResult) => void
   setGeminiLoading: (loading: boolean) => void
   setPerformanceLoading: (loading: boolean) => void
   setSeoLoading: (loading: boolean) => void
@@ -62,17 +114,17 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
     seoError: null
   })
 
-  const updateGeminiAnalysis = (analysis: any) => {
+  const updateGeminiAnalysis = useCallback((analysis: GeminiAnalysisResult) => {
     setData(prev => ({ ...prev, geminiAnalysis: analysis }))
-  }
+  }, [])
 
-  const updatePerformanceAnalysis = (analysis: any) => {
+  const updatePerformanceAnalysis = useCallback((analysis: PerformanceAnalysisResult) => {
     setData(prev => ({ ...prev, performanceAnalysis: analysis }))
-  }
+  }, [])
 
-  const updateSeoAnalysis = (analysis: any) => {
+  const updateSeoAnalysis = useCallback((analysis: SEOAnalysisResult) => {
     setData(prev => ({ ...prev, seoAnalysis: analysis }))
-  }
+  }, [])
 
   const setGeminiLoading = (loading: boolean) => {
     setData(prev => ({ ...prev, isGeminiLoading: loading }))
@@ -98,7 +150,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
     setData(prev => ({ ...prev, seoError: error }))
   }
 
-  const refreshAnalysis = async (type: 'gemini' | 'performance' | 'seo') => {
+  const refreshAnalysis = useCallback(async (type: 'gemini' | 'performance' | 'seo') => {
     if (!data.page) return
 
     switch (type) {
@@ -118,9 +170,9 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           })
           const result = await response.json()
           if (result.success) {
-            updateGeminiAnalysis(result.analysis)
+            updateGeminiAnalysis(result.analysis as GeminiAnalysisResult)
             // Update database
-            await updateScrapedPage(data.page.id, { gemini_analysis: result.analysis } as any)
+            await updateScrapedPage(data.page.id, { gemini_analysis: result.analysis } as Partial<ScrapedPageData>)
           } else {
             setGeminiError(result.error || 'Analysis failed')
           }
@@ -145,9 +197,9 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           })
           const result = await response.json()
           if (result.success) {
-            updatePerformanceAnalysis(result.analysis)
+            updatePerformanceAnalysis(result.analysis as PerformanceAnalysisResult)
             // Update database
-            await updateScrapedPage(data.page.id, { performance_analysis: result.analysis } as any)
+            await updateScrapedPage(data.page.id, { performance_analysis: result.analysis } as Partial<ScrapedPageData>)
           } else {
             setPerformanceError(result.error || 'Analysis failed')
           }
@@ -164,7 +216,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
         try {
           // SEO analysis is typically done client-side
           const { analyzeSEO } = await import('@/lib/seo-analysis')
-          const analysis = analyzeSEO(data.page.html_content, data.page.url)
+          const analysis = analyzeSEO(data.page.html_content || '', data.page.url)
           updateSeoAnalysis(analysis)
         } catch {
           setSeoError('Failed to perform SEO analysis')
@@ -173,7 +225,7 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
         }
         break
     }
-  }
+  }, [data.page, updateGeminiAnalysis, updatePerformanceAnalysis, updateSeoAnalysis, updateScrapedPage])
 
   // Load initial page data
   useEffect(() => {
@@ -190,15 +242,16 @@ export function PageAnalysisCacheProvider({ children, pageId }: PageAnalysisCach
           return
         }
 
+        const pageData = foundPage as ScrapedPageData
         setData(prev => ({
           ...prev,
-          page: foundPage,
-          geminiAnalysis: (foundPage as any).gemini_analysis || null,
-          performanceAnalysis: (foundPage as any).performance_analysis || null
+          page: pageData,
+          geminiAnalysis: pageData.gemini_analysis || null,
+          performanceAnalysis: pageData.performance_analysis ? (pageData.performance_analysis as unknown as PerformanceAnalysisResult) : null
         }))
 
         // Auto-trigger performance analysis if no cached data exists
-        if (!(foundPage as any).performance_analysis) {
+        if (!pageData.performance_analysis) {
           console.log('🚀 PageAnalysisCache: No performance analysis found, auto-triggering...')
           setTimeout(() => {
             refreshAnalysis('performance').catch(err => {

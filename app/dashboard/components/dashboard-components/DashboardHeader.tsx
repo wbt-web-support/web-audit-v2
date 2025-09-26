@@ -4,7 +4,15 @@ import { motion } from 'framer-motion'
 
 interface DashboardHeaderProps {
   onMenuClick: () => void
-  userProfile: any
+  userProfile: {
+    id: string;
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    role: string;
+    email_confirmed: boolean;
+    created_at: string;
+  } | null
 }
 
 export default function DashboardHeader({ onMenuClick, userProfile }: DashboardHeaderProps) {

@@ -1,7 +1,18 @@
 'use client'
 
 interface PagesSectionProps {
-  scrapedPages: any[]
+  scrapedPages: Array<{
+    id: string;
+    url: string;
+    title: string | null;
+    status_code: number | null;
+    created_at: string;
+    description?: string | null;
+    links_count: number;
+    images_count: number;
+    meta_tags_count: number;
+    technologies_count: number;
+  }>
   projectId?: string
   onPageSelect?: (pageId: string) => void
 }
@@ -17,11 +28,11 @@ export default function PagesSection({ scrapedPages, onPageSelect }: PagesSectio
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-gray-900">{page.title || 'Untitled'}</h4>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
-                  page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
+                  page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
+                  page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 }`}>
-                  {page.status_code}
+                  {page.status_code || 'N/A'}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-2">{page.url}</p>

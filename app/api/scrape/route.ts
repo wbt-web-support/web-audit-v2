@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     try {
       new URL(endpoint);
     } catch (urlError) {
-      console.error('❌ Invalid endpoint URL:', endpoint);
+      console.error('❌ Invalid endpoint URL:', endpoint, urlError);
       return new Response(JSON.stringify({
         error: 'Invalid API endpoint configuration',
         details: `Invalid URL: ${endpoint}`,

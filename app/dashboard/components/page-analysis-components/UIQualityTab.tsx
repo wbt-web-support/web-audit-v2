@@ -1,7 +1,9 @@
 'use client'
 
 interface UIQualityTabProps {
-  page: any
+  page: {
+    html_content: string | null
+  }
 }
 
 export default function UIQualityTab({ page }: UIQualityTabProps) {

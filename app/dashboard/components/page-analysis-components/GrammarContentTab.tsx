@@ -1,13 +1,22 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { filterHtmlContent } from "@/lib/html-content-filter"
 import { GeminiAnalysisResult } from "@/lib/gemini"
 import { useGeminiStream } from "@/hooks/useGeminiStream"
 
+// Define proper interfaces for the page data
+interface ScrapedPageData {
+  id: string
+  url: string
+  html_content: string | null
+  filtered_content?: string | null
+  gemini_analysis?: GeminiAnalysisResult | null
+}
+
 interface GrammarContentTabProps {
-  page: any
-  cachedAnalysis?: any
+  page: ScrapedPageData
+  cachedAnalysis?: GeminiAnalysisResult
 }
 
 type TabType = 'grammar' | 'punctuation' | 'structure' | 'style' | 'spelling' | 'uk-english' | 'content'
@@ -31,8 +40,18 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
   const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '')
   const textContent = typeof filteredContent === 'string' ? filteredContent : filteredContent?.pureContent || ''
 
+  // Update analysis when streaming completes
+  useEffect(() => {
+    if (streamStatus.status === 'completed' && streamStatus.analysis) {
+      setGeminiAnalysis(streamStatus.analysis)
+      setAnalysisError(null)
+    } else if (streamStatus.status === 'error') {
+      setAnalysisError(streamStatus.error || 'Analysis failed')
+    }
+  }, [streamStatus])
+
   // Function to trigger Gemini analysis
-  const handleReAnalyze = async () => {
+  const handleReAnalyze = useCallback(async () => {
     try {
       setAnalysisError(null)
       reset()
@@ -64,7 +83,7 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
       console.error('Error during analysis:', error)
       setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze content. Please try again.')
     }
-  }
+  }, [page.id, page.url, textContent, reset, startAnalysis])
 
   // Auto-trigger analysis if no analysis exists
   useEffect(() => {
@@ -98,16 +117,6 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
       </div>
     )
   }
-
-  // Update analysis when streaming completes
-  useEffect(() => {
-    if (streamStatus.status === 'completed' && streamStatus.analysis) {
-      setGeminiAnalysis(streamStatus.analysis)
-      setAnalysisError(null)
-    } else if (streamStatus.status === 'error') {
-      setAnalysisError(streamStatus.error || 'Analysis failed')
-    }
-  }, [streamStatus])
 
   // Helper functions to categorize issues
   const getGrammarIssues = () => {
@@ -173,11 +182,20 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
     })
   }
 
+  // Define issue interface
+  interface AnalysisIssue {
+    type: string
+    severity: 'high' | 'medium' | 'low'
+    text?: string
+    description?: string
+    suggestion: string
+  }
+
   // Render issues for current tab
   const renderTabContent = () => {
     if (!geminiAnalysis) return null
 
-    let issues: any[] = []
+    let issues: AnalysisIssue[] = []
     let title = ""
 
     switch (activeTab) {
@@ -252,7 +270,7 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
                   
                   {issue.text && (
                     <p className="text-sm text-gray-800 mb-2">
-                      <strong>Text:</strong> "{issue.text}"
+                      <strong>Text:</strong> &ldquo;{issue.text}&rdquo;
                     </p>
                   )}
                   
@@ -387,7 +405,7 @@ export default function GrammarContentTab({ page, cachedAnalysis }: GrammarConte
               </svg>
             </div>
             <p className="text-gray-600 mb-4">No AI analysis available yet</p>
-            <p className="text-sm text-gray-500">Click "Re-analyze" to get AI-powered grammar analysis</p>
+            <p className="text-sm text-gray-500">Click &ldquo;Re-analyze&rdquo; to get AI-powered grammar analysis</p>
           </div>
         )}
       </div>

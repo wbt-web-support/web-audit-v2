@@ -6,15 +6,25 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
 
+interface UserProfile {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  role: 'user' | 'admin' | 'moderator'
+  email_confirmed: boolean
+  created_at: string
+}
+
 interface AdminTabProps {
-  userProfile: any
+  userProfile: UserProfile
 }
 
 export default function AdminTab({ }: AdminTabProps) {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [_roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
-  const [_verificationError, setVerificationError] = useState<string | null>(null)
+  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
 
   const [users] = useState([
     {
@@ -162,6 +172,11 @@ export default function AdminTab({ }: AdminTabProps) {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
         <p className="text-gray-600">You don&apos;t have admin permissions to access this panel.</p>
         <p className="text-sm text-gray-500 mt-2">Database verification failed.</p>
+        {verificationError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">Error: {verificationError}</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -172,6 +187,11 @@ export default function AdminTab({ }: AdminTabProps) {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
         <p className="text-gray-600 mt-1">Manage users, monitor system health, and configure settings</p>
+        {roleVerificationResult && (
+          <div className="mt-2 text-xs text-gray-500">
+            Verified as: {roleVerificationResult.role} (Status: {roleVerificationResult.verified ? 'Verified' : 'Not Verified'})
+          </div>
+        )}
       </div>
 
       {/* System Stats */}

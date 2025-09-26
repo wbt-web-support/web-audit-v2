@@ -11,7 +11,15 @@ interface DashboardSidebarProps {
   onClose: () => void
   activeTab: string
   onTabChange: (tab: string) => void
-  userProfile: any
+  userProfile: {
+    id: string;
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    role: string;
+    email_confirmed: boolean;
+    created_at: string;
+  } | null
   selectedProjectId?: string | null
 }
 

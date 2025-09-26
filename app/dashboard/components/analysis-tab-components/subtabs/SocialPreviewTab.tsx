@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 
 interface SocialMetaData {
@@ -10,16 +11,33 @@ interface SocialMetaData {
   site_name?: string
 }
 
+interface MetaTag {
+  property?: string
+  name?: string
+  content?: string
+}
+
+interface MetaTagsData {
+  all_meta_tags?: MetaTag[]
+}
+
+interface SocialData {
+  openGraph: SocialMetaData
+  twitter: SocialMetaData
+  presentTags: string[]
+  missingTags: string[]
+}
+
 interface SocialPreviewTabProps {
   project: AuditProject
 }
 
 export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
-  const [socialData, setSocialData] = useState<any>(null)
+  const [socialData, setSocialData] = useState<SocialData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Extract social meta tags from meta_tags_data
-  const extractSocialMetaTags = (metaTagsData: any) => {
+  const extractSocialMetaTags = (metaTagsData: MetaTagsData): SocialData => {
     if (!metaTagsData?.all_meta_tags) {
       return {
         openGraph: {},
@@ -39,7 +57,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
     const twitterTags = ['twitter:card', 'twitter:title', 'twitter:description', 'twitter:image', 'twitter:url', 'twitter:site', 'twitter:creator']
 
     // Extract tags from all_meta_tags array
-    metaTagsData.all_meta_tags.forEach((tag: any) => {
+    metaTagsData.all_meta_tags.forEach((tag: MetaTag) => {
       // Handle Open Graph tags (using property field)
       if (tag.property?.startsWith('og:')) {
         const key = tag.property.replace('og:', '')
@@ -136,9 +154,11 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
             <div className="w-32 h-32 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center relative">
               {socialImage ? (
                 <>
-                  <img 
+                  <Image 
                     src={socialImage} 
                     alt="Social preview" 
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover rounded"
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement
@@ -185,9 +205,11 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Image</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <img 
+              <Image 
                 src={socialImage} 
                 alt="Social media preview" 
+                width={128}
+                height={128}
                 className="w-32 h-32 object-cover rounded-lg border border-gray-200"
                 onError={(e) => {
                   const target = e.currentTarget as HTMLImageElement

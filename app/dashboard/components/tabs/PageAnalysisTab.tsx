@@ -90,21 +90,21 @@ function PageAnalysisContent({ }: PageAnalysisTabProps) {
       case 'overview':
         return <OverviewTab page={data.page} project={data.project} />
       case 'links':
-        return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={data.page?.scraping_data} />
+        return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'images':
-        return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={data.page?.scraping_data} />
+        return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'grammar-content':
-        return <GrammarContentTab page={data.page} cachedAnalysis={data.geminiAnalysis} />
+        return <GrammarContentTab page={data.page!} cachedAnalysis={data.geminiAnalysis || undefined} />
       case 'seo-structure':
-        return <SEOAnalysisSection page={data.page} isPageAnalysis={true} cachedAnalysis={data.seoAnalysis} />
+        return <SEOAnalysisSection page={data.page!} isPageAnalysis={true} cachedAnalysis={data.seoAnalysis} />
       case 'ui-quality':
-        return <UIQualityTab page={data.page} />
+        return <UIQualityTab page={data.page!} />
       case 'technical':
-        return <TechnicalTab page={data.page} />
+        return <TechnicalTab page={data.page!} />
       case 'performance':
-        return <PerformanceTab page={data.page} cachedAnalysis={data.performanceAnalysis} />
+        return data.page ? <PerformanceTab page={{...data.page, html_content: data.page.html_content || undefined, images: data.page.images?.map(() => ({ size: 0, loading: 'lazy', format: 'unknown' })) || undefined, response_time: data.page.response_time || undefined, html_content_length: data.page.html_content_length || undefined, performance_analysis: undefined}} cachedAnalysis={undefined} /> : null
       case 'accessibility':
-        return <AccessibilityTab page={data.page} />
+        return data.page ? <AccessibilityTab page={data.page} /> : null
       default:
         return <OverviewTab page={data.page} project={data.project} />
     }

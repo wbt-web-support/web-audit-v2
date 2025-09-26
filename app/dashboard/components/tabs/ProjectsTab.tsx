@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader'
 
@@ -62,17 +63,9 @@ export default function ProjectsTab({
     } else if (projects.length === 0) {
       
     } else {
-      const renderStartTime = performance.now()
-      
-      
       // Use requestAnimationFrame to measure after DOM updates
       requestAnimationFrame(() => {
-        const renderEndTime = performance.now()
-        
-        
-        
-        // Log performance metrics
-        // const avgRenderTimePerCard = (renderEndTime - renderStartTime) / projects.length
+        // Performance tracking logic can be added here if needed
         
       })
     }
@@ -600,7 +593,7 @@ export default function ProjectsTab({
                               <div className="mb-4">
                                 <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Detected Plugins</h6>
                                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                                  {project.cms_plugins.slice(0, 5).map((plugin: any, index: number) => (
+                                  {project.cms_plugins.slice(0, 5).map((plugin: { name: string; version?: string; active?: boolean; confidence: number }, index: number) => (
                                     <div key={index} className="flex items-center justify-between text-xs bg-gray-100 rounded px-2 py-1">
                                       <div className="flex items-center">
                                         <span className="font-medium text-gray-900">{plugin.name}</span>
@@ -630,7 +623,7 @@ export default function ProjectsTab({
                               <div className="mb-4">
                                 <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Detected Themes</h6>
                                 <div className="space-y-1">
-                                  {project.cms_themes.slice(0, 3).map((theme: any, index: number) => (
+                                  {project.cms_themes.slice(0, 3).map((theme: { name: string; version?: string; active?: boolean; confidence: number }, index: number) => (
                                     <div key={index} className="flex items-center justify-between text-xs bg-gray-100 rounded px-2 py-1">
                                       <div className="flex items-center">
                                         <span className="font-medium text-gray-900">{theme.name}</span>
@@ -737,22 +730,26 @@ export default function ProjectsTab({
                             {/* Technologies List by Category */}
                             {project.technologies_metadata?.technologies_by_category && (
                               <div className="space-y-4">
-                                {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]: [string, any]) => (
+                                {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]) => {
+                                  const techsArray = techs as Array<{ name: string; version?: string; confidence: number; icon?: string }>
+                                  return (
                                   <div key={category} className="bg-gray-50 rounded-lg p-4">
                                     <h6 className="text-sm font-semibold text-gray-700 mb-3 capitalize flex items-center">
                                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                       </svg>
-                                      {category} ({techs.length})
+                                      {category} ({techsArray.length})
                                     </h6>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                      {techs.slice(0, 6).map((tech: any, index: number) => (
+                                      {techsArray.slice(0, 6).map((tech, index: number) => (
                                         <div key={index} className="flex items-center justify-between text-xs bg-white rounded px-3 py-2 border">
                                           <div className="flex items-center">
                                             {tech.icon && (
-                                              <img 
+                                              <Image 
                                                 src={tech.icon} 
                                                 alt={tech.name}
+                                                width={16}
+                                                height={16}
                                                 className="w-4 h-4 mr-2 rounded"
                                                 onError={(e) => {
                                                   e.currentTarget.style.display = 'none'
@@ -775,14 +772,15 @@ export default function ProjectsTab({
                                           </div>
                                         </div>
                                       ))}
-                                      {techs.length > 6 && (
+                                      {techsArray.length > 6 && (
                                         <div className="text-xs text-gray-500 text-center py-2 col-span-full">
-                                          +{techs.length - 6} more technologies
+                                          +{techsArray.length - 6} more technologies
                                         </div>
                                       )}
                                     </div>
                                   </div>
-                                ))}
+                                  )
+                                })}
                               </div>
                             )}
                           </div>

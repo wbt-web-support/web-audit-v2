@@ -1,19 +1,30 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
-import { AuditProject } from '@/types/audit'
-import { fetchPageSpeedInsights } from '@/lib/pagespeed'
+import { AuditProject, PageSpeedInsightsData, SEOAnalysisResult, Technology, CmsPlugin, CmsTheme, CmsComponent } from '@/types/audit'
+
+interface CmsData {
+  cms_detected: boolean
+  cms_type: string | null
+  cms_version: string | null
+  cms_plugins: CmsPlugin[] | null
+  cms_themes: CmsTheme[] | null
+  cms_components: CmsComponent[] | null
+  cms_confidence: number
+  cms_detection_method: string | null
+  cms_metadata: Record<string, unknown> | null
+}
 
 interface AnalysisCacheData {
   // Project data
   project: AuditProject | null
   
   // Analysis results
-  pagespeedData: any
-  seoAnalysis: any
-  technologiesData: any
-  cmsData: any
+  pagespeedData: PageSpeedInsightsData | null
+  seoAnalysis: SEOAnalysisResult | null
+  technologiesData: Technology[] | null
+  cmsData: CmsData | null
   
   // Loading states
   isPagespeedLoading: boolean
@@ -30,10 +41,10 @@ interface AnalysisCacheData {
 
 interface AnalysisCacheContextType {
   data: AnalysisCacheData
-  updatePagespeedData: (data: any) => void
-  updateSeoAnalysis: (analysis: any) => void
-  updateTechnologiesData: (data: any) => void
-  updateCmsData: (data: any) => void
+  updatePagespeedData: (data: PageSpeedInsightsData) => void
+  updateSeoAnalysis: (analysis: SEOAnalysisResult) => void
+  updateTechnologiesData: (data: Technology[]) => void
+  updateCmsData: (data: CmsData) => void
   setPagespeedLoading: (loading: boolean) => void
   setSeoLoading: (loading: boolean) => void
   setTechnologiesLoading: (loading: boolean) => void
@@ -74,7 +85,7 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
   // Track if PageSpeed analysis is already running to prevent duplicates
   const pagespeedRunningRef = useRef(false)
 
-  const refreshAnalysis = async (type: 'pagespeed' | 'seo' | 'technologies' | 'cms') => {
+  const refreshAnalysis = useCallback(async (type: 'pagespeed' | 'seo' | 'technologies' | 'cms') => {
     if (!data.project) return
 
     switch (type) {
@@ -178,7 +189,7 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
         }
         break
     }
-  }
+  }, [data.project, updateAuditProject])
 
   // Load initial project data
   useEffect(() => {
@@ -248,19 +259,19 @@ export function AnalysisCacheProvider({ children, projectId }: AnalysisCacheProv
     }
   }, [projectId, getAuditProject, refreshAnalysis])
 
-  const updatePagespeedData = (pagespeedData: any) => {
+  const updatePagespeedData = (pagespeedData: PageSpeedInsightsData) => {
     setData(prev => ({ ...prev, pagespeedData }))
   }
 
-  const updateSeoAnalysis = (seoAnalysis: any) => {
+  const updateSeoAnalysis = (seoAnalysis: SEOAnalysisResult) => {
     setData(prev => ({ ...prev, seoAnalysis }))
   }
 
-  const updateTechnologiesData = (technologiesData: any) => {
+  const updateTechnologiesData = (technologiesData: Technology[]) => {
     setData(prev => ({ ...prev, technologiesData }))
   }
 
-  const updateCmsData = (cmsData: any) => {
+  const updateCmsData = (cmsData: CmsData) => {
     setData(prev => ({ ...prev, cmsData }))
   }
 

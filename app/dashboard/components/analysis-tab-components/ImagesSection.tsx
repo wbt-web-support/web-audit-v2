@@ -1,23 +1,40 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
+import { ScrapedPage } from '../analysis-tab/types'
+
+// Override the ScrapedPage type to accept any performance_analysis type
+interface ScrapedPageOverride extends Omit<ScrapedPage, 'performance_analysis'> {
+  performance_analysis?: Record<string, unknown>
+}
+
+interface OriginalScrapingData {
+  pages?: ScrapedPageOverride[]
+}
 
 interface ImagesSectionProps {
   project: AuditProject
-  scrapedPages: any[]
-  originalScrapingData?: any
+  scrapedPages: ScrapedPageOverride[]
+  originalScrapingData?: OriginalScrapingData
 }
 
 interface ImageData {
-  url: string
-  alt: string | null
-  title: string | null
+  url?: string
+  src?: string
+  alt?: string | null
+  title?: string | null
   width?: number
   height?: number
   type?: string
   size?: number
   page_url?: string
+  altText?: string
+  alt_text?: string
+  titleText?: string
+  title_text?: string
+  fullTag?: string
 }
 
 export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
@@ -98,13 +115,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
       
       
-      originalScrapingData.pages.forEach((page: any) => {
+      originalScrapingData.pages.forEach((page: ScrapedPageOverride) => {
         
         
         if (page.images && Array.isArray(page.images)) {
           
           
-          page.images.forEach((img: any) => {
+          page.images.forEach((img: ImageData) => {
             let src = img.src || img.url || ''
             let alt = img.alt || img.altText || img.alt_text || null
             let title = img.title || img.titleText || img.title_text || null
@@ -163,7 +180,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     if (allImages.length === 0 && scrapedPages && scrapedPages.length > 0) {
       
       
-      scrapedPages.forEach((page: any) => {
+      scrapedPages.forEach((page: ScrapedPageOverride) => {
         
         
         
@@ -235,7 +252,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     return images.filter(img => {
       // Search filter
       const matchesSearch = searchTerm === '' || 
-        img.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (img.url || img.src || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (img.alt && img.alt.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (img.title && img.title.toLowerCase().includes(searchTerm.toLowerCase()))
 
@@ -357,7 +374,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         <div className="w-40">
           <select
             value={altFilter}
-            onChange={(e) => handleFilterChange(searchTerm, e.target.value as any, typeFilter)}
+            onChange={(e) => handleFilterChange(searchTerm, e.target.value as 'all' | 'with-alt' | 'without-alt', typeFilter)}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           >
             <option value="all">All Images</option>
@@ -415,9 +432,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                       className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
                       onClick={() => handleImageClick(img)}
                     >
-                      <img
-                        src={img.url}
+                      <Image
+                        src={img.url || img.src || ''}
                         alt={img.alt || 'No alt text'}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.currentTarget
@@ -571,9 +590,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 {/* Large Image */}
                 <div className="space-y-4">
                   <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
-                    <img
-                      src={selectedImage.url}
+                    <Image
+                      src={selectedImage.url || selectedImage.src || ''}
                       alt={selectedImage.alt || 'No alt text'}
+                      width={400}
+                      height={400}
                       className="max-w-full max-h-[400px] object-contain rounded-lg shadow-sm"
                       onError={(e) => {
                         const target = e.currentTarget
@@ -597,7 +618,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                       Open in New Tab
                     </a>
                     <button
-                      onClick={() => navigator.clipboard.writeText(selectedImage.url)}
+                      onClick={() => navigator.clipboard.writeText(selectedImage.url || selectedImage.src || '')}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                     >
                       Copy URL
@@ -680,7 +701,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                       
                       {selectedImage.alt && selectedImage.alt.trim() !== '' && (
                         <div className="text-sm text-gray-600">
-                          <strong>Alt Text:</strong> "{selectedImage.alt}"
+                          <strong>Alt Text:</strong> &quot;{selectedImage.alt}&quot;
                         </div>
                       )}
                     </div>

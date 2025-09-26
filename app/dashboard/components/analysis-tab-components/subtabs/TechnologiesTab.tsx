@@ -1,13 +1,30 @@
 'use client'
 
 import { AuditProject } from '@/types/audit'
+import Image from 'next/image'
 
 interface TechnologiesTabProps {
   project: AuditProject
 }
 
+interface Technology {
+  name: string
+  version?: string | null
+  category?: string
+  confidence?: number
+  detection_method?: string
+  description?: string | null
+  website?: string | null
+  icon?: string | null
+}
+
+interface TechnologyIconProps {
+  tech: Technology
+  className?: string
+}
+
 // Technology icon fallback component
-const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?: string }) => {
+const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) => {
   const getInitials = (name: string) => {
     if (!name || typeof name !== 'string') {
       return '??'
@@ -35,15 +52,17 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?
       'detected': 'bg-blue-100 text-blue-800',
       'unknown': 'bg-slate-100 text-slate-800'
     }
-    return colors[category?.toLowerCase()] || colors['detected']
+    return colors[category?.toLowerCase() || 'unknown'] || colors['detected']
   }
 
   if (tech.icon) {
     return (
       <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
-        <img 
+        <Image 
           src={tech.icon} 
           alt={tech.name || 'Technology'}
+          width={24}
+          height={24}
           className="w-6 h-6 object-contain"
           onError={(e) => {
             // Hide the image and show fallback
@@ -64,7 +83,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: { tech: any, className?
 
   return (
     <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
-      <div className={`w-6 h-6 rounded flex items-center justify-center ${getCategoryColor(tech.category)}`}>
+      <div className={`w-6 h-6 rounded flex items-center justify-center ${getCategoryColor(tech.category || 'unknown')}`}>
         <span className="text-xs font-semibold">{getInitials(tech.name || 'Unknown')}</span>
       </div>
     </div>
@@ -86,7 +105,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
     const rawTechnologies = project.scraping_data.summary.technologies
     
     // Convert simple string array to technology objects
-    technologies = rawTechnologies.map((tech: any) => {
+    technologies = rawTechnologies.map((tech: string | Technology): Technology => {
       if (typeof tech === 'string') {
         return {
           name: tech,
@@ -108,7 +127,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
     const rawTechnologies = project.scraping_data.extractedData.technologies
     
     // Convert simple string array to technology objects
-    technologies = rawTechnologies.map((tech: any) => {
+    technologies = rawTechnologies.map((tech: string | Technology): Technology => {
       if (typeof tech === 'string') {
         return {
           name: tech,
@@ -141,18 +160,18 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
               </div>
               
               <div className="space-y-6">
-                {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]: [string, any]) => (
+                {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]) => (
                   <div key={category} className="bg-white rounded-xl border border-gray-200 shadow-sm">
                     <div className="p-6 border-b border-gray-100">
                       <h4 className="text-lg font-semibold text-gray-900 capitalize flex items-center">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
                         {category.replace(/_/g, ' ')}
-                        <span className="ml-2 text-sm font-normal text-gray-500">({techs.length})</span>
+                        <span className="ml-2 text-sm font-normal text-gray-500">({(techs as Technology[]).length})</span>
                       </h4>
                     </div>
                     <div className="p-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {techs.map((tech: any, index: number) => (
+                        {(techs as Technology[]).map((tech: Technology, index: number) => (
                           <div key={index} className="group bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all duration-200 hover:shadow-md">
                             <div className="flex items-center space-x-3">
                               <TechnologyIcon tech={tech} className="w-10 h-10 flex-shrink-0" />
@@ -190,7 +209,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {technologies.map((tech: any, index: number) => (
+                {technologies.map((tech: Technology, index: number) => (
                   <div key={index} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300">
                     <div className="p-6">
                       <div className="flex items-start space-x-4">
@@ -242,9 +261,9 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Sorry, we can't detect any technologies</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Sorry, we can&apos;t detect any technologies</h3>
           <p className="text-gray-500 max-w-sm mx-auto">
-            We couldn't identify any technologies on this website. This might be due to the site's structure or detection limitations.
+            We couldn&apos;t identify any technologies on this website. This might be due to the site&apos;s structure or detection limitations.
           </p>
         </div>
       )}
