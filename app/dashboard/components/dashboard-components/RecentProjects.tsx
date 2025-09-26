@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useEffect, useRef } from 'react'
 import { AuditProject } from '@/types/audit'
 import { RecentProjectSkeleton } from '../SkeletonLoader'
 
@@ -19,6 +20,36 @@ export default function RecentProjects({
   refreshProjects,
   onProjectSelect
 }: RecentProjectsProps) {
+  const previousProjectsRef = useRef<AuditProject[]>([])
+
+  // Monitor project status changes and refresh when crawling is successful
+  useEffect(() => {
+    if (projects.length === 0 || projectsLoading) return
+
+    const previousProjects = previousProjectsRef.current
+    const currentProjects = projects
+
+    // Check if any project has transitioned from pending/in_progress to completed
+    const hasStatusChanged = currentProjects.some(currentProject => {
+      const previousProject = previousProjects.find(p => p.id === currentProject.id)
+      
+      if (!previousProject) return false
+      
+      // Check if status changed from pending/in_progress to completed
+      const wasProcessing = previousProject.status === 'pending' || previousProject.status === 'in_progress'
+      const isNowCompleted = currentProject.status === 'completed'
+      
+      return wasProcessing && isNowCompleted
+    })
+
+    if (hasStatusChanged) {
+      console.log('🔄 Project status changed to completed, refreshing projects...')
+      refreshProjects()
+    }
+
+    // Update the ref with current projects
+    previousProjectsRef.current = currentProjects
+  }, [projects, refreshProjects, projectsLoading])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -219,6 +250,13 @@ export default function RecentProjects({
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
                     >
                       View Analysis →
+                    </button>
+                  ) : project.status === 'pending' ? (
+                    <button 
+                      onClick={() => onProjectSelect?.(project.id)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                    >
+                      View Details →
                     </button>
                   ) : (
                     <button className="text-gray-500 text-sm font-medium">

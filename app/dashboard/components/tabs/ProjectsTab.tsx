@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { AuditProject } from '@/types/audit'
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader'
 
@@ -22,6 +22,36 @@ export default function ProjectsTab({
   onProjectSelect
 }: Omit<ProjectsTabProps, 'userProfile'>) {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
+  const previousProjectsRef = useRef<AuditProject[]>([])
+
+  // Monitor project status changes and refresh when crawling is successful
+  useEffect(() => {
+    if (projects.length === 0 || projectsLoading) return
+
+    const previousProjects = previousProjectsRef.current
+    const currentProjects = projects
+
+    // Check if any project has transitioned from pending/in_progress to completed
+    const hasStatusChanged = currentProjects.some(currentProject => {
+      const previousProject = previousProjects.find(p => p.id === currentProject.id)
+      
+      if (!previousProject) return false
+      
+      // Check if status changed from pending/in_progress to completed
+      const wasProcessing = previousProject.status === 'pending' || previousProject.status === 'in_progress'
+      const isNowCompleted = currentProject.status === 'completed'
+      
+      return wasProcessing && isNowCompleted
+    })
+
+    if (hasStatusChanged) {
+      console.log('🔄 Project status changed to completed, refreshing projects...')
+      refreshProjects()
+    }
+
+    // Update the ref with current projects
+    previousProjectsRef.current = currentProjects
+  }, [projects, refreshProjects, projectsLoading])
   
   // Performance tracking
   useEffect(() => {
@@ -806,6 +836,14 @@ export default function ProjectsTab({
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors"
                         >
                           View Analysis
+                        </button>
+                      )}
+                      {project.status === 'pending' && (
+                        <button 
+                          onClick={() => onProjectSelect?.(project.id)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          View Details
                         </button>
                       )}
                       <button className="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-1 rounded hover:bg-gray-100 transition-colors">

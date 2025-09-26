@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { AuditProject } from '@/types/audit'
 
 interface LinksSectionProps {
@@ -23,10 +23,12 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'internal' | 'external'>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(40)
+  const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
+    setIsProcessing(true)
     const allLinks: LinkData[] = []
     const baseDomain = project.site_url ? new URL(project.site_url).hostname : ''
     
@@ -108,6 +110,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
       })
     }
     
+    setIsProcessing(false)
     return allLinks
   }, [scrapedPages, project.site_url, originalScrapingData])
 
@@ -147,14 +150,31 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return { total, internal, external }
   }, [links])
 
+  // Debounced search handler
+  const debouncedSearch = useCallback((value: string) => {
+    const timeoutId = setTimeout(() => {
+      setSearchTerm(value)
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [])
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Links Analysis</h3>
         <div className="text-sm text-gray-500">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
-          {filteredLinks.length !== stats.total && ` (${stats.total} total)`}
+          {isProcessing ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+              Processing links...
+            </span>
+          ) : (
+            <>
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
+              {filteredLinks.length !== stats.total && ` (${stats.total} total)`}
+            </>
+          )}
         </div>
       </div>
 
@@ -182,7 +202,11 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
             type="text"
             placeholder="Search links..."
             value={searchTerm}
-            onChange={(e) => handleFilterChange(e.target.value, typeFilter)}
+            onChange={(e) => {
+              const value = e.target.value
+              debouncedSearch(value)
+              handleFilterChange(value, typeFilter)
+            }}
             className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
           />
         </div>
