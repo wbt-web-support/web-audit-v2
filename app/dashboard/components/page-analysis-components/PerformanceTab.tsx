@@ -68,45 +68,46 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
 
   // Use cache context data
   useEffect(() => {
-    if (data.performanceAnalysis) {
+    if (data.performanceAnalysis && data.performanceAnalysis.metrics) {
       // Convert PerformanceAnalysisResult to PageSpeedInsightsData format
+      const metrics = data.performanceAnalysis.metrics
       const convertedData: PageSpeedInsightsData = {
         lighthouseResult: {
           categories: {
-            performance: { score: data.performanceAnalysis.score, title: 'Performance' },
+            performance: { score: data.performanceAnalysis.score || 0, title: 'Performance' },
             accessibility: { score: 0.9, title: 'Accessibility' },
             'best-practices': { score: 0.8, title: 'Best Practices' },
             seo: { score: 0.85, title: 'SEO' }
           },
           audits: {
             'first-contentful-paint': {
-              displayValue: `${data.performanceAnalysis.metrics.firstContentfulPaint}ms`,
-              score: data.performanceAnalysis.metrics.firstContentfulPaint < 1000 ? 0.9 : 0.5,
+              displayValue: `${metrics.firstContentfulPaint || 0}ms`,
+              score: (metrics.firstContentfulPaint || 0) < 1000 ? 0.9 : 0.5,
               title: 'First Contentful Paint'
             },
             'largest-contentful-paint': {
-              displayValue: `${data.performanceAnalysis.metrics.largestContentfulPaint}ms`,
-              score: data.performanceAnalysis.metrics.largestContentfulPaint < 2500 ? 0.9 : 0.5,
+              displayValue: `${metrics.largestContentfulPaint || 0}ms`,
+              score: (metrics.largestContentfulPaint || 0) < 2500 ? 0.9 : 0.5,
               title: 'Largest Contentful Paint'
             },
             'cumulative-layout-shift': {
-              displayValue: data.performanceAnalysis.metrics.cumulativeLayoutShift.toString(),
-              score: data.performanceAnalysis.metrics.cumulativeLayoutShift < 0.1 ? 0.9 : 0.5,
+              displayValue: (metrics.cumulativeLayoutShift || 0).toString(),
+              score: (metrics.cumulativeLayoutShift || 0) < 0.1 ? 0.9 : 0.5,
               title: 'Cumulative Layout Shift'
             },
             'speed-index': {
-              displayValue: `${data.performanceAnalysis.metrics.speedIndex}ms`,
-              score: data.performanceAnalysis.metrics.speedIndex < 2000 ? 0.9 : 0.5,
+              displayValue: `${metrics.speedIndex || 0}ms`,
+              score: (metrics.speedIndex || 0) < 2000 ? 0.9 : 0.5,
               title: 'Speed Index'
             },
             'total-blocking-time': {
-              displayValue: `${data.performanceAnalysis.metrics.totalBlockingTime}ms`,
-              score: data.performanceAnalysis.metrics.totalBlockingTime < 200 ? 0.9 : 0.5,
+              displayValue: `${metrics.totalBlockingTime || 0}ms`,
+              score: (metrics.totalBlockingTime || 0) < 200 ? 0.9 : 0.5,
               title: 'Total Blocking Time'
             },
             'interactive': {
-              displayValue: `${data.performanceAnalysis.metrics.interactive}ms`,
-              score: data.performanceAnalysis.metrics.interactive < 3000 ? 0.9 : 0.5,
+              displayValue: `${metrics.interactive || 0}ms`,
+              score: (metrics.interactive || 0) < 3000 ? 0.9 : 0.5,
               title: 'Time to Interactive'
             }
           },
@@ -121,17 +122,17 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
             'FIRST_CONTENTFUL_PAINT_MS': {
               category: 'FAST',
               distributions: [{ min: 0, max: 1000, proportion: 0.7 }],
-              percentile: data.performanceAnalysis.metrics.firstContentfulPaint
+              percentile: metrics.firstContentfulPaint || 0
             },
             'LARGEST_CONTENTFUL_PAINT_MS': {
               category: 'FAST',
               distributions: [{ min: 0, max: 2500, proportion: 0.8 }],
-              percentile: data.performanceAnalysis.metrics.largestContentfulPaint
+              percentile: metrics.largestContentfulPaint || 0
             },
             'CUMULATIVE_LAYOUT_SHIFT_SCORE': {
               category: 'FAST',
               distributions: [{ min: 0, max: 0.1, proportion: 0.85 }],
-              percentile: data.performanceAnalysis.metrics.cumulativeLayoutShift
+              percentile: metrics.cumulativeLayoutShift || 0
             }
           },
           overall_category: 'FAST'
@@ -143,6 +144,9 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
       setPerformanceData(cachedAnalysis)
     } else if (page.performance_analysis) {
       setPerformanceData(page.performance_analysis)
+    } else {
+      // No performance data available - set empty state
+      setPerformanceData(null)
     }
   }, [data.performanceAnalysis, cachedAnalysis, page.performance_analysis, page.url])
 
