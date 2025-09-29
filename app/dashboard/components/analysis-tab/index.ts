@@ -12,7 +12,7 @@ export type {
   } from './types'
 
 // Hooks
-export { useSimpleAnalysis } from './hooks/useSimpleAnalysis'
+export { useScrapingAnalysis } from './hooks/useScrapingAnalysis'
 
 // Services
 export { analyzePageForKeys } from './services/pageAnalysis'

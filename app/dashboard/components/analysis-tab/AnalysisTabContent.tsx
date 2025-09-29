@@ -2,7 +2,8 @@
 
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
-import { useSimpleAnalysis } from './hooks/useSimpleAnalysis'
+import { useScrapingAnalysis } from './hooks/useScrapingAnalysis'
+import ScrapingService from '../ScrapingService'
 import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
 import ErrorState from './components/ErrorState'
@@ -23,7 +24,7 @@ export default function AnalysisTabContent({
   onDataUpdate, 
   onPageSelect 
 }: AnalysisTabProps) {
-  const { state, updateState, refreshData, handleSectionChange, startScraping } = useSimpleAnalysis(projectId, cachedData)
+  const { state, updateState, refreshData, handleSectionChange, startScraping } = useScrapingAnalysis(projectId, cachedData)
 
   // Handle retry actions
   const handleRetryScraping = () => {
@@ -79,6 +80,24 @@ export default function AnalysisTabContent({
 
   return (
     <div className="space-y-6">
+      {/* ScrapingService component to handle data processing */}
+      {state.project?.scraping_data && (
+        <ScrapingService
+          key={`scraping-${state.dataVersion}`}
+          projectId={projectId}
+          scrapingData={state.project.scraping_data}
+          forceProcess={true}
+          onScrapingComplete={(success) => {
+            if (success) {
+              // Refresh data after successful processing
+              refreshData(true);
+            } else {
+              updateState({ scrapingError: 'Failed to process scraping data' });
+            }
+          }}
+        />
+      )}
+
       <AnalysisHeader 
         project={state.project} 
         activeSection={state.activeSection} 

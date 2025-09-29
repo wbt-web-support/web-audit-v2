@@ -2,18 +2,20 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
+
 interface CachedData {
   project: AuditProject | null;
   scrapedPages: ScrapedPage[];
   lastFetchTime: number;
 }
-export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | null) {
+
+export function useScrapingAnalysis(projectId: string, cachedData?: CachedData | null) {
   const {
     getAuditProject,
     getScrapedPages,
-    updateAuditProject,
-    createScrapedPage
+    updateAuditProject
   } = useSupabase();
+  
   const [state, setState] = useState<AnalysisTabState>({
     project: null,
     scrapedPages: [],
@@ -50,58 +52,11 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
     return project && project.status === 'completed' && project.scraping_data;
   }, []);
 
-  // Process and save scraping data
-  const processAndSaveData = useCallback(async (scrapeData: any, projectId: string) => {
-    if (!scrapeData.pages || !Array.isArray(scrapeData.pages)) {
-      throw new Error('No pages data found in scraping response');
-    }
-    // Save each page to database
-    for (const [index, page] of scrapeData.pages.entries()) {
-      try {
-        const pageData = {
-          audit_project_id: projectId,
-          url: page.url || '',
-          status_code: page.statusCode || 200,
-          title: page.title || '',
-          description: page.metaDescription || '',
-          html_content: page.htmlContent || '',
-          html_content_length: page.htmlContent?.length || 0,
-          links_count: page.links?.length || 0,
-          images_count: page.images?.length || 0,
-          links: page.links || [],
-          images: page.images || [],
-          meta_tags_count: Number(page.metaTags?.length || 0),
-          technologies_count: page.technologies?.length || 0,
-          technologies: page.technologies?.map((tech: any) => tech.name) || [],
-          cms_type: page.cmsType || null,
-          cms_version: page.cmsVersion || null,
-          cms_plugins: page.cmsPlugins?.map((plugin: any) => plugin.name) || [],
-          social_meta_tags: page.socialMetaTags || {},
-          social_meta_tags_count: Object.keys(page.socialMetaTags || {}).length,
-          is_external: page.isExternal || false,
-          response_time: page.responseTime || null,
-          performance_analysis: page.performanceAnalysis || null
-        };
-        const {
-          error
-        } = await createScrapedPage(pageData);
-        if (error) {
-          console.error(`❌ Error saving page ${index + 1}:`, error);
-        } else {}
-      } catch (error) {
-        console.error(`❌ Error processing page ${index + 1}:`, error);
-      }
-    }
-  }, [createScrapedPage]);
-
   // Load scraped pages
   const loadScrapedPages = useCallback(async () => {
     if (!projectId) return;
     try {
-      const {
-        data: pages,
-        error: pagesError
-      } = await getScrapedPages(projectId);
+      const { data: pages, error: pagesError } = await getScrapedPages(projectId);
       if (pagesError) {
         console.error('Error loading scraped pages:', pagesError);
         return;
@@ -128,11 +83,13 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
     if (initializationRef.current === false) {
       return;
     }
+    
     setScrapingInitiated(true);
     updateState({
       isScraping: true,
       scrapingError: null
     });
+
     try {
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
@@ -143,29 +100,28 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
         },
         body: JSON.stringify({
           url: project.site_url,
-          mode: (project as {
-            page_type?: string;
-          }).page_type === 'single' ? 'single' : 'multipage',
+          mode: (project as { page_type?: string }).page_type === 'single' ? 'single' : 'multipage',
           maxPages: 100,
           extractImagesFlag: true,
           extractLinksFlag: true,
           detectTechnologiesFlag: true
         })
       });
+
       if (!scrapeResponse.ok) {
         const errorData = await scrapeResponse.json().catch(() => ({}));
-
+        
         // Handle specific error cases
         if (errorData.code === 'SERVICE_UNAVAILABLE') {
           throw new Error('Scraping service is not running. Please start the scraping service or contact support.');
         }
         throw new Error(errorData.message || errorData.error || `Scraping failed: ${scrapeResponse.status}`);
       }
+
       const scrapeData = await scrapeResponse.json();
+      
       // Update project status to completed FIRST (without large data to avoid timeout)
-      const {
-        error: updateError
-      } = await updateAuditProject(project.id, {
+      const { error: updateError } = await updateAuditProject(project.id, {
         status: 'completed',
         progress: 100,
         scraping_completed_at: new Date().toISOString(),
@@ -173,6 +129,7 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
         total_links: scrapeData.summary?.totalLinks || 0,
         total_images: scrapeData.summary?.totalImages || 0
       });
+
       if (updateError) {
         throw new Error(`Failed to update project: ${updateError.message}`);
       }
@@ -188,15 +145,13 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
         total_images: scrapeData.summary?.totalImages || 0,
         scraping_data: scrapeData
       };
+
       updateState({
         project: updatedProject,
-        isScraping: false
+        isScraping: false,
+        dataVersion: state.dataVersion + 1
       });
 
-      // Process and save data in background (don't await to avoid blocking UI)
-      processAndSaveData(scrapeData, project.id).catch(error => {
-        console.error('❌ Error saving pages in background:', error);
-      });
     } catch (error) {
       console.error('❌ Scraping error:', error);
       updateState({
@@ -204,7 +159,7 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
         scrapingError: error instanceof Error ? error.message : 'Scraping failed'
       });
     }
-  }, [updateState, updateAuditProject, processAndSaveData, scrapingInitiated, state.isScraping]);
+  }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion]);
 
   // Load project data from database
   const loadProjectData = useCallback(async (skipAutoScraping = false) => {
@@ -215,22 +170,22 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
       });
       return;
     }
+
     updateState({
       loading: true,
       error: null
     });
+
     try {
       // Get project data
-      const {
-        data: projectData,
-        error: projectError
-      } = await getAuditProject(projectId);
+      const { data: projectData, error: projectError } = await getAuditProject(projectId);
       if (projectError) {
         throw new Error(`Failed to load project: ${projectError.message}`);
       }
       if (!projectData) {
         throw new Error('Project not found');
       }
+
       updateState({
         project: projectData,
         dataFetched: true,
@@ -243,7 +198,6 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
         await loadScrapedPages();
       } else if (projectData.status === 'pending' && !skipAutoScraping && !scrapingInitiated) {
         // If project is pending and has no data, start scraping
-
         await startScraping(projectData);
       }
     } catch (error) {
@@ -272,6 +226,7 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
     if (!forceRefresh && timeSinceLastFetch < REFRESH_THRESHOLD) {
       return;
     }
+
     updateState({
       isRefreshing: true
     });
@@ -310,6 +265,7 @@ export function useSimpleAnalysis(projectId: string, cachedData?: CachedData | n
       initializationRef.current = false;
     };
   }, []);
+
   return {
     state,
     updateState,

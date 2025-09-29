@@ -139,11 +139,13 @@ interface ScrapingServiceProps {
   projectId: string | null;
   scrapingData: ScrapingData;
   onScrapingComplete: (success: boolean) => void;
+  forceProcess?: boolean;
 }
 export default function ScrapingService({
   projectId,
   scrapingData,
-  onScrapingComplete
+  onScrapingComplete,
+  forceProcess = false
 }: ScrapingServiceProps) {
   const {
     createScrapedPages,
@@ -675,8 +677,8 @@ export default function ScrapingService({
     // Create a unique key for this data to prevent duplicate processing
     const dataKey = `${projectId}-${JSON.stringify(scrapingData)}`;
 
-    // Check if we've already processed this exact data
-    if (processedDataRef.current === dataKey) {
+    // Check if we've already processed this exact data (unless force processing)
+    if (!forceProcess && processedDataRef.current === dataKey) {
       return;
     }
 
@@ -686,6 +688,6 @@ export default function ScrapingService({
     processScrapingData(scrapingData, projectId).finally(() => {
       isProcessing.current = false;
     });
-  }, [projectId, scrapingData, processScrapingData]);
+  }, [projectId, scrapingData, processScrapingData, forceProcess]);
   return null; // This component doesn't render anything
 }
