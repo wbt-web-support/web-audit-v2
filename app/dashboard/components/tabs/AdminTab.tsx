@@ -1,70 +1,60 @@
-'use client'
+'use client';
 
-import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 // import { useSupabase } from '@/contexts/SupabaseContext'
-import { supabase } from '@/lib/supabase'
-import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
-
+import { supabase } from '@/lib/supabase';
+import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils';
 interface UserProfile {
-  id: string
-  email: string
-  first_name: string | null
-  last_name: string | null
-  role: 'user' | 'admin' | 'moderator'
-  email_confirmed: boolean
-  created_at: string
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'user' | 'admin' | 'moderator';
+  email_confirmed: boolean;
+  created_at: string;
 }
-
 interface AdminTabProps {
-  userProfile: UserProfile
+  userProfile: UserProfile;
 }
-
-export default function AdminTab({ }: AdminTabProps) {
-  const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
-  const [verificationError, setVerificationError] = useState<string | null>(null)
-
-  const [users] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: '2024-01-15',
-      projects: 5
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'moderator',
-      status: 'active',
-      lastLogin: '2024-01-14',
-      projects: 8
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      role: 'user',
-      status: 'inactive',
-      lastLogin: '2024-01-10',
-      projects: 2
-    },
-    {
-      id: 4,
-      name: 'Alice Brown',
-      email: 'alice@example.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-01-15',
-      projects: 12
-    }
-  ])
-
+export default function AdminTab({}: AdminTabProps) {
+  const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [users] = useState([{
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    role: 'user',
+    status: 'active',
+    lastLogin: '2024-01-15',
+    projects: 5
+  }, {
+    id: 2,
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    role: 'moderator',
+    status: 'active',
+    lastLogin: '2024-01-14',
+    projects: 8
+  }, {
+    id: 3,
+    name: 'Bob Johnson',
+    email: 'bob@example.com',
+    role: 'user',
+    status: 'inactive',
+    lastLogin: '2024-01-10',
+    projects: 2
+  }, {
+    id: 4,
+    name: 'Alice Brown',
+    email: 'alice@example.com',
+    role: 'admin',
+    status: 'active',
+    lastLogin: '2024-01-15',
+    projects: 12
+  }]);
   const [systemStats] = useState({
     totalUsers: 156,
     activeUsers: 142,
@@ -72,83 +62,73 @@ export default function AdminTab({ }: AdminTabProps) {
     totalAudits: 1247,
     criticalIssues: 23,
     resolvedIssues: 1204
-  })
+  });
 
   // Enhanced admin role verification
   useEffect(() => {
     const verifyAdminRole = async () => {
       try {
-        setIsLoading(true)
-        setVerificationError(null)
-        
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError || !user) {
-          console.error('Auth user error:', userError)
-          setVerificationError('Authentication failed')
-          setIsAdminVerified(false)
-          return
-        }
+        setIsLoading(true);
+        setVerificationError(null);
 
-        console.log('🔍 Starting comprehensive role verification for user:', user.id)
-        
+        // Get current user
+        const {
+          data: {
+            user
+          },
+          error: userError
+        } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error('Auth user error:', userError);
+          setVerificationError('Authentication failed');
+          setIsAdminVerified(false);
+          return;
+        }
         // Use the enhanced role verification system
-        const result = await roleVerifier.verifyUserRole(user.id, true)
-        setRoleVerificationResult(result)
-        
+        const result = await roleVerifier.verifyUserRole(user.id, true);
+        setRoleVerificationResult(result);
         if (!result.verified) {
-          console.error('Role verification failed:', result.error)
-          setVerificationError(result.error || 'Role verification failed')
-          setIsAdminVerified(false)
-          return
+          console.error('Role verification failed:', result.error);
+          setVerificationError(result.error || 'Role verification failed');
+          setIsAdminVerified(false);
+          return;
         }
 
         // Test admin access specifically
-        const adminTest = await roleTester.testAdminAccess(user.id)
-        console.log('🧪 Admin access test:', adminTest)
-        
-        setIsAdminVerified(adminTest.hasAccess)
-        
+        const adminTest = await roleTester.testAdminAccess(user.id);
+        setIsAdminVerified(adminTest.hasAccess);
         if (!adminTest.hasAccess) {
-          setVerificationError(`Access denied. User role: ${result.role}`)
+          setVerificationError(`Access denied. User role: ${result.role}`);
         }
-        
       } catch (error) {
-        console.error('Error verifying admin role:', error)
-        setVerificationError(`Unexpected error: ${error}`)
-        setIsAdminVerified(false)
+        console.error('Error verifying admin role:', error);
+        setVerificationError(`Unexpected error: ${error}`);
+        setIsAdminVerified(false);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-
-    verifyAdminRole()
-  }, [])
-
+    };
+    verifyAdminRole();
+  }, []);
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'moderator':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       case 'user':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-100 text-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
-
+  };
   const getStatusColor = (status: string) => {
-    return status === 'active' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-gray-100 text-gray-800'
-  }
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+  };
 
   // Show loading state while verifying admin role
   if (isLoading) {
-    return (
-      <div className="text-center py-12">
+    return <div className="text-center py-12">
         <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
           <svg className="w-12 h-12 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -156,14 +136,12 @@ export default function AdminTab({ }: AdminTabProps) {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Access</h2>
         <p className="text-gray-600">Checking your admin permissions...</p>
-      </div>
-    )
+      </div>;
   }
 
   // Check if user is admin (database verified)
   if (!isAdminVerified) {
-    return (
-      <div className="text-center py-12">
+    return <div className="text-center py-12">
         <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4">
           <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -172,26 +150,19 @@ export default function AdminTab({ }: AdminTabProps) {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
         <p className="text-gray-600">You don&apos;t have admin permissions to access this panel.</p>
         <p className="text-sm text-gray-500 mt-2">Database verification failed.</p>
-        {verificationError && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+        {verificationError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">Error: {verificationError}</p>
-          </div>
-        )}
-      </div>
-    )
+          </div>}
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
         <p className="text-gray-600 mt-1">Manage users, monitor system health, and configure settings</p>
-        {roleVerificationResult && (
-          <div className="mt-2 text-xs text-gray-500">
+        {roleVerificationResult && <div className="mt-2 text-xs text-gray-500">
             Verified as: {roleVerificationResult.role} (Status: {roleVerificationResult.verified ? 'Verified' : 'Not Verified'})
-          </div>
-        )}
+          </div>}
       </div>
 
       {/* System Stats */}
@@ -316,14 +287,16 @@ export default function AdminTab({ }: AdminTabProps) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user, index) => (
-                <motion.tr
-                  key={user.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="hover:bg-gray-50"
-                >
+              {users.map((user, index) => <motion.tr key={user.id} initial={{
+              opacity: 0,
+              y: 20
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              duration: 0.3,
+              delay: index * 0.1
+            }} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
@@ -360,8 +333,7 @@ export default function AdminTab({ }: AdminTabProps) {
                       <button className="text-red-600 hover:text-red-900">Delete</button>
                     </div>
                   </td>
-                </motion.tr>
-              ))}
+                </motion.tr>)}
             </tbody>
           </table>
         </div>
@@ -423,6 +395,5 @@ export default function AdminTab({ }: AdminTabProps) {
           </div>
         </div>
       </div>
-    </div>
-  )
+    </div>;
 }

@@ -1,104 +1,95 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useSupabase } from '@/contexts/SupabaseContext'
-import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
-
+import { useState } from 'react';
+import { useSupabase } from '@/contexts/SupabaseContext';
+import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils';
 interface UserProfile {
-  id: string
-  email: string
-  first_name: string | null
-  last_name: string | null
-  role: 'user' | 'admin' | 'moderator'
-  email_confirmed: boolean
-  created_at: string
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'user' | 'admin' | 'moderator';
+  email_confirmed: boolean;
+  created_at: string;
 }
-
 interface AdminTestResult {
-  hasAccess: boolean
-  isAdmin: boolean
-  error?: string
+  hasAccess: boolean;
+  isAdmin: boolean;
+  error?: string;
 }
-
 interface ModeratorTestResult {
-  hasAccess: boolean
-  isModerator: boolean
-  isAdmin: boolean
-  error?: string
+  hasAccess: boolean;
+  isModerator: boolean;
+  isAdmin: boolean;
+  error?: string;
 }
-
 interface FullRoleTestResult {
-  success: boolean
-  result: RoleVerificationResult
+  success: boolean;
+  result: RoleVerificationResult;
   tests: {
-    isAdmin: boolean
-    isModerator: boolean
-    isUser: boolean
-    roleMatch: boolean
-  }
+    isAdmin: boolean;
+    isModerator: boolean;
+    isUser: boolean;
+    roleMatch: boolean;
+  };
 }
-
 interface RoleTestResults {
-  timestamp: string
-  userId: string
-  userEmail: string
-  profileRole: string
+  timestamp: string;
+  userId: string;
+  userEmail: string;
+  profileRole: string;
   tests: {
-    basicVerification: RoleVerificationResult
-    adminTest: AdminTestResult
-    moderatorTest: ModeratorTestResult
-    fullRoleTest: FullRoleTestResult
-    cachedVerification: RoleVerificationResult
-  }
+    basicVerification: RoleVerificationResult;
+    adminTest: AdminTestResult;
+    moderatorTest: ModeratorTestResult;
+    fullRoleTest: FullRoleTestResult;
+    cachedVerification: RoleVerificationResult;
+  };
   summary: {
-    isAdmin: boolean
-    isModerator: boolean
-    isUser: boolean
-    verified: boolean
-    role: string
-    hasAdminAccess: boolean
-    hasModeratorAccess: boolean
-  }
+    isAdmin: boolean;
+    isModerator: boolean;
+    isUser: boolean;
+    verified: boolean;
+    role: string;
+    hasAdminAccess: boolean;
+    hasModeratorAccess: boolean;
+  };
 }
-
 interface RoleTestPanelProps {
-  userProfile: UserProfile
+  userProfile: UserProfile;
 }
-
-export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
-  const { user } = useSupabase()
-  const [testResults, setTestResults] = useState<RoleTestResults | null>(null)
-  const [isRunning, setIsRunning] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
+export default function RoleTestPanel({
+  userProfile
+}: RoleTestPanelProps) {
+  const {
+    user
+  } = useSupabase();
+  const [testResults, setTestResults] = useState<RoleTestResults | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const runRoleTests = async () => {
     if (!user) {
-      setError('No authenticated user found')
-      return
+      setError('No authenticated user found');
+      return;
     }
-
-    setIsRunning(true)
-    setError(null)
-    setTestResults(null)
-
+    setIsRunning(true);
+    setError(null);
+    setTestResults(null);
     try {
-      console.log('🧪 Starting comprehensive role tests for user:', user.id)
-      
       // Test 1: Basic role verification
-      const basicVerification = await roleVerifier.verifyUserRole(user.id, true)
-      
+      const basicVerification = await roleVerifier.verifyUserRole(user.id, true);
+
       // Test 2: Admin access test
-      const adminTest = await roleTester.testAdminAccess(user.id)
-      
+      const adminTest = await roleTester.testAdminAccess(user.id);
+
       // Test 3: Moderator access test
-      const moderatorTest = await roleTester.testModeratorAccess(user.id)
-      
+      const moderatorTest = await roleTester.testModeratorAccess(user.id);
+
       // Test 4: Full role test
-      const fullRoleTest = await roleTester.testUserRole(user.id)
-      
+      const fullRoleTest = await roleTester.testUserRole(user.id);
+
       // Test 5: Cache test
-      const cachedVerification = await roleVerifier.verifyUserRole(user.id, false)
-      
+      const cachedVerification = await roleVerifier.verifyUserRole(user.id, false);
       const results = {
         timestamp: new Date().toISOString(),
         userId: user.id,
@@ -120,40 +111,26 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
           hasAdminAccess: adminTest.hasAccess,
           hasModeratorAccess: moderatorTest.hasAccess
         }
-      }
-
-      setTestResults(results)
-      console.log('🧪 Role test results:', results)
-      
+      };
+      setTestResults(results);
     } catch (error) {
-      console.error('Role test error:', error)
-      setError(`Test failed: ${error}`)
+      console.error('Role test error:', error);
+      setError(`Test failed: ${error}`);
     } finally {
-      setIsRunning(false)
+      setIsRunning(false);
     }
-  }
-
+  };
   const clearCache = () => {
-    roleVerifier.clearAllCache()
-    console.log('🧹 Cleared all role cache')
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    roleVerifier.clearAllCache();
+  };
+  return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Role Testing Panel</h3>
         <div className="flex space-x-2">
-          <button
-            onClick={runRoleTests}
-            disabled={isRunning}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button onClick={runRoleTests} disabled={isRunning} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             {isRunning ? 'Running Tests...' : 'Run Role Tests'}
           </button>
-          <button
-            onClick={clearCache}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-          >
+          <button onClick={clearCache} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
             Clear Cache
           </button>
         </div>
@@ -171,16 +148,13 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
       </div>
 
       {/* Error Display */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <h4 className="font-medium text-red-800 mb-2">Error</h4>
           <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
+        </div>}
 
       {/* Test Results */}
-      {testResults && (
-        <div className="space-y-4">
+      {testResults && <div className="space-y-4">
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <h4 className="font-medium text-green-800 mb-2">Test Summary</h4>
             <div className="text-sm text-green-700 space-y-1">
@@ -204,9 +178,7 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
                 <p><strong>Verified:</strong> {testResults.tests.basicVerification.verified ? 'Yes' : 'No'}</p>
                 <p><strong>Role:</strong> {testResults.tests.basicVerification.role}</p>
                 <p><strong>Is Admin:</strong> {testResults.tests.basicVerification.isAdmin ? 'Yes' : 'No'}</p>
-                {testResults.tests.basicVerification.error && (
-                  <p className="text-red-600"><strong>Error:</strong> {testResults.tests.basicVerification.error}</p>
-                )}
+                {testResults.tests.basicVerification.error && <p className="text-red-600"><strong>Error:</strong> {testResults.tests.basicVerification.error}</p>}
               </div>
             </div>
 
@@ -216,9 +188,7 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
               <div className="text-sm text-gray-600 space-y-1">
                 <p><strong>Has Access:</strong> {testResults.tests.adminTest.hasAccess ? 'Yes' : 'No'}</p>
                 <p><strong>Is Admin:</strong> {testResults.tests.adminTest.isAdmin ? 'Yes' : 'No'}</p>
-                {testResults.tests.adminTest.error && (
-                  <p className="text-red-600"><strong>Error:</strong> {testResults.tests.adminTest.error}</p>
-                )}
+                {testResults.tests.adminTest.error && <p className="text-red-600"><strong>Error:</strong> {testResults.tests.adminTest.error}</p>}
               </div>
             </div>
 
@@ -229,9 +199,7 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
                 <p><strong>Has Access:</strong> {testResults.tests.moderatorTest.hasAccess ? 'Yes' : 'No'}</p>
                 <p><strong>Is Moderator:</strong> {testResults.tests.moderatorTest.isModerator ? 'Yes' : 'No'}</p>
                 <p><strong>Is Admin:</strong> {testResults.tests.moderatorTest.isAdmin ? 'Yes' : 'No'}</p>
-                {testResults.tests.moderatorTest.error && (
-                  <p className="text-red-600"><strong>Error:</strong> {testResults.tests.moderatorTest.error}</p>
-                )}
+                {testResults.tests.moderatorTest.error && <p className="text-red-600"><strong>Error:</strong> {testResults.tests.moderatorTest.error}</p>}
               </div>
             </div>
 
@@ -267,8 +235,6 @@ export default function RoleTestPanel({ userProfile }: RoleTestPanelProps) {
               {JSON.stringify(testResults, null, 2)}
             </pre>
           </details>
-        </div>
-      )}
-    </div>
-  )
+        </div>}
+    </div>;
 }

@@ -19,13 +19,12 @@ export interface FilteredContent {
 function removeScriptAndStyleTags(html: string): string {
   // Remove script tags and their content
   let filtered = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  
+
   // Remove style tags and their content
   filtered = filtered.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-  
+
   // Remove noscript tags and their content
   filtered = filtered.replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '');
-  
   return filtered;
 }
 
@@ -40,7 +39,7 @@ function extractBodyContent(html: string): string {
   if (bodyMatch) {
     return bodyMatch[1];
   }
-  
+
   // If no body tag found, return the entire content
   return html;
 }
@@ -53,43 +52,18 @@ function extractBodyContent(html: string): string {
 function stripHtmlTags(html: string): string {
   // Remove HTML comments
   let text = html.replace(/<!--[\s\S]*?-->/g, '');
-  
+
   // Remove all HTML tags
   text = text.replace(/<[^>]*>/g, '');
-  
+
   // Decode HTML entities and numeric character references
   text = text
-    // Named entities
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&copy;/g, '©')
-    .replace(/&reg;/g, '®')
-    .replace(/&trade;/g, '™')
-    .replace(/&apos;/g, "'")
-    .replace(/&hellip;/g, '…')
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
-    .replace(/&lsquo;/g, "'")
-    .replace(/&rsquo;/g, "'")
-    .replace(/&ldquo;/g, '"')
-    .replace(/&rdquo;/g, '"')
-    .replace(/&bull;/g, '•')
-    .replace(/&middot;/g, '·')
-    .replace(/&times;/g, '×')
-    .replace(/&divide;/g, '÷')
-    .replace(/&plusmn;/g, '±')
-    .replace(/&deg;/g, '°')
-    .replace(/&sect;/g, '§')
-    .replace(/&para;/g, '¶')
-    // Numeric character references (decimal) - handles &#8217; etc.
-    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(parseInt(dec, 10)))
-    // Numeric character references (hexadecimal) - handles &#x2019; etc.
-    .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
-  
+  // Named entities
+  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&copy;/g, '©').replace(/&reg;/g, '®').replace(/&trade;/g, '™').replace(/&apos;/g, "'").replace(/&hellip;/g, '…').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–').replace(/&lsquo;/g, "'").replace(/&rsquo;/g, "'").replace(/&ldquo;/g, '"').replace(/&rdquo;/g, '"').replace(/&bull;/g, '•').replace(/&middot;/g, '·').replace(/&times;/g, '×').replace(/&divide;/g, '÷').replace(/&plusmn;/g, '±').replace(/&deg;/g, '°').replace(/&sect;/g, '§').replace(/&para;/g, '¶')
+  // Numeric character references (decimal) - handles &#8217; etc.
+  .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(parseInt(dec, 10)))
+  // Numeric character references (hexadecimal) - handles &#x2019; etc.
+  .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
   return text;
 }
 
@@ -101,13 +75,12 @@ function stripHtmlTags(html: string): string {
 function cleanTextContent(text: string): string {
   // Replace multiple whitespace with single space
   let cleaned = text.replace(/\s+/g, ' ');
-  
+
   // Remove leading and trailing whitespace
   cleaned = cleaned.trim();
-  
+
   // Remove empty lines
   cleaned = cleaned.replace(/\n\s*\n/g, '\n');
-  
   return cleaned;
 }
 
@@ -117,15 +90,7 @@ function cleanTextContent(text: string): string {
  * @returns Filtered content with metadata
  */
 export function filterHtmlContent(html: string): FilteredContent {
-  console.log('🔧 filterHtmlContent called with:', {
-    hasHtml: !!html,
-    htmlType: typeof html,
-    htmlLength: html?.length || 0,
-    htmlPreview: html?.substring(0, 100) + '...'
-  });
-
   if (!html || typeof html !== 'string') {
-    console.log('❌ Invalid HTML input provided');
     return {
       pureContent: '',
       wordCount: 0,
@@ -133,32 +98,22 @@ export function filterHtmlContent(html: string): FilteredContent {
       filteredLength: 0
     };
   }
-
   try {
     // Step 1: Remove script and style tags
     let filtered = removeScriptAndStyleTags(html);
-    
+
     // Step 2: Extract body content only
     filtered = extractBodyContent(filtered);
-    
+
     // Step 3: Remove all HTML tags
     let pureContent = stripHtmlTags(filtered);
-    
+
     // Step 4: Clean and normalize text
     pureContent = cleanTextContent(pureContent);
-    
+
     // Calculate metrics
     const wordCount = pureContent.split(/\s+/).filter(word => word.length > 0).length;
     const characterCount = pureContent.length;
-    
-    console.log('✅ filterHtmlContent completed:', {
-      originalLength: html.length,
-      filteredLength: pureContent.length,
-      wordCount,
-      characterCount,
-      contentPreview: pureContent.substring(0, 100) + '...'
-    });
-    
     return {
       pureContent,
       wordCount,

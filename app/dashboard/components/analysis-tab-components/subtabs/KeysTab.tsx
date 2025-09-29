@@ -1,43 +1,38 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { AuditProject } from '@/types/audit'
-import { detectKeysInPages, DetectedKey, KeyDetectionResult } from '@/lib/key-detection'
-
+import { useState, useEffect } from 'react';
+import { AuditProject } from '@/types/audit';
+import { detectKeysInPages, DetectedKey, KeyDetectionResult } from '@/lib/key-detection';
 interface KeysTabProps {
-  project: AuditProject
+  project: AuditProject;
 }
-
-export default function KeysTab({ project }: KeysTabProps) {
-  const [detectedKeys, setDetectedKeys] = useState<DetectedKey[]>([])
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [analysisResult, setAnalysisResult] = useState<KeyDetectionResult | null>(null)
+export default function KeysTab({
+  project
+}: KeysTabProps) {
+  const [detectedKeys, setDetectedKeys] = useState<DetectedKey[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<KeyDetectionResult | null>(null);
 
   // Analyze keys when component mounts or project data changes
   useEffect(() => {
     const analyzeKeys = async () => {
       if (!project || !project.all_pages_html || project.all_pages_html.length === 0) {
-        setAnalysisComplete(true)
-        return
+        setAnalysisComplete(true);
+        return;
       }
-
-      setIsAnalyzing(true)
-      setError(null)
-      setAnalysisComplete(false)
-
+      setIsAnalyzing(true);
+      setError(null);
+      setAnalysisComplete(false);
       try {
-        console.log('🔍 Starting key analysis for project:', project.id)
-        console.log('📊 Pages to analyze:', project.all_pages_html.length)
-
         // Normalize the data format to support both project and page-specific formats
-        const normalizedPages = project.all_pages_html.map((page: { 
-          pageName?: string; 
-          pageUrl?: string; 
-          pageHtml?: string; 
-          name?: string; 
-          url?: string; 
+        const normalizedPages = project.all_pages_html.map((page: {
+          pageName?: string;
+          pageUrl?: string;
+          pageHtml?: string;
+          name?: string;
+          url?: string;
           html?: string;
           html_content?: string;
           title?: string;
@@ -50,94 +45,81 @@ export default function KeysTab({ project }: KeysTabProps) {
               pageName: page.pageName,
               pageUrl: page.pageUrl,
               pageHtml: page.pageHtml
-            }
+            };
           }
-          
+
           // If page has pageUrl and pageHtml (new format)
           if (page.pageUrl && page.pageHtml) {
             return {
               pageName: `Page ${index + 1}`,
               pageUrl: page.pageUrl,
               pageHtml: page.pageHtml
-            }
+            };
           }
-          
+
           // If page is a full page object with html_content
           if (page.html_content) {
             return {
               pageName: page.title || page.page_title || `Page ${index + 1}`,
               pageUrl: page.url || page.page_url || 'Unknown URL',
               pageHtml: page.html_content
-            }
+            };
           }
-          
+
           // Fallback for any other format
           return {
             pageName: `Page ${index + 1}`,
             pageUrl: 'Unknown URL',
             pageHtml: ''
-          }
-        })
-
-        const result = await detectKeysInPages(normalizedPages)
-        
-        setDetectedKeys(result.allKeys)
-        setAnalysisResult(result.summary)
-        setAnalysisComplete(true)
-        
-        console.log('✅ Key analysis completed:', {
-          totalKeys: result.summary.totalKeys,
-          exposedKeys: result.summary.exposedKeys,
-          criticalKeys: result.summary.criticalKeys
-        })
+          };
+        });
+        const result = await detectKeysInPages(normalizedPages);
+        setDetectedKeys(result.allKeys);
+        setAnalysisResult(result.summary);
+        setAnalysisComplete(true);
       } catch (err) {
-        console.error('❌ Key analysis failed:', err)
-        setError('Failed to analyze keys. Please try again.')
-        setAnalysisComplete(true)
+        console.error('❌ Key analysis failed:', err);
+        setError('Failed to analyze keys. Please try again.');
+        setAnalysisComplete(true);
       } finally {
-        setIsAnalyzing(false)
+        setIsAnalyzing(false);
       }
-    }
-
-    analyzeKeys()
-       }, [project?.id, project?.all_pages_html, project])
-
+    };
+    analyzeKeys();
+  }, [project?.id, project?.all_pages_html, project]);
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-  }
-
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'exposed':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'secure':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'warning':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   // Loading skeleton component
-  const LoadingSkeleton = () => (
-    <div className="space-y-4">
+  const LoadingSkeleton = () => <div className="space-y-4">
       <div className="animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-gray-100 rounded-lg p-4">
+          {[1, 2, 3].map(i => <div key={i} className="bg-gray-100 rounded-lg p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -152,15 +134,11 @@ export default function KeysTab({ project }: KeysTabProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            </div>)}
         </div>
       </div>
-    </div>
-  )
-
-  return (
-    <div className="space-y-6">
+    </div>;
+  return <div className="space-y-6">
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start">
           <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,8 +154,7 @@ export default function KeysTab({ project }: KeysTabProps) {
       </div>
 
       {/* Loading State */}
-      {isAnalyzing && (
-        <div className="space-y-4">
+      {isAnalyzing && <div className="space-y-4">
           <div className="flex items-center space-x-2 text-blue-600">
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -186,12 +163,10 @@ export default function KeysTab({ project }: KeysTabProps) {
             <span className="text-sm font-medium">Analyzing website for security keys...</span>
           </div>
           <LoadingSkeleton />
-        </div>
-      )}
+        </div>}
 
       {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-start">
             <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -201,14 +176,11 @@ export default function KeysTab({ project }: KeysTabProps) {
               <p className="text-sm text-red-700 mt-1">{error}</p>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Analysis Results */}
-      {analysisComplete && !isAnalyzing && !error && (
-        <>
-          {analysisResult && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {analysisComplete && !isAnalyzing && !error && <>
+          {analysisResult && <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-medium text-blue-800">Analysis Summary</h4>
@@ -228,11 +200,9 @@ export default function KeysTab({ project }: KeysTabProps) {
                   </span>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
 
-          {detectedKeys.length > 0 ? (
-        <div className="space-y-4">
+          {detectedKeys.length > 0 ? <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-md font-medium text-gray-700">Detected Keys ({detectedKeys.length})</h4>
             <div className="flex items-center space-x-2">
@@ -247,8 +217,7 @@ export default function KeysTab({ project }: KeysTabProps) {
           </div>
 
           <div className="space-y-3">
-            {detectedKeys.map((key, index) => (
-              <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+            {detectedKeys.map((key, index) => <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -282,31 +251,24 @@ export default function KeysTab({ project }: KeysTabProps) {
                         <span className="text-sm text-gray-700">{key.description}</span>
                       </div>
 
-                      {key.context && (
-                        <div className="mt-2">
+                      {key.context && <div className="mt-2">
                           <span className="text-sm text-gray-500">Context:</span>
                           <div className="text-xs bg-gray-50 p-2 rounded mt-1 font-mono text-gray-600">
                             {key.context}
                           </div>
-                        </div>
-                      )}
+                        </div>}
                     </div>
                   </div>
                   
-                  {key.status === 'exposed' && (
-                    <div className="ml-4">
+                  {key.status === 'exposed' && <div className="ml-4">
                       <button className="text-red-600 hover:text-red-800 text-sm font-medium">
                         View Details
                       </button>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-8">
+        </div> : <div className="text-center py-8">
           <div className="text-gray-400 mb-2">
             <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -314,10 +276,7 @@ export default function KeysTab({ project }: KeysTabProps) {
           </div>
           <p className="text-gray-600">No keys detected</p>
           <p className="text-sm text-gray-500 mt-1">Your website appears to be secure</p>
-        </div>
-      )}
-        </>
-      )}
-    </div>
-  )
+        </div>}
+        </>}
+    </div>;
 }
