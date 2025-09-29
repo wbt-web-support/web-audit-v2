@@ -1,14 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../types'
+import { useScrapingStore } from '@/lib/stores/scrapingStore'
+
+// Global tracking to prevent multiple instances from starting scraping for the same project
+const globalInitializedProjects = new Set<string>()
 
 export function useScraping(project: AuditProject | null, onDataUpdate?: (project: AuditProject | null, scrapedPages: ScrapedPage[]) => void) {
   const { updateAuditProject, createScrapedPage, isConnected, connectionError } = useSupabase()
   
-  const [isScraping, setIsScraping] = useState(false)
-  const [scrapingError, setScrapingError] = useState<string | null>(null)
-  const isProcessing = useRef(false)
+  // Use Zustand store for state management - individual selectors to prevent infinite loops
+  const isScraping = useScrapingStore((state) => state.isScraping)
+  const scrapingError = useScrapingStore((state) => state.scrapingError)
+  const isProcessing = useScrapingStore((state) => state.isProcessing)
+  const setScraping = useScrapingStore((state) => state.setScraping)
+  const setScrapingError = useScrapingStore((state) => state.setScrapingError)
+  const setProcessing = useScrapingStore((state) => state.setProcessing)
+  const setCurrentProject = useScrapingStore((state) => state.setCurrentProject)
+  const setScrapedPages = useScrapingStore((state) => state.setScrapedPages)
+  const addActiveCall = useScrapingStore((state) => state.addActiveCall)
+  const removeActiveCall = useScrapingStore((state) => state.removeActiveCall)
+  const isCallActive = useScrapingStore((state) => state.isCallActive)
 
   // Process scraping data
   const processScrapingData = useCallback(async (scrapingData: Record<string, unknown>, projectId: string) => {
@@ -66,10 +79,14 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
 
       console.log('✅ Project status updated to completed - UI should show data now')
 
+      // Update Zustand store with the updated project
+      const updatedProject = { ...project, ...immediateUpdate } as AuditProject
+      setCurrentProject(updatedProject)
+
       // Notify parent component that data is ready
       if (onDataUpdate) {
         console.log('🔄 Notifying parent component of data update...')
-        onDataUpdate(project, []) // Don't await - let it run in background
+        onDataUpdate(updatedProject, []) // Don't await - let it run in background
       }
 
       // Save individual pages to database in background (non-blocking)
@@ -135,13 +152,32 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
 
   // Start scraping
   const startScraping = useCallback(async () => {
-    if (!project || project.status !== 'pending' || isScraping || isProcessing.current) {
+    if (!project || project.status !== 'pending') {
       return
     }
 
-    setIsScraping(true)
+    // Check if scraping is already in progress for this project
+    if (isCallActive(project.id)) {
+      console.log('⚠️ Scraping already in progress for project:', project.id)
+      return
+    }
+
+    // Check if already scraping or processing
+    if (isScraping || isProcessing) {
+      console.log('⚠️ Scraping or processing already in progress')
+      return
+    }
+
+    // Add this call to active calls
+    if (!addActiveCall(project.id)) {
+      console.log('⚠️ Failed to add active call - already exists')
+      return
+    }
+
+    console.log('🚀 Starting scraping for project:', project.id, 'URL:', project.site_url)
+    setScraping(true)
     setScrapingError(null)
-    isProcessing.current = true
+    setProcessing(true)
 
     // Check database connection
     try {
@@ -155,8 +191,9 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
     } catch (dbError) {
       console.error('❌ Database connection check failed:', dbError)
       setScrapingError(`Database connection issue: ${dbError}`)
-      setIsScraping(false)
-      isProcessing.current = false
+      setScraping(false)
+      setProcessing(false)
+      removeActiveCall(project.id)
       return
     }
 
@@ -191,8 +228,11 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
       console.log('✅ Scraping API completed, processing data...')
       
       // Hide loader immediately after API responds
-      setIsScraping(false)
-      isProcessing.current = false
+      setScraping(false)
+      setProcessing(false)
+      removeActiveCall(project.id)
+      // Clear from global initialized projects so it can be re-scraped if needed
+      globalInitializedProjects.delete(project.id)
       console.log('✅ Scraping API completed, hiding loader and processing data...')
       
       // Process the scraping data in background (don't await)
@@ -218,17 +258,53 @@ export function useScraping(project: AuditProject | null, onDataUpdate?: (projec
       }
       
       setScrapingError(errorMessage)
-      setIsScraping(false)
-      isProcessing.current = false
+      setScraping(false)
+      setProcessing(false)
+      removeActiveCall(project.id)
+      // Clear from global initialized projects so it can be retried
+      globalInitializedProjects.delete(project.id)
     }
-  }, [project, processScrapingData, connectionError, isConnected, isScraping])
+  }, [project, processScrapingData, connectionError, isConnected, isScraping, isProcessing, isCallActive, addActiveCall, removeActiveCall, setScraping, setScrapingError, setProcessing])
 
   // Auto-start scraping when project is pending
   useEffect(() => {
-    if (project && project.status === 'pending' && !isScraping && !isProcessing.current) {
+    if (!project) return
+    
+    console.log('🔍 useScraping useEffect triggered:', {
+      projectId: project.id,
+      projectStatus: project.status,
+      isScraping,
+      isProcessing,
+      isCallActive: isCallActive(project.id),
+      alreadyInitialized: globalInitializedProjects.has(project.id)
+    })
+    
+    // Only start scraping if:
+    // 1. Project is pending
+    // 2. Not already scraping or processing
+    // 3. Not already initialized globally for this project
+    // 4. No active call for this project
+    if (project.status === 'pending' && 
+        !isScraping && 
+        !isProcessing && 
+        !globalInitializedProjects.has(project.id) &&
+        !isCallActive(project.id)) {
+      
+      console.log('🚀 Auto-starting scraping for project:', project.id)
+      globalInitializedProjects.add(project.id)
       startScraping()
     }
-  }, [project, isScraping, startScraping])
+  }, [project, isScraping, isProcessing, startScraping, isCallActive])
+
+  // Cleanup effect to remove active calls when component unmounts
+  useEffect(() => {
+    return () => {
+      if (project) {
+        removeActiveCall(project.id)
+        // Note: We don't remove from globalInitializedProjects here as other instances might still need it
+      }
+    }
+  }, [project, removeActiveCall])
 
   return {
     isScraping,

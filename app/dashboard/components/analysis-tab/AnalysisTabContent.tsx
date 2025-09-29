@@ -8,6 +8,7 @@ import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
 import ErrorState from './components/ErrorState'
 import SectionSkeleton from './components/SectionSkeleton'
+import { useScrapingStore } from '@/lib/stores/scrapingStore'
 
 // Lazy load heavy components
 const PagesSection = lazy(() => import('../analysis-tab-components/PagesSection'))
@@ -25,7 +26,13 @@ export default function AnalysisTabContent({
   onPageSelect 
 }: AnalysisTabProps) {
   const { state, updateState, refreshData, handleSectionChange } = useAnalysisData(projectId, cachedData)
-  const { isScraping, scrapingError, setScrapingError } = useScraping(state.project, (project, scrapedPages) => {
+  
+  // Use Zustand store for scraping state - individual selectors to prevent infinite loops
+  const isScraping = useScrapingStore((state) => state.isScraping)
+  const scrapingError = useScrapingStore((state) => state.scrapingError)
+  const zustandScrapedPages = useScrapingStore((state) => state.scrapedPages)
+  
+  const { setScrapingError } = useScraping(state.project, (project, scrapedPages) => {
     // When scraping completes, refresh the data to show the new project state
     console.log('🔄 Scraping completed, refreshing data...')
     refreshData(true) // Force refresh
@@ -62,7 +69,7 @@ export default function AnalysisTabContent({
       <ModernLoader 
         projectName={state.project?.site_url || 'Website'}
         totalPages={state.project?.total_pages || 0}
-        currentPage={state.scrapedPages?.length || 0}
+        currentPage={zustandScrapedPages?.length || state.scrapedPages?.length || 0}
         isScraping={isScraping}
       />
     )
@@ -74,7 +81,7 @@ export default function AnalysisTabContent({
       <ModernLoader 
         projectName={state.project.site_url || 'Website'}
         totalPages={state.project.total_pages || 0}
-        currentPage={state.scrapedPages?.length || 0}
+        currentPage={zustandScrapedPages?.length || state.scrapedPages?.length || 0}
         isScraping={false}
       />
     )
@@ -90,18 +97,6 @@ export default function AnalysisTabContent({
         onRetryLoading={handleRetryLoading}
         onViewProjects={handleViewProjects}
         onGoToDashboard={handleGoToDashboard}
-      />
-    )
-  }
-
-  // Show processing state if project is still in progress
-  if (state.project && (state.project.status === 'in_progress' || (state.project.status === 'pending' && !isScraping))) {
-    return (
-      <ModernLoader 
-        projectName={state.project.site_url || 'Website'}
-        totalPages={state.project.total_pages || 0}
-        currentPage={state.scrapedPages?.length || 0}
-        isScraping={false}
       />
     )
   }
@@ -129,13 +124,13 @@ export default function AnalysisTabContent({
         transition={{ duration: 0.3 }}
       >
         {state.activeSection === 'overview' && (
-          <OverviewSection project={state.project} scrapedPages={state.scrapedPages} />
+          <OverviewSection project={state.project} scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} />
         )}
         
         {state.activeSection === 'pages' && (
           <Suspense fallback={<SectionSkeleton />}>
             <PagesSection 
-              scrapedPages={state.scrapedPages} 
+              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
               projectId={projectId} 
               onPageSelect={onPageSelect} 
             />
@@ -144,7 +139,7 @@ export default function AnalysisTabContent({
         
         {state.activeSection === 'technologies' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <TechnologiesSection project={state.project} scrapedPages={state.scrapedPages} />
+            <TechnologiesSection project={state.project} scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} />
           </Suspense>
         )}
         
@@ -172,7 +167,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <ImagesSection 
               project={state.project} 
-              scrapedPages={state.scrapedPages} 
+              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
               originalScrapingData={state.project.scraping_data} 
             />
           </Suspense>
@@ -182,7 +177,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <LinksSection 
               project={state.project} 
-              scrapedPages={state.scrapedPages} 
+              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
               originalScrapingData={state.project.scraping_data} 
             />
           </Suspense>
@@ -192,7 +187,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <SEOAnalysisSection 
               project={state.project} 
-              scrapedPages={state.scrapedPages} 
+              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
               dataVersion={state.dataVersion} 
             />
           </Suspense>
