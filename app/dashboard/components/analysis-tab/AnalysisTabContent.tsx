@@ -2,13 +2,11 @@
 
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
-import { useAnalysisData } from './hooks/useAnalysisData'
-import { useScraping } from './hooks/useScraping'
+import { useSimpleAnalysis } from './hooks/useSimpleAnalysis'
 import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
 import ErrorState from './components/ErrorState'
 import SectionSkeleton from './components/SectionSkeleton'
-import { useScrapingStore } from '@/lib/stores/scrapingStore'
 
 // Lazy load heavy components
 const PagesSection = lazy(() => import('../analysis-tab-components/PagesSection'))
@@ -25,28 +23,13 @@ export default function AnalysisTabContent({
   onDataUpdate, 
   onPageSelect 
 }: AnalysisTabProps) {
-  const { state, updateState, refreshData, handleSectionChange } = useAnalysisData(projectId, cachedData)
-  
-  // Use Zustand store for scraping state - individual selectors to prevent infinite loops
-  const isScraping = useScrapingStore((state) => state.isScraping)
-  const scrapingError = useScrapingStore((state) => state.scrapingError)
-  const zustandScrapedPages = useScrapingStore((state) => state.scrapedPages)
-  
-  const { setScrapingError } = useScraping(state.project, (project, scrapedPages) => {
-    // When scraping completes, refresh the data to show the new project state
-    console.log('🔄 Scraping completed, refreshing data...')
-    refreshData(true) // Force refresh
-    if (onDataUpdate) {
-      onDataUpdate(project, scrapedPages)
-    }
-  })
+  const { state, updateState, refreshData, handleSectionChange, startScraping } = useSimpleAnalysis(projectId, cachedData)
 
   // Handle retry actions
   const handleRetryScraping = () => {
-    setScrapingError(null)
+    updateState({ scrapingError: null })
     if (state.project) {
-      // Trigger scraping again by updating project status
-      // This would need to be implemented in the useScraping hook
+      startScraping(state.project)
     }
   }
 
@@ -64,35 +47,23 @@ export default function AnalysisTabContent({
   }
 
   // Show loader if loading or scraping
-  if (state.loading || isScraping) {
+  if (state.loading || state.isScraping) {
     return (
       <ModernLoader 
         projectName={state.project?.site_url || 'Website'}
         totalPages={state.project?.total_pages || 0}
-        currentPage={zustandScrapedPages?.length || state.scrapedPages?.length || 0}
-        isScraping={isScraping}
+        currentPage={state.scrapedPages?.length || 0}
+        isScraping={state.isScraping}
       />
     )
   }
 
-  // Show processing state if project is still in progress
-  if (state.project && (state.project.status === 'in_progress' || (state.project.status === 'pending' && !isScraping))) {
-    return (
-      <ModernLoader 
-        projectName={state.project.site_url || 'Website'}
-        totalPages={state.project.total_pages || 0}
-        currentPage={zustandScrapedPages?.length || state.scrapedPages?.length || 0}
-        isScraping={false}
-      />
-    )
-  }
-
-  // Show error state only for scraping errors (not project errors since project exists)
-  if (scrapingError) {
+  // Show error state for any errors
+  if (state.error || state.scrapingError) {
     return (
       <ErrorState
-        error={null}
-        scrapingError={scrapingError}
+        error={state.error}
+        scrapingError={state.scrapingError}
         onRetryScraping={handleRetryScraping}
         onRetryLoading={handleRetryLoading}
         onViewProjects={handleViewProjects}
@@ -124,13 +95,13 @@ export default function AnalysisTabContent({
         transition={{ duration: 0.3 }}
       >
         {state.activeSection === 'overview' && (
-          <OverviewSection project={state.project} scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} />
+          <OverviewSection project={state.project} scrapedPages={state.scrapedPages} />
         )}
         
         {state.activeSection === 'pages' && (
           <Suspense fallback={<SectionSkeleton />}>
             <PagesSection 
-              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
+              scrapedPages={state.scrapedPages} 
               projectId={projectId} 
               onPageSelect={onPageSelect} 
             />
@@ -139,7 +110,7 @@ export default function AnalysisTabContent({
         
         {state.activeSection === 'technologies' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <TechnologiesSection project={state.project} scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} />
+            <TechnologiesSection project={state.project} scrapedPages={state.scrapedPages} />
           </Suspense>
         )}
         
@@ -167,7 +138,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <ImagesSection 
               project={state.project} 
-              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
+              scrapedPages={state.scrapedPages} 
               originalScrapingData={state.project.scraping_data} 
             />
           </Suspense>
@@ -177,7 +148,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <LinksSection 
               project={state.project} 
-              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
+              scrapedPages={state.scrapedPages} 
               originalScrapingData={state.project.scraping_data} 
             />
           </Suspense>
@@ -187,7 +158,7 @@ export default function AnalysisTabContent({
           <Suspense fallback={<SectionSkeleton />}>
             <SEOAnalysisSection 
               project={state.project} 
-              scrapedPages={zustandScrapedPages.length > 0 ? zustandScrapedPages : state.scrapedPages} 
+              scrapedPages={state.scrapedPages} 
               dataVersion={state.dataVersion} 
             />
           </Suspense>

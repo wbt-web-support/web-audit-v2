@@ -24,6 +24,11 @@ export async function POST(request: Request) {
     const apiKey = process.env.SCRAPER_API_KEY;
     const endpoint = `${apiBaseUrl}/scrap`;
     
+    // Check if we're using localhost and provide helpful error
+    if (apiBaseUrl.includes('localhost') && !process.env.SCRAPER_API_BASE_URL) {
+      console.warn('⚠️ Using default localhost scraping service. Make sure the scraping service is running on port 3001');
+    }
+    
     // Validate the endpoint URL
     try {
       new URL(endpoint);
@@ -108,6 +113,20 @@ export async function POST(request: Request) {
           message: 'Scraping request timed out after 3 minutes'
         }), { 
           status: 408, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // Handle connection refused error specifically
+      if (fetchError instanceof Error && fetchError.message.includes('ECONNREFUSED')) {
+        return new Response(JSON.stringify({
+          error: 'Scraping service unavailable',
+          message: 'The scraping service is not running. Please check if the scraping service is started on the configured endpoint.',
+          details: `Endpoint: ${endpoint}`,
+          code: 'SERVICE_UNAVAILABLE',
+          suggestion: 'Make sure the scraping service is running or configure a different endpoint in your environment variables.'
+        }), { 
+          status: 503, 
           headers: { 'Content-Type': 'application/json' } 
         });
       }

@@ -1,6 +1,5 @@
 'use client'
 
-import { AnalysisCacheProvider } from '../contexts/AnalysisCache'
 import { AnalysisTabProps } from './types'
 import AnalysisTabContent from './AnalysisTabContent'
 
@@ -11,13 +10,11 @@ export default function AnalysisTab({
   onPageSelect 
 }: AnalysisTabProps) {
   return (
-    <AnalysisCacheProvider projectId={projectId}>
-      <AnalysisTabContent 
-        projectId={projectId} 
-        cachedData={cachedData} 
-        onDataUpdate={onDataUpdate} 
-        onPageSelect={onPageSelect} 
-      />
-    </AnalysisCacheProvider>
+    <AnalysisTabContent 
+      projectId={projectId} 
+      cachedData={cachedData} 
+      onDataUpdate={onDataUpdate} 
+      onPageSelect={onPageSelect} 
+    />
   )
 }

@@ -4,31 +4,74 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { formatPageSpeedScore, getScoreColor, getScoreBgColor } from '@/lib/pagespeed'
-import { useAnalysisCache } from '../contexts/AnalysisCache'
+import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface PerformanceSectionProps {
   project: AuditProject
   onDataUpdate?: (updatedProject: AuditProject) => void
 }
 
-export default function PerformanceSection({ }: PerformanceSectionProps) {
-  const { data, refreshAnalysis } = useAnalysisCache()
+export default function PerformanceSection({ project, onDataUpdate }: PerformanceSectionProps) {
+  const { updateAuditProject } = useSupabase()
   const [isReanalyzing, setIsReanalyzing] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
-  const pagespeedData = data.pagespeedData
-  const isLoading = data.isPagespeedLoading || isReanalyzing
-  const error = data.pagespeedError
-
-  // Note: PageSpeed analysis is auto-triggered by AnalysisCache, not here
-  // This prevents duplicate requests
+  const pagespeedData = project.pagespeed_insights_data
 
   // Reanalyze function
   const handleReanalyze = async () => {
     try {
       setIsReanalyzing(true)
-      await refreshAnalysis('pagespeed')
+      setIsLoading(true)
+      setError(null)
+      
+      // Update project with loading state
+      await updateAuditProject(project.id, {
+        pagespeed_insights_loading: true,
+        pagespeed_insights_data: null
+      })
+
+      // Call PageSpeed API
+      const response = await fetch('/api/pagespeed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          projectId: project.id,
+          url: project.site_url 
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`PageSpeed API error: ${response.status}`)
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        // Update project with new data
+        const updatedProject = {
+          ...project,
+          pagespeed_insights_data: result.analysis,
+          pagespeed_insights_loading: false
+        }
+        
+        await updateAuditProject(project.id, { 
+          pagespeed_insights_data: result.analysis,
+          pagespeed_insights_loading: false
+        })
+        
+        if (onDataUpdate) {
+          onDataUpdate(updatedProject)
+        }
+      } else {
+        setError(result.error || 'PageSpeed analysis failed')
+      }
+    } catch (err) {
+      console.error('PageSpeed analysis error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to perform PageSpeed analysis')
     } finally {
       setIsReanalyzing(false)
+      setIsLoading(false)
     }
   }
 

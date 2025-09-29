@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePageAnalysisCache } from '../contexts/PageAnalysisCache'
 import { PageSpeedInsightsData } from '@/types/audit'
 
 interface ImageData {
@@ -26,8 +25,6 @@ interface PerformanceTabProps {
 }
 
 export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabProps) {
-  // const { updateScrapedPage } = useSupabase()
-  const { data, refreshAnalysis } = usePageAnalysisCache()
   const [performanceData, setPerformanceData] = useState<PageSpeedInsightsData | null>(cachedAnalysis || null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,101 +63,47 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   //   (hasGzip ? 1 : 0)
   // ) / 10 * 100)
 
-  // Use cache context data
+  // Initialize performance data
   useEffect(() => {
-    if (data.performanceAnalysis && data.performanceAnalysis.metrics) {
-      // Convert PerformanceAnalysisResult to PageSpeedInsightsData format
-      const metrics = data.performanceAnalysis.metrics
-      const convertedData: PageSpeedInsightsData = {
-        lighthouseResult: {
-          categories: {
-            performance: { score: data.performanceAnalysis.score || 0, title: 'Performance' },
-            accessibility: { score: 0.9, title: 'Accessibility' },
-            'best-practices': { score: 0.8, title: 'Best Practices' },
-            seo: { score: 0.85, title: 'SEO' }
-          },
-          audits: {
-            'first-contentful-paint': {
-              displayValue: `${metrics.firstContentfulPaint || 0}ms`,
-              score: (metrics.firstContentfulPaint || 0) < 1000 ? 0.9 : 0.5,
-              title: 'First Contentful Paint'
-            },
-            'largest-contentful-paint': {
-              displayValue: `${metrics.largestContentfulPaint || 0}ms`,
-              score: (metrics.largestContentfulPaint || 0) < 2500 ? 0.9 : 0.5,
-              title: 'Largest Contentful Paint'
-            },
-            'cumulative-layout-shift': {
-              displayValue: (metrics.cumulativeLayoutShift || 0).toString(),
-              score: (metrics.cumulativeLayoutShift || 0) < 0.1 ? 0.9 : 0.5,
-              title: 'Cumulative Layout Shift'
-            },
-            'speed-index': {
-              displayValue: `${metrics.speedIndex || 0}ms`,
-              score: (metrics.speedIndex || 0) < 2000 ? 0.9 : 0.5,
-              title: 'Speed Index'
-            },
-            'total-blocking-time': {
-              displayValue: `${metrics.totalBlockingTime || 0}ms`,
-              score: (metrics.totalBlockingTime || 0) < 200 ? 0.9 : 0.5,
-              title: 'Total Blocking Time'
-            },
-            'interactive': {
-              displayValue: `${metrics.interactive || 0}ms`,
-              score: (metrics.interactive || 0) < 3000 ? 0.9 : 0.5,
-              title: 'Time to Interactive'
-            }
-          },
-          configSettings: { formFactor: 'desktop', locale: 'en-US' },
-          fetchTime: new Date().toISOString(),
-          finalUrl: page.url || '',
-          runWarnings: [],
-          userAgent: 'Mozilla/5.0'
-        },
-        loadingExperience: {
-          metrics: {
-            'FIRST_CONTENTFUL_PAINT_MS': {
-              category: 'FAST',
-              distributions: [{ min: 0, max: 1000, proportion: 0.7 }],
-              percentile: metrics.firstContentfulPaint || 0
-            },
-            'LARGEST_CONTENTFUL_PAINT_MS': {
-              category: 'FAST',
-              distributions: [{ min: 0, max: 2500, proportion: 0.8 }],
-              percentile: metrics.largestContentfulPaint || 0
-            },
-            'CUMULATIVE_LAYOUT_SHIFT_SCORE': {
-              category: 'FAST',
-              distributions: [{ min: 0, max: 0.1, proportion: 0.85 }],
-              percentile: metrics.cumulativeLayoutShift || 0
-            }
-          },
-          overall_category: 'FAST'
-        },
-        version: { major: 1, minor: 0 }
-      }
-      setPerformanceData(convertedData)
-    } else if (cachedAnalysis) {
+    if (cachedAnalysis) {
       setPerformanceData(cachedAnalysis)
     } else if (page.performance_analysis) {
       setPerformanceData(page.performance_analysis)
     } else {
-      // No performance data available - set empty state
       setPerformanceData(null)
     }
-  }, [data.performanceAnalysis, cachedAnalysis, page.performance_analysis, page.url])
-
-  // Update local state when cache changes
-  useEffect(() => {
-    setIsAnalyzing(data.isPerformanceLoading)
-    setError(data.performanceError)
-  }, [data.isPerformanceLoading, data.performanceError])
+  }, [cachedAnalysis, page.performance_analysis])
 
   const performPerformanceAnalysis = async () => {
     try {
-      await refreshAnalysis('performance')
+      setIsAnalyzing(true)
+      setError(null)
+      
+      // Call performance analysis API
+      const response = await fetch('/api/performance-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageId: page.url, // Use URL as pageId for now
+          url: page.url
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Performance analysis API error: ${response.status}`)
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        setPerformanceData(result.analysis)
+      } else {
+        setError(result.error || 'Performance analysis failed')
+      }
     } catch (err) {
       console.error('Error during performance analysis:', err)
+      setError(err instanceof Error ? err.message : 'Failed to perform performance analysis')
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 
