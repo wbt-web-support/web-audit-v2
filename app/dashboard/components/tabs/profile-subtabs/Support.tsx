@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useSupabase } from '@/contexts/SupabaseContext'
+import TicketCard from '../../TicketCard'
 
 interface SupportProps {
   userProfile: {
@@ -20,76 +22,91 @@ interface SupportProps {
 
 interface Ticket {
   id: string
+  user_id: string
   title: string
   description: string
   status: 'open' | 'in_progress' | 'resolved' | 'closed'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  createdAt: string
-  updatedAt: string
-  responses: Array<{
-    id: string
-    message: string
-    isFromSupport: boolean
-    createdAt: string
-  }>
+  created_at: string
+  updated_at: string
+  assigned_to: string | null
+  resolved_at: string | null
+  closed_at: string | null
 }
 
 export default function Support({ userProfile }: SupportProps) {
+  const { createTicket, getTickets, testTicketSystemConnection } = useSupabase()
   const [activeTab, setActiveTab] = useState<'tickets' | 'new'>('tickets')
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [ticketsLoading, setTicketsLoading] = useState(true)
+  const [ticketsError, setTicketsError] = useState<string | null>(null)
   const [newTicket, setNewTicket] = useState({
     title: '',
     description: '',
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent'
   })
 
-  // Mock tickets data
-  const [tickets] = useState<Ticket[]>([
-    {
-      id: '1',
-      title: 'Website audit not working properly',
-      description: 'When I try to run an audit on my website, it gets stuck at 50% and never completes.',
-      status: 'in_progress',
-      priority: 'high',
-      createdAt: '2024-01-20T10:30:00Z',
-      updatedAt: '2024-01-20T14:30:00Z',
-      responses: [
-        {
-          id: '1',
-          message: 'Thank you for reporting this issue. We are investigating the problem and will get back to you soon.',
-          isFromSupport: true,
-          createdAt: '2024-01-20T11:00:00Z'
+  // Load tickets on component mount
+  useEffect(() => {
+    loadTickets()
+  }, [])
+
+  const loadTickets = async () => {
+    setTicketsLoading(true)
+    setTicketsError(null)
+    try {
+      if (!getTickets) {
+        console.error('getTickets function is not available')
+        setTicketsError('getTickets function is not available')
+        return
+      }
+      
+      // First test the database connection
+      console.log('Testing ticket system connection...')
+      const connectionTest = await testTicketSystemConnection()
+      console.log('Connection test result:', connectionTest)
+      
+      if (!connectionTest.success) {
+        console.error('Ticket system connection failed:', connectionTest.error)
+        if (connectionTest.code === 'TABLE_NOT_EXISTS' || connectionTest.error?.includes('does not exist')) {
+          setTicketsError('Ticket system not set up. Please run the database migration script first.')
+        } else if (connectionTest.code === 'PERMISSION_DENIED' || connectionTest.error?.includes('permission denied')) {
+          setTicketsError('Permission denied. Please check your Supabase RLS policies and run the database migration script.')
+        } else {
+          setTicketsError(`Database connection issue: ${connectionTest.error}`)
         }
-      ]
-    },
-    {
-      id: '2',
-      title: 'Feature request: Export audit results',
-      description: 'It would be great to have the ability to export audit results to PDF or Excel format.',
-      status: 'open',
-      priority: 'medium',
-      createdAt: '2024-01-18T09:15:00Z',
-      updatedAt: '2024-01-18T09:15:00Z',
-      responses: []
-    },
-    {
-      id: '3',
-      title: 'Account billing question',
-      description: 'I have a question about my subscription and billing cycle.',
-      status: 'resolved',
-      priority: 'low',
-      createdAt: '2024-01-15T16:45:00Z',
-      updatedAt: '2024-01-16T10:30:00Z',
-      responses: [
-        {
-          id: '2',
-          message: 'Your billing cycle is monthly and renews on the 15th of each month. You can view your billing history in the Billing tab.',
-          isFromSupport: true,
-          createdAt: '2024-01-16T10:30:00Z'
+        return
+      }
+      
+      // If connection test passes, try to fetch tickets
+      const { data, error } = await getTickets()
+      if (error) {
+        console.error('Error loading tickets:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          hasMessage: !!error.message,
+          hasCode: !!error.code
+        })
+        
+        if (error.code === 'TABLE_NOT_EXISTS') {
+          setTicketsError('Ticket system not set up. Please run the database migration script first.')
+        } else if (!error.message || error.message === '') {
+          setTicketsError('Database connection issue. Please check your Supabase configuration.')
+        } else {
+          setTicketsError(error.message || 'Failed to load tickets')
         }
-      ]
+      } else {
+        setTickets(data || [])
+      }
+    } catch (error) {
+      console.error('Unexpected error loading tickets:', error)
+      setTicketsError('Failed to load tickets')
+    } finally {
+      setTicketsLoading(false)
     }
-  ])
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -103,12 +120,35 @@ export default function Support({ userProfile }: SupportProps) {
     e.preventDefault()
     setIsCreatingTicket(true)
     
-    // Simulate ticket creation
-    setTimeout(() => {
+    try {
+      const { data, error } = await createTicket({
+        title: newTicket.title,
+        description: newTicket.description,
+        priority: newTicket.priority,
+        status: 'open'
+      })
+
+      if (error) {
+        console.error('Error creating ticket:', error)
+        if (error.code === 'TABLE_NOT_EXISTS') {
+          alert('Ticket system not set up. Please run the database migration script first.')
+        } else {
+          alert('Failed to create ticket. Please try again.')
+        }
+      } else {
+        setNewTicket({ title: '', description: '', priority: 'medium' })
+        alert('Ticket created successfully! Our support team will get back to you soon.')
+        // Reload tickets to show the new one
+        await loadTickets()
+        // Switch to tickets tab to show the new ticket
+        setActiveTab('tickets')
+      }
+    } catch (error) {
+      console.error('Unexpected error creating ticket:', error)
+      alert('Failed to create ticket. Please try again.')
+    } finally {
       setIsCreatingTicket(false)
-      setNewTicket({ title: '', description: '', priority: 'medium' })
-      alert('Ticket created successfully! Our support team will get back to you soon.')
-    }, 1000)
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -153,8 +193,6 @@ export default function Support({ userProfile }: SupportProps) {
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
             }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             My Tickets ({tickets.length})
           </motion.button>
@@ -165,8 +203,6 @@ export default function Support({ userProfile }: SupportProps) {
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
             }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             Create New Ticket
           </motion.button>
@@ -181,7 +217,52 @@ export default function Support({ userProfile }: SupportProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          {tickets.length === 0 ? (
+          {ticketsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : ticketsError ? (
+            <div className="text-center py-8">
+              <div className="text-red-500 mb-2">
+                <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <p className="text-red-600 font-medium">{ticketsError}</p>
+              {ticketsError.includes('not set up') || ticketsError.includes('does not exist') ? (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
+                  <p className="text-sm text-yellow-800 mb-2">
+                    <strong>🚨 Setup Required:</strong> The ticket system database tables haven't been created yet.
+                  </p>
+                  <p className="text-xs text-yellow-700 mb-2">
+                    <strong>Quick Fix:</strong> Go to your Supabase dashboard → SQL Editor → Run the <code className="bg-yellow-100 px-1 rounded">create-tickets-table-fixed.sql</code> script.
+                  </p>
+                  <p className="text-xs text-yellow-600">
+                    This will create the necessary tables and enable the full ticket system functionality.
+                  </p>
+                </div>
+              ) : ticketsError.includes('permission denied') ? (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-auto">
+                  <p className="text-sm text-red-800 mb-2">
+                    <strong>🔒 Permission Issue:</strong> Database access is restricted by Row Level Security policies.
+                  </p>
+                  <p className="text-xs text-red-700 mb-2">
+                    <strong>Solution:</strong> Run the <code className="bg-red-100 px-1 rounded">create-tickets-table-fixed.sql</code> script to set up proper RLS policies.
+                  </p>
+                  <p className="text-xs text-red-600">
+                    This will create the tables and configure the necessary permissions.
+                  </p>
+                </div>
+              ) : (
+                <button 
+                  onClick={loadTickets}
+                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  Try again
+                </button>
+              )}
+            </div>
+          ) : tickets.length === 0 ? (
             <motion.div 
               className="text-center py-8"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -204,40 +285,16 @@ export default function Support({ userProfile }: SupportProps) {
             </motion.div>
           ) : (
             tickets.map((ticket, index) => (
-              <motion.div 
-                key={ticket.id} 
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              <motion.div
+                key={ticket.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-medium text-black">{ticket.title}</h3>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
-                      </span>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-3">{ticket.description}</p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
-                      <span>Updated: {new Date(ticket.updatedAt).toLocaleDateString()}</span>
-                      <span>Responses: {ticket.responses.length}</span>
-                    </div>
-                  </div>
-                  <motion.button 
-                    className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    View Details →
-                  </motion.button>
-                </div>
+                <TicketCard 
+                  ticket={ticket} 
+                  onTicketUpdate={loadTickets}
+                />
               </motion.div>
             ))
           )}
@@ -251,7 +308,6 @@ export default function Support({ userProfile }: SupportProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          whileHover={{ scale: 1.01 }}
         >
           <h2 className="text-lg font-semibold text-black mb-6">Create New Support Ticket</h2>
           <motion.form 
@@ -277,7 +333,6 @@ export default function Support({ userProfile }: SupportProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 placeholder="Brief description of your issue"
                 required
-                whileFocus={{ scale: 1.02 }}
               />
             </motion.div>
 
@@ -294,7 +349,6 @@ export default function Support({ userProfile }: SupportProps) {
                 value={newTicket.priority}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                whileFocus={{ scale: 1.02 }}
               >
                 <option value="low">Low - General question or minor issue</option>
                 <option value="medium">Medium - Standard support request</option>
@@ -319,7 +373,6 @@ export default function Support({ userProfile }: SupportProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
                 required
-                whileFocus={{ scale: 1.02 }}
               />
             </motion.div>
 
@@ -333,8 +386,6 @@ export default function Support({ userProfile }: SupportProps) {
                 type="submit"
                 disabled={isCreatingTicket}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 {isCreatingTicket ? 'Creating Ticket...' : 'Create Ticket'}
               </motion.button>
@@ -342,8 +393,6 @@ export default function Support({ userProfile }: SupportProps) {
                 type="button"
                 onClick={() => setNewTicket({ title: '', description: '', priority: 'medium' })}
                 className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 Clear Form
               </motion.button>
@@ -358,7 +407,6 @@ export default function Support({ userProfile }: SupportProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        whileHover={{ scale: 1.01 }}
       >
         <h3 className="text-lg font-semibold text-black mb-4">Support Resources</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -367,7 +415,6 @@ export default function Support({ userProfile }: SupportProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
-            whileHover={{ scale: 1.05 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <span className="text-blue-600 text-sm">📚</span>
@@ -382,7 +429,6 @@ export default function Support({ userProfile }: SupportProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.5 }}
-            whileHover={{ scale: 1.05 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <span className="text-blue-600 text-sm">💬</span>
@@ -397,7 +443,6 @@ export default function Support({ userProfile }: SupportProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}
-            whileHover={{ scale: 1.05 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <span className="text-blue-600 text-sm">🎥</span>
@@ -412,7 +457,6 @@ export default function Support({ userProfile }: SupportProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.7 }}
-            whileHover={{ scale: 1.05 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <span className="text-blue-600 text-sm">❓</span>

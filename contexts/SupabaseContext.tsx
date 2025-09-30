@@ -69,6 +69,34 @@ interface ScrapedPage {
   updated_at: string
 }
 
+interface Ticket {
+  id: string
+  user_id: string
+  title: string
+  description: string
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  created_at: string
+  updated_at: string
+  assigned_to: string | null
+  resolved_at: string | null
+  closed_at: string | null
+}
+
+interface TicketMessage {
+  id: string
+  ticket_id: string
+  user_id: string
+  message: string
+  is_from_support: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface TicketWithMessages extends Ticket {
+  messages: TicketMessage[]
+}
+
 interface SupabaseContextType {
   user: User | null
   userProfile: UserProfile | null
@@ -101,6 +129,19 @@ interface SupabaseContextType {
   processMetaTagsData: (auditProjectId: string) => Promise<{ data: AuditProjectWithUserId | null; error: any }>
   // Manual trigger for existing projects
   triggerMetaTagsProcessing: (auditProjectId: string) => Promise<{ success: boolean; error?: any }>
+  // Ticket System CRUD operations
+  createTicket: (ticketData: Omit<Ticket, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'assigned_to' | 'resolved_at' | 'closed_at'>) => Promise<{ data: Ticket | null; error: any }>
+  getTickets: () => Promise<{ data: Ticket[] | null; error: any }>
+  getTicket: (id: string) => Promise<{ data: TicketWithMessages | null; error: any }>
+  updateTicket: (id: string, updates: Partial<Ticket>) => Promise<{ data: Ticket | null; error: any }>
+  deleteTicket: (id: string) => Promise<{ error: any }>
+  // Ticket Messages CRUD operations
+  createTicketMessage: (messageData: Omit<TicketMessage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<{ data: TicketMessage | null; error: any }>
+  getTicketMessages: (ticketId: string) => Promise<{ data: TicketMessage[] | null; error: any }>
+  updateTicketMessage: (id: string, updates: Partial<TicketMessage>) => Promise<{ data: TicketMessage | null; error: any }>
+  deleteTicketMessage: (id: string) => Promise<{ error: any }>
+  // Test function
+  testTicketSystemConnection: () => Promise<{ success: boolean; error: string | null; code?: string; originalError?: any }>
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
@@ -1267,6 +1308,433 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Test database connection for tickets
+  const testTicketSystemConnection = async () => {
+    try {
+      console.log('Testing ticket system database connection...')
+      
+      // Try a simple query that doesn't trigger RLS issues
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('id')
+        .limit(1)
+      
+      console.log('Ticket system connection test result:', { data, error })
+      
+      if (error) {
+        console.error('Ticket system connection failed:', error)
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // Check for specific error types
+        if (error.message?.includes('relation "tickets" does not exist') || 
+            error.message?.includes('relation "public.tickets" does not exist') ||
+            error.code === 'PGRST301') {
+          return { 
+            success: false, 
+            error: 'Ticket system not set up. Please run the database migration script first.',
+            code: 'TABLE_NOT_EXISTS'
+          }
+        }
+        
+        if (error.message?.includes('permission denied')) {
+          return { 
+            success: false, 
+            error: 'Permission denied. Please check your Supabase RLS policies.',
+            code: 'PERMISSION_DENIED'
+          }
+        }
+        
+        return { 
+          success: false, 
+          error: error.message || 'Database connection failed',
+          code: error.code 
+        }
+      }
+      
+      console.log('Ticket system connection successful')
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('Unexpected error testing ticket system:', error)
+      return { 
+        success: false, 
+        error: 'Unexpected error occurred',
+        originalError: error 
+      }
+    }
+  }
+
+  // Ticket System CRUD operations
+  const createTicket = async (ticketData: Omit<Ticket, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'assigned_to' | 'resolved_at' | 'closed_at'>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert({
+          user_id: user.id,
+          ...ticketData
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating ticket:', error)
+        // Check if it's a table doesn't exist error
+        if (error.message?.includes('relation "tickets" does not exist') || 
+            error.message?.includes('relation "public.tickets" does not exist')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Ticket system not set up. Please run the database migration script first.',
+              code: 'TABLE_NOT_EXISTS'
+            } 
+          }
+        }
+        return { data: null, error }
+      }
+
+      return { data: data as Ticket, error: null }
+    } catch (error) {
+      console.error('Unexpected error creating ticket:', error)
+      return { data: null, error }
+    }
+  }
+
+  const getTickets = async () => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      console.log('Attempting to fetch tickets for user:', user.id)
+      
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      console.log('Supabase response:', { data, error, hasData: !!data, hasError: !!error })
+
+      if (error) {
+        console.error('Error fetching tickets:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        // Check if it's a table doesn't exist error
+        if (error.message?.includes('relation "tickets" does not exist') || 
+            error.message?.includes('relation "public.tickets" does not exist') ||
+            error.code === 'PGRST301' ||
+            error.message?.includes('does not exist')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Ticket system not set up. Please run the database migration script first.',
+              code: 'TABLE_NOT_EXISTS'
+            } 
+          }
+        }
+        return { data: null, error }
+      }
+
+      console.log('Successfully fetched tickets:', data?.length || 0, 'tickets')
+      return { data: data as Ticket[], error: null }
+    } catch (error) {
+      console.error('Unexpected error fetching tickets:', error)
+      return { data: null, error: { message: 'Unexpected error occurred', originalError: error } }
+    }
+  }
+
+  const getTicket = async (id: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      // Get ticket with messages
+      const { data: ticket, error: ticketError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (ticketError) {
+        console.error('Error fetching ticket:', ticketError)
+        return { data: null, error: ticketError }
+      }
+
+      // Get messages for this ticket
+      const { data: messages, error: messagesError } = await supabase
+        .from('ticket_messages')
+        .select('*')
+        .eq('ticket_id', id)
+        .order('created_at', { ascending: true })
+
+      if (messagesError) {
+        console.error('Error fetching ticket messages:', messagesError)
+        return { data: null, error: messagesError }
+      }
+
+      const ticketWithMessages: TicketWithMessages = {
+        ...ticket as Ticket,
+        messages: messages as TicketMessage[]
+      }
+
+      return { data: ticketWithMessages, error: null }
+    } catch (error) {
+      console.error('Unexpected error fetching ticket:', error)
+      return { data: null, error }
+    }
+  }
+
+  const updateTicket = async (id: string, updates: Partial<Ticket>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating ticket:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as Ticket, error: null }
+    } catch (error) {
+      console.error('Unexpected error updating ticket:', error)
+      return { data: null, error }
+    }
+  }
+
+  const deleteTicket = async (id: string) => {
+    if (!user) {
+      return { error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting ticket:', error)
+        return { error }
+      }
+
+      return { error: null }
+    } catch (error) {
+      console.error('Unexpected error deleting ticket:', error)
+      return { error }
+    }
+  }
+
+  // Ticket Messages CRUD operations
+  const createTicketMessage = async (messageData: Omit<TicketMessage, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      console.log('Creating ticket message:', messageData)
+      
+      const { data, error } = await supabase
+        .from('ticket_messages')
+        .insert({
+          user_id: user.id,
+          ...messageData
+        })
+        .select()
+        .single()
+
+      console.log('Create ticket message response:', { data, error, hasData: !!data, hasError: !!error })
+
+      if (error) {
+        console.error('Error creating ticket message:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        // Check if it's a table doesn't exist error
+        if (error.message?.includes('relation "ticket_messages" does not exist') || 
+            error.message?.includes('relation "public.ticket_messages" does not exist') ||
+            error.code === 'PGRST301') {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Ticket messages table not set up. Please run the database migration script first.',
+              code: 'TABLE_NOT_EXISTS'
+            } 
+          }
+        }
+        
+        if (error.message?.includes('permission denied')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Permission denied for ticket messages. Please check your Supabase RLS policies.',
+              code: 'PERMISSION_DENIED'
+            } 
+          }
+        }
+        
+        return { data: null, error }
+      }
+
+      console.log('Successfully created ticket message:', data?.id)
+      return { data: data as TicketMessage, error: null }
+    } catch (error) {
+      console.error('Unexpected error creating ticket message:', error)
+      return { data: null, error: { message: 'Unexpected error occurred', originalError: error } }
+    }
+  }
+
+  const getTicketMessages = async (ticketId: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      console.log('Fetching ticket messages for ticket:', ticketId)
+      
+      const { data, error } = await supabase
+        .from('ticket_messages')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true })
+
+      console.log('Ticket messages response:', { data, error, hasData: !!data, hasError: !!error })
+
+      if (error) {
+        console.error('Error fetching ticket messages:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          errorKeys: Object.keys(error),
+          errorStringified: JSON.stringify(error)
+        })
+        
+        // Check if it's a table doesn't exist error
+        if (error.message?.includes('relation "ticket_messages" does not exist') || 
+            error.message?.includes('relation "public.ticket_messages" does not exist') ||
+            error.code === 'PGRST301') {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Ticket messages table not set up. Please run the database migration script first.',
+              code: 'TABLE_NOT_EXISTS'
+            } 
+          }
+        }
+        
+        if (error.message?.includes('permission denied')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Permission denied for ticket messages. Please check your Supabase RLS policies.',
+              code: 'PERMISSION_DENIED'
+            } 
+          }
+        }
+        
+        // Handle empty error objects (likely RLS issues)
+        if (!error.message || error.message === '' || Object.keys(error).length === 0) {
+          console.warn('Empty error object detected - likely RLS policy issue')
+          return { 
+            data: null, 
+            error: { 
+              message: 'RLS policy issue detected. Please run the fix-ticket-messages-rls-permissive.sql script.',
+              code: 'RLS_POLICY_ISSUE'
+            } 
+          }
+        }
+        
+        return { data: null, error }
+      }
+
+      console.log('Successfully fetched ticket messages:', data?.length || 0, 'messages')
+      return { data: data as TicketMessage[], error: null }
+    } catch (error) {
+      console.error('Unexpected error fetching ticket messages:', error)
+      return { data: null, error: { message: 'Unexpected error occurred', originalError: error } }
+    }
+  }
+
+  const updateTicketMessage = async (id: string, updates: Partial<TicketMessage>) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('ticket_messages')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating ticket message:', error)
+        return { data: null, error }
+      }
+
+      return { data: data as TicketMessage, error: null }
+    } catch (error) {
+      console.error('Unexpected error updating ticket message:', error)
+      return { data: null, error }
+    }
+  }
+
+  const deleteTicketMessage = async (id: string) => {
+    if (!user) {
+      return { error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ticket_messages')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting ticket message:', error)
+        return { error }
+      }
+
+      return { error: null }
+    } catch (error) {
+      console.error('Unexpected error deleting ticket message:', error)
+      return { error }
+    }
+  }
+
   const value = {
     user,
     userProfile,
@@ -1294,6 +1762,17 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     createScrapedPages,
     processMetaTagsData,
     triggerMetaTagsProcessing,
+    // Ticket System functions
+    createTicket,
+    getTickets,
+    getTicket,
+    updateTicket,
+    deleteTicket,
+    createTicketMessage,
+    getTicketMessages,
+    updateTicketMessage,
+    deleteTicketMessage,
+    testTicketSystemConnection,
   }
 
   return (
