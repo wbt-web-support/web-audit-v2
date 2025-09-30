@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface BrandConsistencyData {
   companyName: string
@@ -28,9 +28,19 @@ interface SiteCrawlFormProps {
   }) => void
   isSubmitting: boolean
   submitStatus: 'idle' | 'submitting' | 'success' | 'error'
+  isEditMode?: boolean
+  initialData?: {
+    siteUrl: string
+    pageType: 'single' | 'multiple'
+    brandConsistency: boolean
+    hiddenUrls: boolean
+    keysCheck: boolean
+    brandData: BrandConsistencyData
+    hiddenUrlsList: HiddenUrl[]
+  }
 }
 
-export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: SiteCrawlFormProps) {
+export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, isEditMode = false, initialData }: SiteCrawlFormProps) {
   // Form States
   const [siteUrl, setSiteUrl] = useState('')
   const [pageType, setPageType] = useState<'single' | 'multiple'>('single')
@@ -49,6 +59,19 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
   const [hiddenUrlsList, setHiddenUrlsList] = useState<HiddenUrl[]>([
     { id: '1', url: '' }
   ])
+
+  // Initialize form data when in edit mode
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      setSiteUrl(initialData.siteUrl)
+      setPageType(initialData.pageType)
+      setBrandConsistency(initialData.brandConsistency)
+      setHiddenUrls(initialData.hiddenUrls)
+      setKeysCheck(initialData.keysCheck)
+      setBrandData(initialData.brandData)
+      setHiddenUrlsList(initialData.hiddenUrlsList)
+    }
+  }, [isEditMode, initialData])
 
   const handleBrandDataChange = (field: keyof BrandConsistencyData, value: string) => {
     setBrandData(prev => ({
@@ -76,6 +99,15 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('SiteCrawlForm: Form submitted with data:', {
+      siteUrl,
+      pageType,
+      brandConsistency,
+      hiddenUrls,
+      keysCheck,
+      brandData,
+      hiddenUrlsList
+    })
     onSubmit({
       siteUrl,
       pageType,
@@ -110,12 +142,14 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div>
-          <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
-          <p className="text-gray-600 text-sm">Start a comprehensive web audit</p>
+      {!isEditMode && (
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div>
+            <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
+            <p className="text-gray-600 text-sm">Start a comprehensive web audit</p>
+          </div>
         </div>
-      </div>
+      )}
       
       <div className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -370,14 +404,14 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Creating Project...
+                    {isEditMode ? 'Updating Project...' : 'Creating Project...'}
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Start Site Crawl
+                    {isEditMode ? 'Update Project' : 'Start Site Crawl'}
                   </>
                 )}
               </span>

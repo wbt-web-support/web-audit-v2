@@ -29,9 +29,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             <p className="text-2xl font-bold text-black mt-1">
               {projectsLoading ? '...' : totalProjects}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {projectsLoading ? 'Loading...' : totalProjects > 0 ? 'Active projects' : 'No projects yet'}
-            </p>
+           
           </div>
           <div className="p-3 rounded bg-blue-100 text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,9 +51,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             <p className="text-2xl font-bold text-black mt-1">
               {projectsLoading ? '...' : activeProjects}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {projectsLoading ? 'Loading...' : activeProjects > 0 ? 'Currently running' : 'None active'}
-            </p>
+           
           </div>
           <div className="p-3 rounded bg-blue-100 text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,9 +73,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             <p className="text-2xl font-bold text-black mt-1">
               {projectsLoading ? '...' : completedProjects}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {projectsLoading ? 'Loading...' : completedProjects > 0 ? 'Successfully finished' : 'None completed'}
-            </p>
+           
           </div>
           <div className="p-3 rounded bg-blue-100 text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,9 +95,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             <p className="text-2xl font-bold text-black mt-1">
               {projectsLoading ? '...' : `${successRate}%`}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {projectsLoading ? 'Loading...' : successRate > 0 ? 'Based on completed projects' : 'No data yet'}
-            </p>
+           
           </div>
           <div className="p-3 rounded bg-blue-100 text-blue-600">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

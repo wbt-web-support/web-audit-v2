@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { AuditProject } from '@/types/audit';
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader';
+import EditProjectModal from '../modals/EditProjectModal';
 interface ProjectsTabProps {
   userProfile: unknown;
   projects: AuditProject[];
@@ -12,16 +13,25 @@ interface ProjectsTabProps {
   projectsError: string | null;
   refreshProjects: () => Promise<void>;
   onProjectSelect?: (projectId: string) => void;
+  onUpdateProject?: (projectId: string, data: any) => Promise<void>;
+  onDeleteProject?: (projectId: string) => Promise<void>;
+  onRecrawlProject?: (projectId: string) => Promise<void>;
 }
 export default function ProjectsTab({
   projects,
   projectsLoading,
   projectsError,
   refreshProjects,
-  onProjectSelect
+  onProjectSelect,
+  onUpdateProject,
+  onDeleteProject,
+  onRecrawlProject
 }: Omit<ProjectsTabProps, 'userProfile'>) {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const previousProjectsRef = useRef<AuditProject[]>([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<AuditProject | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Monitor project status changes and refresh when crawling is successful
   useEffect(() => {
@@ -66,6 +76,65 @@ export default function ProjectsTab({
       }
       return newSet;
     });
+  };
+
+  const handleEditProject = (project: AuditProject) => {
+    setSelectedProject(project);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveProject = async (projectId: string, data: {
+    siteUrl: string;
+    pageType: 'single' | 'multiple';
+    brandConsistency: boolean;
+    hiddenUrls: boolean;
+    keysCheck: boolean;
+    brandData: any;
+    hiddenUrlsList: any[];
+  }) => {
+    console.log('ProjectsTab: handleSaveProject called with:', { projectId, data });
+    
+    if (!onUpdateProject) {
+      console.log('ProjectsTab: onUpdateProject is not provided');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      console.log('ProjectsTab: Calling onUpdateProject...');
+      await onUpdateProject(projectId, data);
+      console.log('ProjectsTab: onUpdateProject completed successfully');
+      setEditModalOpen(false);
+      setSelectedProject(null);
+      await refreshProjects();
+      console.log('ProjectsTab: Modal closed and projects refreshed');
+    } catch (error) {
+      console.error('ProjectsTab: Error updating project:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRecrawlProject = async (projectId: string) => {
+    if (!onRecrawlProject) return;
+    
+    try {
+      await onRecrawlProject(projectId);
+      await refreshProjects();
+    } catch (error) {
+      console.error('Error recrawling project:', error);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!onDeleteProject) return;
+    
+    try {
+      await onDeleteProject(projectId);
+      await refreshProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -783,10 +852,16 @@ export default function ProjectsTab({
                       {project.status === 'pending' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-xs font-medium px-3 py-2 bg-blue-50 border border-blue-200 rounded cursor-pointer">
                           View Details
                         </button>}
-                      <button className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer">
+                      <button 
+                        onClick={() => handleEditProject(project)}
+                        className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer"
+                      >
                         Edit
                       </button>
-                      <button className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer">
+                      <button 
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="text-red-600 text-xs font-medium px-3 py-1 bg-red-50 border border-red-200 rounded cursor-pointer"
+                      >
                         Delete
                       </button>
                     </div>
@@ -796,5 +871,19 @@ export default function ProjectsTab({
         })}
           </motion.div>}
       </motion.div>
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedProject(null);
+        }}
+        project={selectedProject}
+        onSave={handleSaveProject}
+        onRecrawl={handleRecrawlProject}
+        onDelete={handleDeleteProject}
+        isSubmitting={isSubmitting}
+      />
     </motion.div>;
 }

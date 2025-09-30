@@ -154,13 +154,9 @@ export default function RecentProjects({
                     <h3 className="font-semibold text-black">
                       {getProjectName(project.site_url)}
                     </h3>
-                    <span className={`ml-3 px-2 py-1 rounded text-xs font-medium ${getStatusColor(project.status)}`}>
-                      {getStatusDisplayName(project.status)}
-                    </span>
+                   
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    Last audit: {formatDate(project.last_audit_at)}
-                  </p>
+                 
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     {project.issues_count > 0 && <span className="flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,14 +185,7 @@ export default function RecentProjects({
                   </div>
                 </div>
                 <div className="flex flex-col items-end space-y-2">
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-black">{project.progress}%</div>
-                    <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{
-                  width: `${project.progress}%`
-                }}></div>
-                    </div>
-                  </div>
+                  
                   {project.status === 'completed' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">
                       View Analysis →
                     </button> : project.status === 'pending' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">

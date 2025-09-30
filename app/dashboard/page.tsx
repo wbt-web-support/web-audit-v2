@@ -201,6 +201,77 @@ function DashboardContentWrapper() {
     window.history.pushState({}, '', url.toString())
   }
 
+  // CRUD operations for projects
+  const handleUpdateProject = async (projectId: string, data: {
+    siteUrl: string;
+    pageType: 'single' | 'multiple';
+    brandConsistency: boolean;
+    hiddenUrls: boolean;
+    keysCheck: boolean;
+    brandData: any;
+    hiddenUrlsList: any[];
+  }) => {
+    console.log('Dashboard: handleUpdateProject called with:', { projectId, data });
+    
+    try {
+      // TODO: Implement actual API call to update project
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the project in local state
+      setProjects(prev => prev.map(project => 
+        project.id === projectId 
+          ? { ...project, site_url: data.siteUrl, updated_at: new Date().toISOString() }
+          : project
+      ));
+      
+      console.log('Dashboard: Project updated successfully');
+    } catch (error) {
+      console.error('Dashboard: Error updating project:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    console.log('Dashboard: handleDeleteProject called with:', projectId);
+    
+    try {
+      // TODO: Implement actual API call to delete project
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Remove the project from local state
+      setProjects(prev => prev.filter(project => project.id !== projectId));
+      
+      console.log('Dashboard: Project deleted successfully');
+    } catch (error) {
+      console.error('Dashboard: Error deleting project:', error);
+      throw error;
+    }
+  };
+
+  const handleRecrawlProject = async (projectId: string) => {
+    console.log('Dashboard: handleRecrawlProject called with:', projectId);
+    
+    try {
+      // TODO: Implement actual API call to recrawl project
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the project status to pending
+      setProjects(prev => prev.map(project => 
+        project.id === projectId 
+          ? { ...project, status: 'pending', updated_at: new Date().toISOString() }
+          : project
+      ));
+      
+      console.log('Dashboard: Project recrawl initiated successfully');
+    } catch (error) {
+      console.error('Dashboard: Error recrawling project:', error);
+      throw error;
+    }
+  };
+
   // Analysis cache management
   const getCachedAnalysisData = (projectId: string): {
     project: AuditProject | null
@@ -367,6 +438,9 @@ function DashboardContentWrapper() {
             projectsError={projectsError}
             refreshProjects={refreshProjects}
             onProjectSelect={handleProjectSelect}
+            onUpdateProject={handleUpdateProject}
+            onDeleteProject={handleDeleteProject}
+            onRecrawlProject={handleRecrawlProject}
           />
         )}
       </div>
