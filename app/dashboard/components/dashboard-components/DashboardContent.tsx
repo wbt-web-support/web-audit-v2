@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { AuditProject } from '@/types/audit'
 import DashboardOverview from '../tabs/DashboardOverview'
 import ProjectsTab from '../tabs/ProjectsTab'
@@ -76,14 +75,8 @@ export default function DashboardContent({
   }
 
   return (
-    <motion.main
-      key={activeTab}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="p-4 lg:p-6"
-    >
+    <main className="p-6">
       {renderContent()}
-    </motion.main>
+    </main>
   )
 }

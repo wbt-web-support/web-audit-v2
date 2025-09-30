@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { AuditProject } from '@/types/audit';
 import { RecentProjectSkeleton } from '../SkeletonLoader';
@@ -90,29 +89,14 @@ export default function RecentProjects({
       return siteUrl;
     }
   };
-  return <motion.div initial={{
-    opacity: 0,
-    y: 20
-  }} animate={{
-    opacity: 1,
-    y: 0
-  }} transition={{
-    delay: 0.1
-  }} className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+  return <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="p-2 bg-gray-100 rounded-lg mr-3">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Recent Projects</h2>
-              <p className="text-gray-600 text-sm">Your latest audit activities</p>
-            </div>
+          <div>
+            <h2 className="text-lg font-semibold text-black">Recent Projects</h2>
+            <p className="text-gray-600 text-sm">Your latest audit activities</p>
           </div>
-          <button onClick={() => refreshProjects()} className="text-gray-600 hover:text-gray-800 transition-colors relative" disabled={projectsLoading}>
+          <button onClick={() => refreshProjects()} className="text-gray-600 relative" disabled={projectsLoading}>
             <svg className={`w-5 h-5 ${projectsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -140,7 +124,7 @@ export default function RecentProjects({
                   See <code className="bg-yellow-100 px-1 rounded">env.example</code> for reference.
                 </p>
               </div>}
-            <button onClick={() => refreshProjects()} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button onClick={() => refreshProjects()} className="mt-2 text-blue-600 text-sm font-medium px-4 py-2 bg-blue-50 rounded">
               Try again
             </button>
           </div> : projects.length === 0 ? <div className="text-center py-8">
@@ -152,26 +136,17 @@ export default function RecentProjects({
             <p className="text-gray-600 font-medium">No projects yet</p>
             <p className="text-gray-500 text-sm">Create your first audit project to get started</p>
           </div> : <div className="space-y-4">
-            {projects.slice(0, 3).map((project, index) => <motion.div key={project.id} initial={{
-          opacity: 0,
-          x: -20
-        }} animate={{
-          opacity: 1,
-          x: 0
-        }} transition={{
-          duration: 0.3,
-          delay: index * 0.1
-        }} className="group flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-gray-200 hover:shadow-sm">
+            {projects.slice(0, 3).map((project, index) => <div key={project.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-semibold text-black">
                       {getProjectName(project.site_url)}
                     </h3>
-                    <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                    <span className={`ml-3 px-2 py-1 rounded text-xs font-medium ${getStatusColor(project.status)}`}>
                       {getStatusDisplayName(project.status)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="text-sm text-gray-600 mb-2">
                     Last audit: {formatDate(project.last_audit_at)}
                   </p>
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -203,29 +178,29 @@ export default function RecentProjects({
                 </div>
                 <div className="flex flex-col items-end space-y-2">
                   <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-900">{project.progress}%</div>
+                    <div className="text-sm font-semibold text-black">{project.progress}%</div>
                     <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" style={{
+                      <div className="bg-blue-600 h-2 rounded-full" style={{
                   width: `${project.progress}%`
                 }}></div>
                     </div>
                   </div>
-                  {project.status === 'completed' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
+                  {project.status === 'completed' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">
                       View Analysis →
-                    </button> : project.status === 'pending' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
+                    </button> : project.status === 'pending' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">
                       View Details →
                     </button> : <button className="text-gray-500 text-sm font-medium">
                       {project.status === 'in_progress' ? 'Processing...' : 'Pending'}
                     </button>}
                 </div>
-              </motion.div>)}
+              </div>)}
           </div>}
           
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <button className="w-full text-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          <button className="w-full text-center text-blue-600 font-medium">
             View All Projects
           </button>
         </div>
       </div>
-    </motion.div>;
+    </div>;
 }
