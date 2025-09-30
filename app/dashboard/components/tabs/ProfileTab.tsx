@@ -10,7 +10,7 @@ interface ProfileTabProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
     updated_at?: string

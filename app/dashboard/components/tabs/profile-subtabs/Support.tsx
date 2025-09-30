@@ -13,7 +13,7 @@ interface SupportProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
     updated_at?: string
@@ -136,8 +136,8 @@ export default function Support({ userProfile }: SupportProps) {
           alert('Failed to create ticket. Please try again.')
         }
       } else {
-        setNewTicket({ title: '', description: '', priority: 'medium' })
-        alert('Ticket created successfully! Our support team will get back to you soon.')
+      setNewTicket({ title: '', description: '', priority: 'medium' })
+      alert('Ticket created successfully! Our support team will get back to you soon.')
         // Add the new ticket to the local state instead of reloading
         if (data) {
           setTickets(prev => [data, ...prev])
@@ -185,29 +185,29 @@ export default function Support({ userProfile }: SupportProps) {
         className="border-b border-gray-200"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
         <nav className="-mb-px flex space-x-8">
-          <motion.button
+          <button
             onClick={() => setActiveTab('tickets')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'tickets'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
             }`}
           >
             My Tickets ({tickets.length})
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setActiveTab('new')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'new'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
             }`}
           >
             Create New Ticket
-          </motion.button>
+          </button>
         </nav>
       </motion.div>
 
@@ -287,8 +287,8 @@ export default function Support({ userProfile }: SupportProps) {
             </motion.div>
           ) : (
             tickets.map((ticket, index) => (
-              <motion.div
-                key={ticket.id}
+              <motion.div 
+                key={ticket.id} 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
@@ -306,10 +306,10 @@ export default function Support({ userProfile }: SupportProps) {
       {/* Create New Ticket */}
       {activeTab === 'new' && (
         <motion.div 
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+          className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
           <h2 className="text-lg font-semibold text-black mb-6">Create New Support Ticket</h2>
           <motion.form 
@@ -327,12 +327,12 @@ export default function Support({ userProfile }: SupportProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ticket Title
               </label>
-              <motion.input
+              <input
                 type="text"
                 name="title"
                 value={newTicket.title}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 placeholder="Brief description of your issue"
                 required
               />
@@ -346,17 +346,17 @@ export default function Support({ userProfile }: SupportProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Priority
               </label>
-              <motion.select
+              <select
                 name="priority"
                 value={newTicket.priority}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
               >
                 <option value="low">Low - General question or minor issue</option>
                 <option value="medium">Medium - Standard support request</option>
                 <option value="high">High - Important issue affecting usage</option>
                 <option value="urgent">Urgent - Critical issue blocking work</option>
-              </motion.select>
+              </select>
             </motion.div>
 
             <motion.div
@@ -367,12 +367,12 @@ export default function Support({ userProfile }: SupportProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
-              <motion.textarea
+              <textarea
                 name="description"
                 value={newTicket.description}
                 onChange={handleInputChange}
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
                 required
               />
@@ -384,20 +384,20 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.7 }}
             >
-              <motion.button
+              <button
                 type="submit"
                 disabled={isCreatingTicket}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreatingTicket ? 'Creating Ticket...' : 'Create Ticket'}
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
                 onClick={() => setNewTicket({ title: '', description: '', priority: 'medium' })}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400 transition-colors"
               >
                 Clear Form
-              </motion.button>
+              </button>
             </motion.div>
           </motion.form>
         </motion.div>
@@ -405,10 +405,10 @@ export default function Support({ userProfile }: SupportProps) {
 
       {/* Support Resources */}
       <motion.div 
-        className="bg-gray-50 rounded-lg p-6"
+        className="bg-gray-50 rounded p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
       >
         <h3 className="text-lg font-semibold text-black mb-4">Support Resources</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,7 +418,7 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
               <span className="text-blue-600 text-sm">📚</span>
             </div>
             <div>
@@ -432,7 +432,7 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.5 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
               <span className="text-blue-600 text-sm">💬</span>
             </div>
             <div>
@@ -446,7 +446,7 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
               <span className="text-blue-600 text-sm">🎥</span>
             </div>
             <div>
@@ -460,7 +460,7 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.7 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
               <span className="text-blue-600 text-sm">❓</span>
             </div>
             <div>

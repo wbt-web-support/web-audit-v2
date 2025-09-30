@@ -11,7 +11,7 @@ interface BillingProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
     updated_at?: string
@@ -73,15 +73,14 @@ export default function Billing({ userProfile }: BillingProps) {
     >
       {/* Current Plan */}
       <motion.div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-black">Current Plan</h2>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
             {subscription.status}
           </span>
         </div>
@@ -103,9 +102,9 @@ export default function Billing({ userProfile }: BillingProps) {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Projects: {subscription.usage.projects}/{subscription.usage.maxProjects}</span>
-                <div className="w-20 bg-gray-200 rounded-full h-2">
+                <div className="w-20 bg-gray-200 rounded h-2">
                   <motion.div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                    className="bg-blue-600 h-2 rounded" 
                     initial={{ width: 0 }}
                     animate={{ width: `${(subscription.usage.projects / subscription.usage.maxProjects) * 100}%` }}
                     transition={{ duration: 1, delay: 0.5 }}
@@ -114,9 +113,9 @@ export default function Billing({ userProfile }: BillingProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Audits: {subscription.usage.audits}/{subscription.usage.maxAudits}</span>
-                <div className="w-20 bg-gray-200 rounded-full h-2">
+                <div className="w-20 bg-gray-200 rounded h-2">
                   <motion.div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                    className="bg-blue-600 h-2 rounded" 
                     initial={{ width: 0 }}
                     animate={{ width: `${(subscription.usage.audits / subscription.usage.maxAudits) * 100}%` }}
                     transition={{ duration: 1, delay: 0.7 }}
@@ -140,18 +139,17 @@ export default function Billing({ userProfile }: BillingProps) {
 
       {/* Available Plans */}
       <motion.div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        whileHover={{ scale: 1.01 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
       >
         <h2 className="text-lg font-semibold text-black mb-6">Available Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
-              className={`relative rounded-lg border-2 p-6 ${
+              className={`relative rounded border-2 p-6 ${
                 plan.current
                   ? 'border-blue-600 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
@@ -159,7 +157,6 @@ export default function Billing({ userProfile }: BillingProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
             >
               {plan.current && (
                 <motion.div 
@@ -168,7 +165,7 @@ export default function Billing({ userProfile }: BillingProps) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: 0.5 }}
                 >
-                  <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium">
                     Current Plan
                   </span>
                 </motion.div>
@@ -198,23 +195,20 @@ export default function Billing({ userProfile }: BillingProps) {
               </ul>
               <div className="mt-6">
                 {plan.current ? (
-                  <motion.button
+                  <button
                     disabled
-                    className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-lg cursor-not-allowed"
-                    whileHover={{ scale: 1.02 }}
+                    className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded cursor-not-allowed"
                   >
                     Current Plan
-                  </motion.button>
+                  </button>
                 ) : (
-                  <motion.button
+                  <button
                     onClick={() => handleUpgrade(plan.name)}
                     disabled={isUpgrading}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUpgrading ? 'Processing...' : 'Upgrade'}
-                  </motion.button>
+                  </button>
                 )}
               </div>
             </motion.div>
@@ -224,11 +218,10 @@ export default function Billing({ userProfile }: BillingProps) {
 
       {/* Billing History */}
       <motion.div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        whileHover={{ scale: 1.01 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
       >
         <h2 className="text-lg font-semibold text-black mb-4">Billing History</h2>
         <motion.div 

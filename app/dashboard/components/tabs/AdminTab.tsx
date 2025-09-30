@@ -103,7 +103,7 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
       default:
         return <AdminOverview userProfile={userProfile} />
     }
-  }
+    }
 
   // Show loading state while verifying admin role
   if (isLoading) {
@@ -135,9 +135,9 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
         {verificationError && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">Error: {verificationError}</p>
-          </div>
-        )}
       </div>
+        )}
+            </div>
     )
   }
 

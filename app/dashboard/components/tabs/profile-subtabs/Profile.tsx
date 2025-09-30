@@ -12,7 +12,7 @@ interface ProfileProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
     updated_at?: string
@@ -82,25 +82,24 @@ export default function Profile({ userProfile }: ProfileProps) {
           className="lg:col-span-2"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
           <motion.div 
-            className="bg-white rounded-lg shadow-sm border border-gray-200"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+            className="bg-white rounded-lg border border-gray-200"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-black">Personal Information</h2>
                 {!isEditing && (
-                  <motion.button
+                  <button
                     onClick={() => setIsEditing(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
                   >
                     Edit Profile
-                  </motion.button>
+                  </button>
                 )}
               </div>
             </div>
@@ -109,21 +108,18 @@ export default function Profile({ userProfile }: ProfileProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
+                  transition={{ duration: 0.4, delay: 0.3 }}
                 >
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
                   {isEditing ? (
-                    <motion.input
+                    <input
                       type="text"
                       name="first_name"
                       value={formData.first_name}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                      initial={{ scale: 0.95 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.2 }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   ) : (
                     <p className="text-black">{userProfile?.first_name || 'Not provided'}</p>
@@ -132,21 +128,18 @@ export default function Profile({ userProfile }: ProfileProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 }}
+                  transition={{ duration: 0.4, delay: 0.4 }}
                 >
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
                   {isEditing ? (
-                    <motion.input
+                    <input
                       type="text"
                       name="last_name"
                       value={formData.last_name}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                      initial={{ scale: 0.95 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.2 }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   ) : (
                     <p className="text-black">{userProfile?.last_name || 'Not provided'}</p>
@@ -157,7 +150,7 @@ export default function Profile({ userProfile }: ProfileProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -169,12 +162,12 @@ export default function Profile({ userProfile }: ProfileProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 capitalize">
+                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 capitalize">
                   {userProfile?.role || 'user'}
                 </span>
               </motion.div>
@@ -182,13 +175,13 @@ export default function Profile({ userProfile }: ProfileProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Confirmed
                 </label>
                 <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                     userProfile?.email_confirmed 
                       ? 'bg-blue-100 text-blue-800' 
                       : 'bg-gray-100 text-gray-800'
@@ -196,13 +189,9 @@ export default function Profile({ userProfile }: ProfileProps) {
                     {userProfile?.email_confirmed ? 'Confirmed' : 'Pending'}
                   </span>
                   {!userProfile?.email_confirmed && (
-                    <motion.button 
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
+                    <button className="text-blue-600 hover:text-blue-800 text-sm">
                       Resend confirmation
-                    </motion.button>
+                    </button>
                   )}
                 </div>
               </motion.div>
@@ -214,23 +203,19 @@ export default function Profile({ userProfile }: ProfileProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <motion.button
+                  <button
                     onClick={handleSave}
                     disabled={isLoading}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? 'Saving...' : 'Save Changes'}
-                  </motion.button>
-                  <motion.button
+                  </button>
+                  <button
                     onClick={handleCancel}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
                   >
                     Cancel
-                  </motion.button>
+                  </button>
                 </motion.div>
               )}
             </div>
@@ -242,12 +227,13 @@ export default function Profile({ userProfile }: ProfileProps) {
           className="space-y-6"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
           <motion.div 
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+            className="bg-white rounded-lg border border-gray-200 p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h3 className="text-lg font-semibold text-black mb-4">Account Stats</h3>
             <div className="space-y-4">
@@ -255,7 +241,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                 className="flex justify-between"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <span className="text-gray-600">Member since</span>
                 <span className="font-medium text-black">
@@ -269,7 +255,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                 className="flex justify-between"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
               >
                 <span className="text-gray-600">Total Projects</span>
                 <span className="font-medium text-black">12</span>
@@ -278,7 +264,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                 className="flex justify-between"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
               >
                 <span className="text-gray-600">Completed Audits</span>
                 <span className="font-medium text-black">8</span>
@@ -287,7 +273,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                 className="flex justify-between"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
               >
                 <span className="text-gray-600">Issues Found</span>
                 <span className="font-medium text-black">24</span>

@@ -12,7 +12,7 @@ interface SecurityProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
     updated_at?: string
@@ -55,21 +55,20 @@ export default function Security({ userProfile }: SecurityProps) {
     >
       {/* Password Reset Section */}
       <motion.div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
         <div className="text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"
+            className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center mx-auto mb-3"
           >
             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
             </svg>
           </motion.div>
           
@@ -96,7 +95,7 @@ export default function Security({ userProfile }: SecurityProps) {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`mb-6 p-4 rounded-lg ${
+              className={`mb-6 p-4 rounded ${
                 message.type === 'success' 
                   ? 'bg-green-50 border border-green-200 text-green-800' 
                   : 'bg-red-50 border border-red-200 text-red-800'
@@ -123,12 +122,10 @@ export default function Security({ userProfile }: SecurityProps) {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="space-y-4"
           >
-            <motion.button
+            <button
               onClick={handlePasswordReset}
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -141,7 +138,7 @@ export default function Security({ userProfile }: SecurityProps) {
               ) : (
                 'Send Password Reset Email'
               )}
-            </motion.button>
+            </button>
 
             <motion.p 
               className="text-xs text-gray-500"
@@ -157,10 +154,10 @@ export default function Security({ userProfile }: SecurityProps) {
 
       {/* Security Info */}
       <motion.div 
-        className="bg-gray-50 rounded-lg p-4"
+        className="bg-gray-50 rounded p-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
       >
         <h3 className="text-base font-semibold text-black mb-3">Security Information</h3>
         <div className="space-y-2">
