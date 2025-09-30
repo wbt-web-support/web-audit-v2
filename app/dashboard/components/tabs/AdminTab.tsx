@@ -16,7 +16,7 @@ interface UserProfile {
   email: string
   first_name: string | null
   last_name: string | null
-  role: 'user' | 'admin' | 'moderator'
+  role: 'user' | 'admin'
   email_confirmed: boolean
   created_at: string
 }

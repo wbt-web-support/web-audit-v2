@@ -133,9 +133,10 @@ export default function TicketCard({ ticket, onTicketUpdate }: TicketCardProps) 
         }
       } else {
         setNewMessage('')
-        // Reload messages to show the new one
-        await loadMessages()
-        onTicketUpdate()
+        // Add the new message to the local state instead of reloading
+        if (data) {
+          setMessages(prev => [...prev, data])
+        }
       }
     } catch (error) {
       console.error('Unexpected error sending message:', error)

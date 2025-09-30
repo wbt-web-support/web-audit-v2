@@ -138,8 +138,10 @@ export default function Support({ userProfile }: SupportProps) {
       } else {
         setNewTicket({ title: '', description: '', priority: 'medium' })
         alert('Ticket created successfully! Our support team will get back to you soon.')
-        // Reload tickets to show the new one
-        await loadTickets()
+        // Add the new ticket to the local state instead of reloading
+        if (data) {
+          setTickets(prev => [data, ...prev])
+        }
         // Switch to tickets tab to show the new ticket
         setActiveTab('tickets')
       }
