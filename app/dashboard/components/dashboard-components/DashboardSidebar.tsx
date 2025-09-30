@@ -1,5 +1,6 @@
 'use client';
 
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { useState, useEffect } from 'react';
@@ -108,10 +109,29 @@ export default function DashboardSidebar({
   };
   return <>
       {/* Mobile Overlay */}
-      {isOpen && <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} />}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile Sidebar */}
-      {isOpen && <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 lg:hidden">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 lg:hidden"
+            initial={{ x: -256 }}
+            animate={{ x: 0 }}
+            exit={{ x: -256 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -176,10 +196,17 @@ export default function DashboardSidebar({
             </button>
           </div>
         </div>
-      </div>}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Desktop Sidebar - Always visible on large screens */}
-      <div className="hidden lg:block fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200">
+      <motion.div 
+        className="hidden lg:block fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center p-6 border-b border-gray-200">
@@ -236,6 +263,6 @@ export default function DashboardSidebar({
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </>;
 }

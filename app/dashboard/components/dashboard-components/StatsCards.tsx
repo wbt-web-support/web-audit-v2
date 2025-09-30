@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { AuditProject } from '@/types/audit'
 
 interface StatsCardsProps {
@@ -16,7 +17,12 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
   const successRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">Total Projects</p>
@@ -33,9 +39,14 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">Active Projects</p>
@@ -52,9 +63,14 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">Completed Projects</p>
@@ -71,9 +87,14 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4, ease: "easeOut" }}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">Success Rate</p>
@@ -90,7 +111,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

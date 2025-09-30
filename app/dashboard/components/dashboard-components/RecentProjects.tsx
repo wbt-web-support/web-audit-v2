@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { AuditProject } from '@/types/audit';
 import { RecentProjectSkeleton } from '../SkeletonLoader';
@@ -89,7 +90,12 @@ export default function RecentProjects({
       return siteUrl;
     }
   };
-  return <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+  return <motion.div 
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
@@ -136,7 +142,13 @@ export default function RecentProjects({
             <p className="text-gray-600 font-medium">No projects yet</p>
             <p className="text-gray-500 text-sm">Create your first audit project to get started</p>
           </div> : <div className="space-y-4">
-            {projects.slice(0, 3).map((project, index) => <div key={project.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            {projects.slice(0, 3).map((project, index) => <motion.div 
+              key={project.id} 
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
+            >
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <h3 className="font-semibold text-black">
@@ -193,7 +205,7 @@ export default function RecentProjects({
                       {project.status === 'in_progress' ? 'Processing...' : 'Pending'}
                     </button>}
                 </div>
-              </div>)}
+              </motion.div>)}
           </div>}
           
         <div className="mt-6 pt-4 border-t border-gray-200">
@@ -202,5 +214,5 @@ export default function RecentProjects({
           </button>
         </div>
       </div>
-    </div>;
+    </motion.div>;
 }

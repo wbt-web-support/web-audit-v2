@@ -70,15 +70,15 @@ export default function ProjectsTab({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
   };
   const getStatusDisplayName = (status: string) => {
@@ -114,164 +114,231 @@ export default function ProjectsTab({
   const completedProjects = projects.filter(p => p.status === 'completed').length;
   const inProgressProjects = projects.filter(p => p.status === 'in_progress').length;
   const totalIssues = projects.reduce((sum, p) => sum + p.issues_count, 0);
-  return <div className="space-y-6">
+  return <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, ease: "easeOut" }}
+    className="space-y-8"
+  >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600 mt-1">Manage and monitor your web audit projects</p>
+          <h1 className="text-2xl font-semibold text-black mb-2">Projects</h1>
+          <p className="text-gray-600">Manage and monitor your web audit projects</p>
         </div>
-        <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-          <button onClick={() => refreshProjects()} className="text-gray-600 hover:text-gray-800 transition-colors relative p-2 rounded-lg hover:bg-gray-100" disabled={projectsLoading} title="Refresh projects">
+        <div className="flex items-center space-x-4 mt-6 sm:mt-0">
+          <button 
+            onClick={() => refreshProjects()} 
+            className="text-gray-600 hover:text-blue-600 relative p-2 rounded-lg border border-gray-200 bg-white cursor-pointer transition-colors duration-200" 
+            disabled={projectsLoading} 
+            title="Refresh projects"
+          >
             <svg className={`w-5 h-5 ${projectsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {projectsLoading && <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>}
+            {projectsLoading && <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>}
           </button>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg cursor-pointer flex items-center space-x-2 font-medium">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             <span>New Project</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+      >
         {projectsLoading ? Array.from({
         length: 4
       }).map((_, index) => <StatsCardSkeleton key={index} />) : <>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0 * 0.1, ease: "easeOut" }}
+              className="bg-white border border-gray-200 rounded-lg p-6"
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Total Projects</p>
-                  <p className="text-xl font-bold text-gray-900">{totalProjects}</p>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Projects</p>
+                  <p className="text-2xl font-bold text-black">{totalProjects}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 1 * 0.1, ease: "easeOut" }}
+              className="bg-white border border-gray-200 rounded-lg p-6"
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-xl font-bold text-gray-900">{completedProjects}</p>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Completed</p>
+                  <p className="text-2xl font-bold text-black">{completedProjects}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 2 * 0.1, ease: "easeOut" }}
+              className="bg-white border border-gray-200 rounded-lg p-6"
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">In Progress</p>
-                  <p className="text-xl font-bold text-gray-900">{inProgressProjects}</p>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 mb-1">In Progress</p>
+                  <p className="text-2xl font-bold text-black">{inProgressProjects}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 3 * 0.1, ease: "easeOut" }}
+              className="bg-white border border-gray-200 rounded-lg p-6"
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Total Issues</p>
-                  <p className="text-xl font-bold text-gray-900">{totalIssues}</p>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Issues</p>
+                  <p className="text-2xl font-bold text-black">{totalIssues}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </>}
-      </div>
+      </motion.div>
 
       {/* Projects Cards */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="space-y-8"
+      >
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="flex items-center justify-between"
+        >
+          <h2 className="text-xl font-semibold text-black">All Projects</h2>
           <div className="text-sm text-gray-500">
             {projectsLoading ? 'Loading...' : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}
           </div>
-        </div>
+        </motion.div>
         
-        {projectsLoading ? <div className="space-y-4">
+        {projectsLoading ? <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="space-y-6"
+        >
             {Array.from({
           length: 3
         }).map((_, index) => <ProjectCardSkeleton key={index} />)}
-          </div> : projectsError ? <div className="text-center py-12">
-            <div className="text-red-500 mb-2">
-              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          </motion.div> : projectsError ? <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="text-center py-16"
+          >
+            <div className="text-gray-500 mb-4">
+              <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <p className="text-red-600 font-medium">{projectsError}</p>
-            {projectsError?.includes('Supabase not configured') && <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
-                <p className="text-sm text-yellow-800">
-                  Please create a <code className="bg-yellow-100 px-1 rounded">.env.local</code> file with your Supabase credentials.
+            <p className="text-gray-700 font-medium text-lg mb-2">{projectsError}</p>
+            {projectsError?.includes('Supabase not configured') && <div className="mt-6 p-6 bg-gray-50 border border-gray-200 rounded-lg max-w-md mx-auto">
+                <p className="text-sm text-gray-600">
+                  Please create a <code className="bg-gray-100 px-2 py-1 rounded text-sm">.env.local</code> file with your Supabase credentials.
                   <br />
-                  See <code className="bg-yellow-100 px-1 rounded">env.example</code> for reference.
+                  See <code className="bg-gray-100 px-2 py-1 rounded text-sm">env.example</code> for reference.
                 </p>
               </div>}
-            <button onClick={() => refreshProjects()} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button onClick={() => refreshProjects()} className="mt-6 text-blue-600 text-sm font-medium px-6 py-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer">
               Try again
             </button>
-          </div> : projects.length === 0 ? <div className="text-center py-12">
-            <div className="text-gray-400 mb-2">
-              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          </motion.div> : projects.length === 0 ? <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="text-center py-16"
+          >
+            <div className="text-gray-400 mb-4">
+              <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <p className="text-gray-600 font-medium">No projects yet</p>
-            <p className="text-gray-500 text-sm">Create your first audit project to get started</p>
-          </div> : <div className="space-y-4">
+            <p className="text-gray-700 font-medium text-lg mb-2">No projects yet</p>
+            <p className="text-gray-500">Create your first audit project to get started</p>
+          </motion.div> : <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="space-y-6"
+          >
             {projects.map((project, index) => {
           const isExpanded = expandedCards.has(project.id);
-          return <motion.div key={project.id} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.3,
-            delay: index * 0.1
-          }} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+          return <motion.div 
+            key={project.id} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
+            className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+          >
                 {/* Card Header - Always Visible */}
-                <div className="p-6 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => toggleCardExpansion(project.id)}>
+                <div className="p-4 border-b border-gray-200 cursor-pointer" onClick={() => toggleCardExpansion(project.id)}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                      <div className="flex items-center space-x-4 mb-2">
+                        <h3 className="text-lg font-semibold text-black">
                           {getProjectName(project.site_url)}
                         </h3>
-                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
+                        <span className={`inline-flex px-3 py-1 text-xs font-medium rounded ${getStatusColor(project.status)}`}>
                           {getStatusDisplayName(project.status)}
                         </span>
                         <div className="flex items-center">
-                          <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                            <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{
+                          <div className="w-20 bg-gray-200 rounded-full h-1.5 mr-2">
+                            <div className="bg-blue-600 h-1.5 rounded-full" style={{
                           width: `${project.progress}%`
                         }}></div>
                           </div>
-                          <span className="text-sm text-gray-600">{project.progress}%</span>
+                          <span className="text-xs font-medium text-gray-600">{project.progress}%</span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500 mb-3">{project.site_url}</p>
+                      <p className="text-sm text-gray-500 mb-2">{project.site_url}</p>
                       
                       {/* Basic Summary - Only show metrics with data */}
                       <div className="flex items-center space-x-6 text-sm text-gray-600">
@@ -317,19 +384,10 @@ export default function ProjectsTab({
                     </div>
                     
                     <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <div className={`text-2xl font-bold ${project.score >= 80 ? 'text-green-600' : project.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {project.score > 0 ? project.score : 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-500">/100</div>
-                      </div>
+                     
                       
                       {/* Expand/Collapse Button */}
-                      <motion.button whileHover={{
-                    scale: 1.1
-                  }} whileTap={{
-                    scale: 0.9
-                  }} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                      <motion.button className="p-2 rounded  bg-white cursor-pointer">
                         <motion.svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" animate={{
                       rotate: isExpanded ? 180 : 0
                     }} transition={{
@@ -357,19 +415,19 @@ export default function ProjectsTab({
                 duration: 0.3,
                 ease: 'easeInOut'
               }} className="overflow-hidden">
-                      <div className="p-6 bg-gray-50 border-t border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                      <div className="p-4 bg-gray-50 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-black mb-3 flex items-center">
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
                           Detailed Summary
                         </h4>
                         
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-4">
                           {/* Pages & Links */}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Content</h5>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                               {project.total_pages > 0 && <div className="flex items-center justify-between">
                                   <div className="flex items-center text-sm text-gray-600">
                                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,9 +468,9 @@ export default function ProjectsTab({
                           </div>
 
                           {/* Technical Details */}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Technical</h5>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                               {project.technologies_found > 0 && <div className="flex items-center justify-between">
                                   <div className="flex items-center text-sm text-gray-600">
                                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,7 +496,7 @@ export default function ProjectsTab({
                                     </svg>
                                     CMS Detected
                                   </div>
-                                  <span className="font-semibold text-indigo-600">Yes</span>
+                                  <span className="font-semibold text-blue-600">Yes</span>
                                 </div>}
                             </div>
                           </div>
@@ -528,7 +586,7 @@ export default function ProjectsTab({
                                       <div className="flex items-center">
                                         <span className="font-medium text-gray-900">{plugin.name}</span>
                                         {plugin.version && <span className="ml-2 text-gray-500">v{plugin.version}</span>}
-                                        {plugin.active && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {plugin.active && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                             Active
                                           </span>}
                                       </div>
@@ -615,7 +673,7 @@ export default function ProjectsTab({
                                     </svg>
                                     High Confidence
                                   </div>
-                                  <span className="font-semibold text-green-600">
+                                  <span className="font-semibold text-blue-600">
                                     {project.technologies_metadata?.high_confidence_technologies || 0}
                                   </span>
                                 </div>
@@ -626,7 +684,7 @@ export default function ProjectsTab({
                                     </svg>
                                     Medium Confidence
                                   </div>
-                                  <span className="font-semibold text-yellow-600">
+                                  <span className="font-semibold text-blue-500">
                                     {project.technologies_metadata?.medium_confidence_technologies || 0}
                                   </span>
                                 </div>
@@ -637,7 +695,7 @@ export default function ProjectsTab({
                                     </svg>
                                     Low Confidence
                                   </div>
-                                  <span className="font-semibold text-red-600">
+                                  <span className="font-semibold text-gray-600">
                                     {project.technologies_metadata?.low_confidence_technologies || 0}
                                   </span>
                                 </div>
@@ -670,7 +728,7 @@ export default function ProjectsTab({
                                             {tech.version && <span className="ml-2 text-gray-500">v{tech.version}</span>}
                                           </div>
                                           <div className="flex items-center space-x-2">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${tech.confidence >= 0.8 ? 'bg-green-100 text-green-800' : tech.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${tech.confidence >= 0.8 ? 'bg-blue-100 text-blue-800' : tech.confidence >= 0.5 ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
                                               {Math.round(tech.confidence * 100)}%
                                             </span>
                                           </div>
@@ -713,22 +771,22 @@ export default function ProjectsTab({
                 </AnimatePresence>
 
                 {/* Card Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs text-gray-500">
                       Created {formatDate(project.created_at)}
                     </div>
                     <div className="flex space-x-2">
-                      {project.status === 'completed' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors">
+                      {project.status === 'completed' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-xs font-medium px-3 py-2 bg-blue-50 border border-blue-200 rounded cursor-pointer">
                           View Analysis
                         </button>}
-                      {project.status === 'pending' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors">
+                      {project.status === 'pending' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-xs font-medium px-3 py-2 bg-blue-50 border border-blue-200 rounded cursor-pointer">
                           View Details
                         </button>}
-                      <button className="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-1 rounded hover:bg-gray-100 transition-colors">
+                      <button className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer">
                         Edit
                       </button>
-                      <button className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 rounded hover:bg-red-50 transition-colors">
+                      <button className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer">
                         Delete
                       </button>
                     </div>
@@ -736,7 +794,7 @@ export default function ProjectsTab({
                 </div>
               </motion.div>;
         })}
-          </div>}
-      </div>
-    </div>;
+          </motion.div>}
+      </motion.div>
+    </motion.div>;
 }

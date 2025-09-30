@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 interface BrandConsistencyData {
@@ -103,7 +104,12 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
   // }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <motion.div 
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="px-6 py-4 border-b border-gray-200">
         <div>
           <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
@@ -379,6 +385,6 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus }: 
           </div>
         </form>
       </div>
-    </div>
+    </motion.div>
   )
 }

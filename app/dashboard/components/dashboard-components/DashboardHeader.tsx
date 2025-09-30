@@ -1,5 +1,7 @@
 'use client'
 
+import { motion } from 'framer-motion'
+
 interface DashboardHeaderProps {
   onMenuClick: () => void
   userProfile: {
@@ -15,7 +17,12 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ onMenuClick, userProfile }: DashboardHeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 lg:hidden">
+    <motion.header 
+      className="bg-white border-b border-gray-200 lg:hidden"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left side - Mobile menu button and title */}
         <div className="flex items-center">
@@ -58,6 +65,6 @@ export default function DashboardHeader({ onMenuClick, userProfile }: DashboardH
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }

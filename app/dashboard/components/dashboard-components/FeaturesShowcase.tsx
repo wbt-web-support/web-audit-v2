@@ -1,5 +1,7 @@
 'use client'
 
+import { motion } from 'framer-motion'
+
 interface Feature {
   id: number
   name: string
@@ -14,7 +16,12 @@ interface FeaturesShowcaseProps {
 
 export default function FeaturesShowcase({ features }: FeaturesShowcaseProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <motion.div 
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
@@ -26,10 +33,13 @@ export default function FeaturesShowcase({ features }: FeaturesShowcaseProps) {
 
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.slice(0, 6).map((feature) => (
-            <div
+          {features.slice(0, 6).map((feature, index) => (
+            <motion.div
               key={feature.id}
               className="bg-white border border-gray-200 rounded-lg p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
             >
               <div className="mb-4">
                 <h3 className="text-base font-semibold text-black mb-2">{feature.name}</h3>
@@ -41,7 +51,7 @@ export default function FeaturesShowcase({ features }: FeaturesShowcaseProps) {
               <button className="text-blue-600 text-sm font-medium">
                 Learn More →
               </button>
-            </div>
+            </motion.div>
           ))}
         </div>
         
@@ -53,6 +63,6 @@ export default function FeaturesShowcase({ features }: FeaturesShowcaseProps) {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
-import SiteCrawlForm from '../SiteCrawlForm'
+import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 
 interface UserProfile {
