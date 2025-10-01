@@ -193,11 +193,13 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         loading: false
       });
 
-      // If project has data, load scraped pages
-      if (hasProjectData(projectData)) {
+      // Always try to load scraped pages if project exists
+      if (projectData) {
         await loadScrapedPages();
-      } else if (projectData.status === 'pending' && !skipAutoScraping && !scrapingInitiated) {
-        // If project is pending and has no data, start scraping
+      }
+
+      // If project is pending and has no data, start scraping
+      if (projectData.status === 'pending' && !skipAutoScraping && !scrapingInitiated) {
         await startScraping(projectData);
       }
     } catch (error) {

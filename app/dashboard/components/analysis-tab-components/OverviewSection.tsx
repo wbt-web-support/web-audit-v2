@@ -2,7 +2,7 @@
 
 import { AuditProject } from "@/types/audit";
 import SEOAnalysisSection from "./SEOAnalysisSection";
-import Image from "next/image";
+import DynamicImage from "./DynamicImage";
 
 interface OverviewSectionProps {
   project: AuditProject;
@@ -15,6 +15,8 @@ interface OverviewSectionProps {
     links_count: number;
     images_count: number;
     meta_tags_count: number;
+    html_content: string | null;
+    audit_project_id: string;
   }>;
 }
 
@@ -98,7 +100,11 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
         </div>
         {/* SEO Analysis Section */}
         <div className="lg:col-span-3">
-          <SEOAnalysisSection project={project} />
+          <SEOAnalysisSection 
+            project={project} 
+            scrapedPages={scrapedPages}
+            dataVersion={Date.now()}
+          />
         </div>
         {/* Technologies Overview */}
         {project.technologies && project.technologies.length > 0 && (
@@ -116,15 +122,12 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                   >
                     <div className="flex items-center">
                       {tech.icon && (
-                        <Image
+                        <DynamicImage
                           src={tech.icon}
                           alt={tech.name}
                           width={20}
                           height={20}
                           className="w-5 h-5 mr-2 rounded"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
                         />
                       )}
                       <span className="font-medium text-gray-900">
@@ -180,7 +183,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
             <div className="flex justify-between">
               <span className="text-gray-600">Last Updated</span>
               <span className="text-gray-900">
-                {formatDate(project.updated_at)}
+                {formatDate(project.updated_at)} 
               </span>
             </div>
             <div className="flex justify-between">

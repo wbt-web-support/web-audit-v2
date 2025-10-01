@@ -154,9 +154,6 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     seo_analysis: null,
     meta_tags_data: null,
     social_meta_tags_data: null,
-    all_pages_html: null,
-    images: null,
-    links: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }

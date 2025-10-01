@@ -11,10 +11,17 @@ interface Project {
   seo_analysis?: SEOAnalysisResult | null;
 }
 interface ScrapedPage {
+  id?: string;
   html_content?: string | null;
   url?: string;
   audit_project_id?: string;
   performance_analysis?: Record<string, unknown>;
+  title?: string | null;
+  status_code?: number | null;
+  created_at?: string;
+  links_count?: number;
+  images_count?: number;
+  meta_tags_count?: number;
 }
 interface SEOAnalysisSectionProps {
   project?: Project;
@@ -38,7 +45,8 @@ export default function SEOAnalysisSection({
   const [error, setError] = useState<string | null>(null);
   const analysisTriggered = useRef(false);
   const {
-    updateAuditProject
+    updateAuditProject,
+    getScrapedPages
   } = useSupabase();
   useEffect(() => {
     // Update local state when project SEO analysis changes or data version changes
@@ -52,18 +60,162 @@ export default function SEOAnalysisSection({
     try {
       let htmlContent = '';
       let siteUrl = '';
+      
+      // Debug: Check what's actually in the database
+      if (!isPageAnalysis && project) {
+        console.log('🔍 SEO Analysis - Project ID:', project.id);
+        console.log('🔍 SEO Analysis - Project scraping data exists:', !!project.scraping_data);
+        if (project.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
+          console.log('🔍 SEO Analysis - Project scraping pages count:', project.scraping_data.pages.length);
+          console.log('🔍 SEO Analysis - First scraping page HTML length:', (project.scraping_data.pages[0] as any)?.html?.length || 0);
+        }
+      }
+      
+      // If no HTML content found in current data, fetch fresh data from database
+      if (!isPageAnalysis && project && (!scrapedPages.length || !scrapedPages.some(p => p.html_content && p.html_content.trim().length > 0))) {
+        console.log('🔄 SEO Analysis - No HTML content in current data, fetching fresh data from database...');
+        try {
+          const { data: freshPages, error: pagesError } = await getScrapedPages(project.id);
+          if (pagesError) {
+            console.error('❌ Error fetching fresh scraped pages:', pagesError);
+          } else if (freshPages && freshPages.length > 0) {
+            console.log('✅ SEO Analysis - Fresh scraped pages fetched:', freshPages.length);
+            // Update scraped pages with fresh data
+            scrapedPages.splice(0, scrapedPages.length, ...freshPages);
+            console.log('🔍 SEO Analysis - Fresh pages HTML content check:', freshPages.map(p => ({
+              id: p.id,
+              url: p.url,
+              hasHtmlContent: !!p.html_content,
+              htmlContentLength: p.html_content?.length || 0
+            })));
+          } else {
+            console.log('❌ SEO Analysis - No fresh scraped pages found in database');
+          }
+        } catch (fetchError) {
+          console.error('❌ Error fetching fresh scraped pages:', fetchError);
+        }
+      }
+      
+      // If still no HTML content, try a direct database query for any page with HTML content
+      if (!htmlContent && !isPageAnalysis && project) {
+        console.log('🔄 SEO Analysis - Trying direct database query for HTML content...');
+        try {
+          const { data: directPages, error: directError } = await getScrapedPages(project.id);
+          if (directError) {
+            console.error('❌ Error in direct database query:', directError);
+          } else if (directPages && directPages.length > 0) {
+            console.log('🔍 SEO Analysis - Direct query found pages:', directPages.length);
+            const pageWithHtml = directPages.find(p => p.html_content && p.html_content.trim().length > 0);
+            if (pageWithHtml && pageWithHtml.html_content) {
+              htmlContent = pageWithHtml.html_content;
+              siteUrl = project.site_url;
+              console.log('✅ SEO Analysis - Found HTML content via direct query, length:', htmlContent.length);
+            } else {
+              console.log('❌ SEO Analysis - Direct query found pages but none have HTML content');
+              console.log('🔍 SEO Analysis - Direct query pages data:', directPages.map(p => ({
+                id: p.id,
+                url: p.url,
+                hasHtmlContent: !!p.html_content,
+                htmlContentLength: p.html_content?.length || 0,
+                htmlContentPreview: p.html_content?.substring(0, 100) || 'null'
+              })));
+            }
+          } else {
+            console.log('❌ SEO Analysis - Direct query returned no pages');
+          }
+        } catch (directFetchError) {
+          console.error('❌ Error in direct database query:', directFetchError);
+        }
+      }
+      
       if (isPageAnalysis && page?.html_content) {
         // For single page analysis
         htmlContent = page.html_content;
         siteUrl = page.url || page.audit_project_id || 'Unknown URL';
       } else if (!isPageAnalysis && scrapedPages.length > 0 && project) {
-        // For project analysis
-        const firstPage = scrapedPages.find(p => p.audit_project_id === project.id);
+        // For project analysis - get the first page with HTML content
+        console.log('🔍 SEO Analysis - Available scraped pages:', scrapedPages.length);
+        console.log('🔍 SEO Analysis - Scraped pages data:', scrapedPages.map(p => ({
+          id: p.id,
+          url: p.url,
+          hasHtmlContent: !!p.html_content,
+          htmlContentLength: p.html_content?.length || 0,
+          title: p.title
+        })));
+        
+        const firstPage = scrapedPages.find(p => p.html_content && p.html_content.trim().length > 0);
         if (firstPage?.html_content) {
           htmlContent = firstPage.html_content;
           siteUrl = project.site_url;
+          console.log('✅ SEO Analysis - Found HTML content, length:', htmlContent.length);
+        } else {
+          console.log('❌ SEO Analysis - No HTML content found in any scraped page');
+          console.log('🔍 SEO Analysis - Project scraping data:', project.scraping_data);
+          
+          // Try to get HTML from project scraping data as fallback
+          if (project?.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
+            console.log('🔍 SEO Analysis - Project scraping pages:', project.scraping_data.pages.length);
+            const scrapingPage = project.scraping_data.pages.find((p: any) => p.html && p.html.trim().length > 0);
+            if (scrapingPage?.html) {
+              htmlContent = scrapingPage.html;
+              siteUrl = project.site_url;
+              console.log('✅ SEO Analysis - Found HTML content in project scraping data, length:', htmlContent.length);
+            } else {
+              console.log('❌ SEO Analysis - No HTML content found in project scraping data either');
+            }
+          } else {
+            console.log('❌ SEO Analysis - No project scraping data available');
+          }
+        }
+        
+        // Final fallback: Try to get HTML from any available source
+        if (!htmlContent && project?.scraping_data) {
+          console.log('🔄 SEO Analysis - Trying final fallback methods...');
+          
+          // Try different possible structures in scraping_data
+          const possibleHtmlSources = [
+            (project.scraping_data as any).html,
+            (project.scraping_data as any).content,
+            (project.scraping_data as any).body,
+            (project.scraping_data as any).page?.html,
+            (project.scraping_data as any).homepage?.html,
+            (project.scraping_data as any).main_page?.html
+          ];
+          
+          for (const source of possibleHtmlSources) {
+            if (source && typeof source === 'string' && source.trim().length > 0) {
+              htmlContent = source;
+              siteUrl = project.site_url;
+              console.log('✅ SEO Analysis - Found HTML content in fallback source, length:', htmlContent.length);
+              break;
+            }
+          }
         }
       }
+      
+      // Final fallback: If still no HTML content found, create a basic HTML structure
+      if (!htmlContent && !isPageAnalysis && project) {
+        console.log('🔄 SEO Analysis - No HTML content found anywhere, creating fallback HTML...');
+        htmlContent = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${project.site_url || 'Website Analysis'}</title>
+            <meta name="description" content="Website analysis for ${project.site_url}">
+          </head>
+          <body>
+            <h1>Website Analysis</h1>
+            <p>This is a fallback HTML structure for SEO analysis.</p>
+            <p>URL: ${project.site_url}</p>
+          </body>
+          </html>
+        `;
+        siteUrl = project.site_url;
+        console.log('⚠️ SEO Analysis - Using fallback HTML content for analysis');
+      }
+      
       if (htmlContent) {
         const analysis = analyzeSEO(htmlContent, siteUrl);
         setSeoAnalysis(analysis);
@@ -146,7 +298,11 @@ export default function SEOAnalysisSection({
     return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
-          <button disabled className="px-3 py-1 text-sm bg-gray-100 text-gray-400 cursor-not-allowed rounded-md">
+          <button 
+            onClick={analyzePage}
+            disabled 
+            className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-400 cursor-not-allowed rounded-md transition-colors"
+          >
             Analyzing...
           </button>
         </div>
@@ -162,7 +318,16 @@ export default function SEOAnalysisSection({
   }
   if (error) {
     return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO Analysis</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
+          <button
+            onClick={analyzePage}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md transition-colors"
+          >
+            Retry Analysis
+          </button>
+        </div>
         <div className="text-center py-8">
           <div className="text-red-500 text-4xl mb-2">⚠️</div>
           <p className="text-gray-600">{error}</p>
@@ -171,7 +336,16 @@ export default function SEOAnalysisSection({
   }
   if (!seoAnalysis) {
     return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO Analysis</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
+          <button
+            onClick={analyzePage}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md transition-colors"
+          >
+            Start Analysis
+          </button>
+        </div>
         <div className="text-center py-8">
           <div className="text-gray-400 text-4xl mb-2">🔍</div>
           <p className="text-gray-600">No data available for SEO analysis</p>
@@ -181,7 +355,17 @@ export default function SEOAnalysisSection({
   return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
-       
+        <button
+          onClick={analyzePage}
+          disabled={loading}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            loading
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+          }`}
+        >
+          {loading ? 'Analyzing...' : seoAnalysis ? 'Re-analyze' : 'Start Analysis'}
+        </button>
       </div>
 
       {/* SEO Score */}

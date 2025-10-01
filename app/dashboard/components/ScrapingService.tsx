@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
-import { filterHtmlContent } from '@/lib/html-content-filter'
 
 interface ScrapingServiceProps {
   projectId: string | null
@@ -316,24 +315,6 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       const scrapedPagesData = scrapingData.pages.map((page: any) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
-        // Filter HTML content to get pure text content
-        console.log('🔍 Processing page HTML for filtering:', {
-          url: page.url,
-          hasHtml: !!page.html,
-          htmlLength: page.html?.length || 0,
-          htmlPreview: page.html?.substring(0, 200) + '...'
-        })
-        
-        const filteredContent = filterHtmlContent(page.html)
-        
-        console.log('✅ HTML filtering completed:', {
-          url: page.url,
-          originalLength: page.html?.length || 0,
-          filteredLength: filteredContent.filteredLength,
-          wordCount: filteredContent.wordCount,
-          characterCount: filteredContent.characterCount,
-          contentPreview: filteredContent.pureContent.substring(0, 200) + '...'
-        })
         return {
           audit_project_id: projectId,
           url: page.url,
@@ -342,8 +323,6 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
           html_content: page.html, // Keep original HTML content
           html_content_length: page.htmlContentLength, // Keep original HTML length
-          filtered_content: filteredContent.pureContent, // Store filtered pure text content in new column
-          filtered_content_length: filteredContent.filteredLength, // Store filtered content length
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
           links: page.links || null, // Store actual links data
@@ -391,56 +370,6 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         scrapingData.extractedData?.technologies,
         scrapingData.summary?.technologies
       )
-      // Extract HTML content from all pages
-      console.log('🔍 Starting to process pages for HTML extraction...')
-      console.log('📊 Total pages to process:', scrapingData.pages?.length || 0)
-      
-      const allPagesHtml = scrapingData.pages.map((page: any, index: number) => {
-        console.log(`📄 Processing page ${index + 1}/${scrapingData.pages.length}:`, {
-          url: page.url,
-          hasHtml: !!page.html,
-          htmlLength: page.html?.length || 0,
-          title: page.title,
-          statusCode: page.statusCode
-        })
-        
-        // Create simplified page data structure
-        const pageData = {
-          pageName: page.title || `Page ${index + 1}`,
-          pageUrl: page.url,
-          pageHtml: page.html || ''
-        }
-        
-        console.log(`✅ Page ${index + 1} processed successfully:`, {
-          pageName: pageData.pageName,
-          pageUrl: pageData.pageUrl,
-          htmlLength: pageData.pageHtml?.length || 0
-        })
-        
-        return pageData
-      })
-      
-      console.log('🎯 All pages HTML extraction completed!')
-      console.log('📈 Final allPagesHtml array:', {
-        totalPages: allPagesHtml.length,
-        pagesWithHtml: allPagesHtml.filter((p: any) => p.pageHtml).length,
-        totalHtmlLength: allPagesHtml.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0),
-        sampleUrls: allPagesHtml.slice(0, 3).map((p: any) => p.pageUrl)
-      })
-      
-      // Log first page HTML sample for debugging
-      if (allPagesHtml.length > 0 && allPagesHtml[0].pageHtml) {
-        console.log('🔍 First page HTML sample (first 500 chars):', allPagesHtml[0].pageHtml.substring(0, 500))
-      }
-      
-    
-      // Update audit project with summary data
-      console.log('💾 Preparing to save allPagesHtml to database...')
-      console.log('📊 allPagesHtml data summary:', {
-        totalPages: allPagesHtml.length,
-        totalHtmlSize: allPagesHtml.reduce((sum: number, p: any) => sum + (p.pageHtml?.length || 0), 0),
-        urls: allPagesHtml.map((p: any) => p.pageUrl)
-      })
       
       // Aggregate images and links from all pages
       console.log('🖼️ Aggregating images and links data from all pages...')
@@ -499,24 +428,13 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         average_html_per_page: scrapingData.summary?.averageHtmlPerPage || 0,
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
         total_response_time: scrapingData.performance?.totalTime || 0,
-        all_pages_html: allPagesHtml, // Store all pages HTML in new column
-        images: allImages, // Store aggregated images data from all pages
-        links: allLinks, // Store aggregated links data from all pages
+       
         scraping_completed_at: new Date().toISOString(),
-        scraping_data: {
-          ...scrapingData,
-          all_pages_html: allPagesHtml // Also store in scraping_data as backup
-        },
         status: 'completed' as const,
         progress: 100
       }
       
-      console.log('💾 Summary data prepared with allPagesHtml:', {
-        hasAllPagesHtml: !!summaryData.all_pages_html,
-        allPagesHtmlLength: summaryData.all_pages_html?.length || 0,
-        hasScrapingDataBackup: !!summaryData.scraping_data?.all_pages_html,
-        scrapingDataBackupLength: summaryData.scraping_data?.all_pages_html?.length || 0
-      })
+    
       
       // Log the exact data being sent to database
      
@@ -528,31 +446,38 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         console.error('❌ Error updating audit project with summary:', updateError)
         console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
         
-        // Check if the error is related to missing columns
-        if (updateError.message && (updateError.message.includes('all_pages_html') || updateError.message.includes('images') || updateError.message.includes('links'))) {
+        // Check if it's a column not found error
+        if (updateError.message?.includes('Could not find') || updateError.code === 'PGRST204') {
           console.warn('⚠️ Some columns may not exist in database')
-          console.warn('💡 You need to add these columns to your audit_projects table:')
-          console.warn('   ALTER TABLE audit_projects ADD COLUMN all_pages_html JSONB;')
-          console.warn('   ALTER TABLE audit_projects ADD COLUMN images JSONB;')
-          console.warn('   ALTER TABLE audit_projects ADD COLUMN links JSONB;')
+          console.warn('💡 You may need to add missing columns to your audit_projects table')
           
-          // Try updating without the problematic fields
-          const { all_pages_html: _all_pages_html, images: _images, links: _links, ...summaryDataWithoutNewFields } = summaryData
+          // Try updating with only basic fields
+          const basicSummaryData = {
+            total_pages: summaryData.total_pages,
+            total_links: summaryData.total_links,
+            total_images: summaryData.total_images,
+            total_meta_tags: summaryData.total_meta_tags,
+            technologies_found: summaryData.technologies_found,
+            cms_detected: summaryData.cms_detected,
+            scraping_completed_at: summaryData.scraping_completed_at,
+            status: summaryData.status,
+            progress: summaryData.progress
+          }
           
-          
-          const { error: retryError } = await updateAuditProject(projectId, summaryDataWithoutNewFields)
-          if (retryError) {
-            console.error('❌ Retry also failed:', retryError)
+          const { error: basicUpdateError } = await updateAuditProject(projectId, basicSummaryData)
+          if (basicUpdateError) {
+            console.error('❌ Basic update also failed:', basicUpdateError)
             onScrapingComplete(false)
             return
           } else {
-            
-            
+            console.log('✅ Basic update successful with limited fields')
+            onScrapingComplete(true)
+            return
           }
-        } else {
-          onScrapingComplete(false)
-          return
         }
+        
+        onScrapingComplete(false)
+        return
       } else {
         console.log('✅ Database update successful!')
         console.log('🔍 Verifying saved data...')
@@ -564,36 +489,8 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
             console.warn('⚠️ Could not verify saved data:', verifyError)
           } else {
             console.log('🔍 Verification data retrieved successfully')
-            console.log('📊 Verification data summary:', {
-              hasAllPagesHtml: !!verifyData?.all_pages_html,
-              allPagesHtmlLength: verifyData?.all_pages_html?.length || 0,
-              hasScrapingData: !!verifyData?.scraping_data,
-              hasScrapingDataAllPagesHtml: !!verifyData?.scraping_data?.all_pages_html,
-              scrapingDataAllPagesHtmlLength: verifyData?.scraping_data?.all_pages_html?.length || 0
-            })
+           
             
-            // Check if HTML content is saved in any location
-            const htmlSavedInAllPagesHtml = verifyData?.all_pages_html && verifyData.all_pages_html.length > 0
-            const htmlSavedInScrapingData = verifyData?.scraping_data?.all_pages_html && verifyData.scraping_data.all_pages_html.length > 0
-            
-            if (htmlSavedInAllPagesHtml) {
-              console.log('✅ HTML content successfully saved in all_pages_html column')
-              console.log('📈 all_pages_html details:', {
-                totalPages: verifyData.all_pages_html?.length || 0,
-                sampleUrls: verifyData.all_pages_html?.slice(0, 3).map((p: any) => p.url) || [],
-                totalHtmlSize: verifyData.all_pages_html?.reduce((sum: number, p: any) => sum + (p.html?.length || 0), 0) || 0
-              })
-            } else if (htmlSavedInScrapingData) {
-              console.log('✅ HTML content successfully saved in scraping_data.all_pages_html (backup location)')
-              console.log('📈 scraping_data.all_pages_html details:', {
-                totalPages: verifyData.scraping_data.all_pages_html.length,
-                sampleUrls: verifyData.scraping_data.all_pages_html.slice(0, 3).map((p: any) => p.url),
-                totalHtmlSize: verifyData.scraping_data.all_pages_html.reduce((sum: number, p: any) => sum + (p.html?.length || 0), 0)
-              })
-            } else {
-              console.warn('⚠️ HTML content not found in either location - this indicates a database issue')
-              console.warn('🔍 Available data keys:', Object.keys(verifyData || {}))
-            }
           }
         } catch (verifyErr) {
           console.warn('⚠️ Verification failed:', verifyErr)

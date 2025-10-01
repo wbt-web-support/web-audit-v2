@@ -205,12 +205,7 @@ export default function DashboardOverview({
         seo_analysis: null,
         // Meta tags fields
         meta_tags_data: null,
-        social_meta_tags_data: null,
-        // HTML content storage for all pages
-        all_pages_html: null,
-        // Required fields for createAuditProject
-        images: null,
-        links: null
+        social_meta_tags_data: null
       }
 
       

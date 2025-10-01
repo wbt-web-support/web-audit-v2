@@ -1,6 +1,6 @@
 'use client'
 
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useScrapingAnalysis } from './hooks/useScrapingAnalysis'
 import ScrapingService from '../ScrapingService'
@@ -24,7 +24,14 @@ export default function AnalysisTabContent({
   onDataUpdate, 
   onPageSelect 
 }: AnalysisTabProps) {
-  const { state, updateState, refreshData, handleSectionChange, startScraping } = useScrapingAnalysis(projectId, cachedData)
+  const { state, updateState, refreshData, handleSectionChange, startScraping, loadScrapedPages } = useScrapingAnalysis(projectId, cachedData)
+
+  // Ensure data is loaded when component mounts
+  useEffect(() => {
+    if (state.project && !state.scrapedPagesLoaded && !state.isScraping) {
+      loadScrapedPages()
+    }
+  }, [state.project, state.scrapedPagesLoaded, state.isScraping, loadScrapedPages])
 
   // Handle retry actions
   const handleRetryScraping = () => {
@@ -122,7 +129,13 @@ export default function AnalysisTabContent({
             <PagesSection 
               scrapedPages={state.scrapedPages} 
               projectId={projectId} 
-              onPageSelect={onPageSelect} 
+              onPageSelect={onPageSelect}
+              onPagesUpdate={(pages) => {
+                updateState({ scrapedPages: pages })
+                if (onDataUpdate) {
+                  onDataUpdate(state.project, pages)
+                }
+              }}
             />
           </Suspense>
         )}

@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    // Allow any external domain for dynamic content
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
 

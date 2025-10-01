@@ -290,7 +290,7 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               seo_analysis: null,
               meta_tags_data: null,
               social_meta_tags_data: null,
-              all_pages_html: null,
+             
               images: null,
               links: null
             }} 
@@ -298,52 +298,50 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
         )
       case 'keys':
         return (
-          <KeysTab 
-            project={{
-              id: page.id,
-              site_url: page.url,
-              status: 'completed' as const,
-              progress: 100,
-              last_audit_at: new Date().toISOString(),
-              issues_count: 0,
-              score: 0,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              total_pages: 1,
-              total_links: 0,
-              total_images: 0,
-              total_meta_tags: 0,
-              technologies_found: 0,
-              cms_detected: false,
-              cms_type: null,
-              cms_version: null,
-              cms_plugins: null,
-              cms_themes: null,
-              cms_components: null,
-              cms_confidence: 0,
-              cms_detection_method: null,
-              cms_metadata: null,
-              technologies: null,
-              technologies_confidence: 0,
-              technologies_detection_method: null,
-              technologies_metadata: null,
-              total_html_content: 0,
-              average_html_per_page: 0,
-              pagespeed_insights_data: null,
-              pagespeed_insights_loading: false,
-              pagespeed_insights_error: null,
-              scraping_data: null,
-              seo_analysis: null,
-              meta_tags_data: null,
-              social_meta_tags_data: null,
-              all_pages_html: [{
-                pageUrl: page.url || page.page_url || 'Unknown URL',
-                pageHtml: page.html_content || ''
-              }],
-              images: null,
-              links: null
-            }} 
-          />
+          // <KeysTab 
+          //   project={{
+          //     id: page.id,
+          //     site_url: page.url,
+          //     status: 'completed' as const,
+          //     progress: 100,
+          //     last_audit_at: new Date().toISOString(),
+          //     issues_count: 0,
+          //     score: 0,
+          //     created_at: new Date().toISOString(),
+          //     updated_at: new Date().toISOString(),
+          //     total_pages: 1,
+          //     total_links: 0,
+          //     total_images: 0,
+          //     total_meta_tags: 0,
+          //     technologies_found: 0,
+          //     cms_detected: false,
+          //     cms_type: null,
+          //     cms_version: null,
+          //     cms_plugins: null,
+          //     cms_themes: null,
+          //     cms_components: null,
+          //     cms_confidence: 0,
+          //     cms_detection_method: null,
+          //     cms_metadata: null,
+          //     technologies: null,
+          //     technologies_confidence: 0,
+          //     technologies_detection_method: null,
+          //     technologies_metadata: null,
+          //     total_html_content: 0,
+          //     average_html_per_page: 0,
+          //     pagespeed_insights_data: null,
+          //     pagespeed_insights_loading: false,
+          //     pagespeed_insights_error: null,
+          //     scraping_data: null,
+          //     seo_analysis: null,
+          //     meta_tags_data: null,
+          //     social_meta_tags_data: null,
+            
+          //     images: null,
+          //     links: null
+          //   }} 
+          <>sdfsdf</>
+          // />
         )
       case 'standards':
         return (

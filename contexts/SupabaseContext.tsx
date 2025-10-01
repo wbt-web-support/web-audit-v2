@@ -33,11 +33,6 @@ interface AuditProjectWithUserId extends AuditProject {
   pagespeed_insights_error: string | null
   meta_tags_data: MetaTagsData | null
   social_meta_tags_data: SocialMetaTagsData | null
-  // HTML content storage for all pages
-  all_pages_html: any[] | null
-  // Images and links data storage
-  images: any[] | null // Store aggregated images data from all pages
-  links: any[] | null // Store aggregated links data from all pages
 }
 
 interface ScrapedPage {
@@ -671,18 +666,89 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Try with minimal required fields first to avoid RLS issues
+      const minimalData = {
+        user_id: user.id,
+        site_url: projectData.site_url,
+        status: projectData.status || 'pending',
+        progress: projectData.progress || 0,
+        page_type: projectData.page_type || 'single',
+        brand_consistency: projectData.brand_consistency || false,
+        hidden_urls: projectData.hidden_urls || false,
+        keys_check: projectData.keys_check || false
+      }
+
       const { data, error } = await supabase
         .from('audit_projects')
-        .insert({
-          user_id: user.id,
-          ...projectData
-        })
+        .insert(minimalData)
         .select()
         .single()
 
       if (error) {
         console.error('Error creating audit project:', error)
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        // Check for specific error types
+        if (error.message?.includes('relation "audit_projects" does not exist') || 
+            error.code === 'PGRST301') {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Database not set up. Please run the database migration script first.',
+              code: 'TABLE_NOT_EXISTS'
+            } 
+          }
+        }
+        
+        if (error.message?.includes('permission denied') || 
+            !error.message || 
+            error.message === '' ||
+            Object.keys(error).length === 0) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'RLS policy issue detected. Please check your Supabase RLS policies.',
+              code: 'RLS_POLICY_ISSUE'
+            } 
+          }
+        }
+        
         return { data: null, error }
+      }
+
+      // If successful, try to update with additional fields
+      if (data) {
+        try {
+          const { data: updatedData, error: updateError } = await supabase
+            .from('audit_projects')
+            .update({
+              brand_data: projectData.brand_data,
+              hidden_urls_data: projectData.hidden_urls_data,
+              pages_per_second: projectData.pages_per_second,
+              total_response_time: projectData.total_response_time,
+              scraping_completed_at: projectData.scraping_completed_at,
+              scraping_data: projectData.scraping_data,
+              pagespeed_insights_data: projectData.pagespeed_insights_data,
+              pagespeed_insights_loading: projectData.pagespeed_insights_loading,
+              pagespeed_insights_error: projectData.pagespeed_insights_error,
+              meta_tags_data: projectData.meta_tags_data,
+              social_meta_tags_data: projectData.social_meta_tags_data
+            })
+            .eq('id', data.id)
+            .select()
+            .single()
+
+          if (!updateError && updatedData) {
+            return { data: updatedData as AuditProjectWithUserId, error: null }
+          }
+        } catch (updateErr) {
+          console.warn('Could not update with additional fields, using minimal data:', updateErr)
+        }
       }
 
       return { data: data as AuditProjectWithUserId, error: null }
@@ -769,6 +835,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       
 
       try {
+        // Use a simpler query with only essential fields to avoid RLS issues
         const { data, error } = await supabase
           .from('audit_projects')
           .select(`
@@ -786,28 +853,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             total_images,
             total_meta_tags,
             technologies_found,
-            cms_detected,
-            cms_type,
-            cms_version,
-            cms_plugins,
-            cms_themes,
-            cms_components,
-            cms_confidence,
-            cms_detection_method,
-            cms_metadata,
-            technologies,
-            technologies_confidence,
-            technologies_detection_method,
-            technologies_metadata,
-            total_html_content,
-            average_html_per_page,
-            pagespeed_insights_data,
-            pagespeed_insights_loading,
-            pagespeed_insights_error,
-            seo_analysis,
-            all_pages_html,
-            images,
-            links
+            cms_detected
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -817,6 +863,38 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error('❌ SupabaseContext: Query error after', queryTime.toFixed(2), 'ms:', error)
+          console.error('❌ Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
+          
+          // Check for specific error types
+          if (error.message?.includes('relation "audit_projects" does not exist') || 
+              error.code === 'PGRST301') {
+            return { 
+              data: null, 
+              error: { 
+                message: 'Database not set up. Please run the database migration script first.',
+                code: 'TABLE_NOT_EXISTS'
+              } 
+            }
+          }
+          
+          if (error.message?.includes('permission denied') || 
+              !error.message || 
+              error.message === '' ||
+              Object.keys(error).length === 0) {
+            return { 
+              data: null, 
+              error: { 
+                message: 'RLS policy issue detected. Please check your Supabase RLS policies.',
+                code: 'RLS_POLICY_ISSUE'
+              } 
+            }
+          }
+          
           return { data: null, error }
         }
 
@@ -830,7 +908,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         // Add default values for meta tags fields if they don't exist
         const projectsWithDefaults = data?.map(project => ({
-          ...project,
+          ...(project as any),
           meta_tags_data: (project as any).meta_tags_data || null,
           social_meta_tags_data: (project as any).social_meta_tags_data || null
         })) || []
