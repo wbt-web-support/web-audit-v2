@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
     }
     // If analysis already exists, return it
     if (existingAnalysis?.gemini_analysis) {
-      const duration = Date.now() - startTime;
       return NextResponse.json({
         success: true,
         analysis: existingAnalysis.gemini_analysis,
@@ -48,11 +47,8 @@ export async function POST(request: NextRequest) {
         status: 503
       });
     }
-    const analysisStartTime = Date.now();
-
     // Perform Gemini analysis
     const analysis = await analyzeContentWithGemini(content, url);
-    const analysisDuration = Date.now() - analysisStartTime;
     // Save analysis to database
     const {
       error: saveError
@@ -67,7 +63,6 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
-    const totalDuration = Date.now() - startTime;
     return NextResponse.json({
       success: true,
       analysis,
@@ -114,14 +109,12 @@ export async function GET(request: NextRequest) {
       });
     }
     if (!pageData?.gemini_analysis) {
-      const duration = Date.now() - startTime;
       return NextResponse.json({
         success: true,
         analysis: null,
         cached: false
       });
     }
-    const duration = Date.now() - startTime;
     return NextResponse.json({
       success: true,
       analysis: pageData.gemini_analysis,

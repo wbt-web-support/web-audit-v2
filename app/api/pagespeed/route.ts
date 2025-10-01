@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchPageSpeedInsights } from '@/lib/pagespeed';
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
+ 
   try {
     const {
       projectId,
@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
 
     // If analysis already exists, return it
     if (existingProject.pagespeed_insights_data) {
-      const duration = Date.now() - startTime;
       return NextResponse.json({
         success: true,
         analysis: existingProject.pagespeed_insights_data,
@@ -82,7 +81,6 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
-    const duration = Date.now() - startTime;
     return NextResponse.json({
       success: true,
       analysis: pagespeedData,

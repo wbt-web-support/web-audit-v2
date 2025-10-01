@@ -1,10 +1,9 @@
 'use client';
 
 import { supabase } from './supabase';
-export type UserRole = 'user' | 'admin' | 'moderator';
+export type UserRole = 'user' | 'admin';
 export interface RoleVerificationResult {
   isAdmin: boolean;
-  isModerator: boolean;
   isUser: boolean;
   role: UserRole;
   verified: boolean;
@@ -77,7 +76,6 @@ export class RoleVerifier {
       const role = profile.role as UserRole;
       const result: RoleVerificationResult = {
         isAdmin: role === 'admin',
-        isModerator: role === 'moderator',
         isUser: role === 'user',
         role,
         verified: true
@@ -104,11 +102,11 @@ export class RoleVerifier {
   }
 
   /**
-   * Check if user has moderator or admin access
+   * Check if user has admin access
    */
-  async isModeratorOrAdmin(userId: string): Promise<boolean> {
+  async isAdminUser(userId: string): Promise<boolean> {
     const result = await this.verifyUserRole(userId);
-    return (result.isModerator || result.isAdmin) && result.verified;
+    return result.isAdmin && result.verified;
   }
 
   /**
@@ -135,7 +133,6 @@ export class RoleVerifier {
   private createErrorResult(error: string): RoleVerificationResult {
     return {
       isAdmin: false,
-      isModerator: false,
       isUser: false,
       role: 'user',
       verified: false,
@@ -156,7 +153,6 @@ export class RoleTester {
     result: RoleVerificationResult;
     tests: {
       isAdmin: boolean;
-      isModerator: boolean;
       isUser: boolean;
       roleMatch: boolean;
     };
@@ -166,7 +162,6 @@ export class RoleTester {
 
     const tests = {
       isAdmin: result.isAdmin,
-      isModerator: result.isModerator,
       isUser: result.isUser,
       roleMatch: result.verified && result.role !== null
     };
@@ -195,24 +190,6 @@ export class RoleTester {
     };
   }
 
-  /**
-   * Test moderator access
-   */
-  static async testModeratorAccess(userId: string): Promise<{
-    hasAccess: boolean;
-    isModerator: boolean;
-    isAdmin: boolean;
-    error?: string;
-  }> {
-    const verifier = RoleVerifier.getInstance();
-    const result = await verifier.verifyUserRole(userId, true);
-    return {
-      hasAccess: (result.isModerator || result.isAdmin) && result.verified,
-      isModerator: result.isModerator,
-      isAdmin: result.isAdmin,
-      error: result.error
-    };
-  }
 }
 
 // Export singleton instance

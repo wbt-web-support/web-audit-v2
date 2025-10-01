@@ -8,7 +8,7 @@ interface UserProfile {
   email: string;
   first_name: string | null;
   last_name: string | null;
-  role: 'user' | 'admin' | 'moderator';
+  role: 'user' | 'admin';
   email_confirmed: boolean;
   created_at: string;
 }
@@ -17,18 +17,11 @@ interface AdminTestResult {
   isAdmin: boolean;
   error?: string;
 }
-interface ModeratorTestResult {
-  hasAccess: boolean;
-  isModerator: boolean;
-  isAdmin: boolean;
-  error?: string;
-}
 interface FullRoleTestResult {
   success: boolean;
   result: RoleVerificationResult;
   tests: {
     isAdmin: boolean;
-    isModerator: boolean;
     isUser: boolean;
     roleMatch: boolean;
   };
@@ -41,18 +34,15 @@ interface RoleTestResults {
   tests: {
     basicVerification: RoleVerificationResult;
     adminTest: AdminTestResult;
-    moderatorTest: ModeratorTestResult;
     fullRoleTest: FullRoleTestResult;
     cachedVerification: RoleVerificationResult;
   };
   summary: {
     isAdmin: boolean;
-    isModerator: boolean;
     isUser: boolean;
     verified: boolean;
     role: string;
     hasAdminAccess: boolean;
-    hasModeratorAccess: boolean;
   };
 }
 interface RoleTestPanelProps {
@@ -82,13 +72,10 @@ export default function RoleTestPanel({
       // Test 2: Admin access test
       const adminTest = await roleTester.testAdminAccess(user.id);
 
-      // Test 3: Moderator access test
-      const moderatorTest = await roleTester.testModeratorAccess(user.id);
-
-      // Test 4: Full role test
+      // Test 3: Full role test
       const fullRoleTest = await roleTester.testUserRole(user.id);
 
-      // Test 5: Cache test
+      // Test 4: Cache test
       const cachedVerification = await roleVerifier.verifyUserRole(user.id, false);
       const results = {
         timestamp: new Date().toISOString(),
@@ -98,18 +85,15 @@ export default function RoleTestPanel({
         tests: {
           basicVerification,
           adminTest,
-          moderatorTest,
           fullRoleTest,
           cachedVerification
         },
         summary: {
           isAdmin: basicVerification.isAdmin,
-          isModerator: basicVerification.isModerator,
           isUser: basicVerification.isUser,
           verified: basicVerification.verified,
           role: basicVerification.role,
-          hasAdminAccess: adminTest.hasAccess,
-          hasModeratorAccess: moderatorTest.hasAccess
+          hasAdminAccess: adminTest.hasAccess
         }
       };
       setTestResults(results);
@@ -161,9 +145,8 @@ export default function RoleTestPanel({
               <p><strong>Role:</strong> {testResults.summary.role}</p>
               <p><strong>Verified:</strong> {testResults.summary.verified ? 'Yes' : 'No'}</p>
               <p><strong>Is Admin:</strong> {testResults.summary.isAdmin ? 'Yes' : 'No'}</p>
-              <p><strong>Is Moderator:</strong> {testResults.summary.isModerator ? 'Yes' : 'No'}</p>
+              <p><strong>Is User:</strong> {testResults.summary.isUser ? 'Yes' : 'No'}</p>
               <p><strong>Has Admin Access:</strong> {testResults.summary.hasAdminAccess ? 'Yes' : 'No'}</p>
-              <p><strong>Has Moderator Access:</strong> {testResults.summary.hasModeratorAccess ? 'Yes' : 'No'}</p>
             </div>
           </div>
 
@@ -192,16 +175,6 @@ export default function RoleTestPanel({
               </div>
             </div>
 
-            {/* Moderator Test */}
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <h5 className="font-medium text-gray-800 mb-2">Moderator Access Test</h5>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p><strong>Has Access:</strong> {testResults.tests.moderatorTest.hasAccess ? 'Yes' : 'No'}</p>
-                <p><strong>Is Moderator:</strong> {testResults.tests.moderatorTest.isModerator ? 'Yes' : 'No'}</p>
-                <p><strong>Is Admin:</strong> {testResults.tests.moderatorTest.isAdmin ? 'Yes' : 'No'}</p>
-                {testResults.tests.moderatorTest.error && <p className="text-red-600"><strong>Error:</strong> {testResults.tests.moderatorTest.error}</p>}
-              </div>
-            </div>
 
             {/* Full Role Test */}
             <div className="p-3 bg-gray-50 rounded-lg">
@@ -210,7 +183,6 @@ export default function RoleTestPanel({
                 <p><strong>Success:</strong> {testResults.tests.fullRoleTest.success ? 'Yes' : 'No'}</p>
                 <p><strong>Role Match:</strong> {testResults.tests.fullRoleTest.tests.roleMatch ? 'Yes' : 'No'}</p>
                 <p><strong>Is Admin:</strong> {testResults.tests.fullRoleTest.tests.isAdmin ? 'Yes' : 'No'}</p>
-                <p><strong>Is Moderator:</strong> {testResults.tests.fullRoleTest.tests.isModerator ? 'Yes' : 'No'}</p>
                 <p><strong>Is User:</strong> {testResults.tests.fullRoleTest.tests.isUser ? 'Yes' : 'No'}</p>
               </div>
             </div>

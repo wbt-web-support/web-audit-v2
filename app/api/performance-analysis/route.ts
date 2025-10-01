@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   }
 }
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
+  
   try {
     const {
       pageId,
@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
 
     // If analysis already exists, return it
     if (existingPage.performance_analysis) {
-      const duration = Date.now() - startTime;
       return NextResponse.json({
         success: true,
         analysis: existingPage.performance_analysis,
@@ -135,7 +134,6 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
-    const duration = Date.now() - startTime;
     return NextResponse.json({
       success: true,
       analysis: pagespeedData,

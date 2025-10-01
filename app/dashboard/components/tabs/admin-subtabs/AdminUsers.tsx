@@ -39,7 +39,7 @@ interface User {
   }
 }
 
-export default function AdminUsers({ userProfile }: AdminUsersProps) {
+export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   const { 
     getUsers, 
     updateUser, 
@@ -55,20 +55,15 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
   const [usersLoading, setUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [userActivity, setUserActivity] = useState<any>(null)
-  const [userProjects, setUserProjects] = useState<any[]>([])
-  const [userSubscription, setUserSubscription] = useState<any>(null)
+  const [userActivity, setUserActivity] = useState<Record<string, unknown> | null>(null)
+  const [userProjects, setUserProjects] = useState<Record<string, unknown>[]>([])
+  const [userSubscription, setUserSubscription] = useState<Record<string, unknown> | null>(null)
   const [showUserDetails, setShowUserDetails] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
-
-  // Load users on component mount
-  useEffect(() => {
-    loadUsers()
-  }, [])
 
   const loadUsers = async () => {
     setUsersLoading(true)
@@ -92,7 +87,12 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
     }
   }
 
-  const handleUserAction = async (userId: string, action: string, value?: any) => {
+  // Load users on component mount
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
+
+  const handleUserAction = async (userId: string, action: string, value?: unknown) => {
     setActionLoading(action)
     try {
       let result
@@ -104,7 +104,7 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
           result = await unblockUser(userId)
           break
         case 'changeRole':
-          result = await changeUserRole(userId, value)
+          result = await changeUserRole(userId, value as 'user' | 'admin')
           break
         case 'updateNotes':
           result = await updateUser(userId, { notes: value })
@@ -158,17 +158,6 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
     }
   }
 
-  const getStatusColor = (user: User) => {
-    if (user.blocked) return 'bg-red-100 text-red-800'
-    if (user.email_confirmed) return 'bg-green-100 text-green-800'
-    return 'bg-yellow-100 text-yellow-800'
-  }
-
-  const getStatusText = (user: User) => {
-    if (user.blocked) return 'Blocked'
-    if (user.email_confirmed) return 'Verified'
-    return 'Not Verified'
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -178,6 +167,20 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const renderDateField = (value: unknown, label: string) => {
+    if (value && typeof value === 'string') {
+      return (
+        <div className="bg-gray-50 rounded p-4">
+          <div>
+            <span className="text-gray-600 text-sm">{label}</span>
+            <p className="text-black font-medium mt-1">{formatDate(value)}</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
   }
 
   const getUserDisplayName = (user: User) => {
@@ -549,31 +552,17 @@ export default function AdminUsers({ userProfile }: AdminUsersProps) {
                       <div className="bg-gray-50 rounded p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Total Projects</span>
-                          <span className="text-xl font-semibold text-black">{userActivity.totalProjects}</span>
+                          <span className="text-xl font-semibold text-black">{typeof userActivity.totalProjects === 'number' ? userActivity.totalProjects : 0}</span>
                         </div>
                       </div>
                       <div className="bg-gray-50 rounded p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Total Tickets</span>
-                          <span className="text-xl font-semibold text-black">{userActivity.totalTickets}</span>
+                          <span className="text-xl font-semibold text-black">{typeof userActivity.totalTickets === 'number' ? userActivity.totalTickets : 0}</span>
                         </div>
                       </div>
-                      {userActivity.lastProject && (
-                        <div className="bg-gray-50 rounded p-4">
-                          <div>
-                            <span className="text-gray-600 text-sm">Last Project</span>
-                            <p className="text-black font-medium mt-1">{formatDate(userActivity.lastProject)}</p>
-                          </div>
-                        </div>
-                      )}
-                      {userActivity.lastTicket && (
-                        <div className="bg-gray-50 rounded p-4">
-                          <div>
-                            <span className="text-gray-600 text-sm">Last Ticket</span>
-                            <p className="text-black font-medium mt-1">{formatDate(userActivity.lastTicket)}</p>
-                          </div>
-                        </div>
-                      )}
+                      {renderDateField(userActivity.lastProject, 'Last Project')}
+                      {renderDateField(userActivity.lastTicket, 'Last Ticket')}
                     </div>
                   ) : (
                     <div className="text-center py-8">

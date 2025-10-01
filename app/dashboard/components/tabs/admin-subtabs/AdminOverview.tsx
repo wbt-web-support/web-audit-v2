@@ -9,7 +9,7 @@ interface AdminOverviewProps {
     email: string
     first_name: string | null
     last_name: string | null
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
   }
@@ -58,15 +58,7 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
     }
   ])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success': return 'text-green-600'
-      case 'warning': return 'text-yellow-600'
-      case 'error': return 'text-red-600'
-      case 'info': return 'text-blue-600'
-      default: return 'text-gray-600'
-    }
-  }
+ 
 
   return (
     <motion.div

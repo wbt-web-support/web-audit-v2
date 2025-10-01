@@ -9,13 +9,13 @@ interface AdminRevenueProps {
     email: string
     first_name: string | null
     last_name: string | null
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
   }
 }
 
-export default function AdminRevenue({ userProfile }: AdminRevenueProps) {
+export default function AdminRevenue({ }: AdminRevenueProps) {
   const [revenueStats] = useState({
     totalRevenue: 1247500,
     monthlyRevenue: 104500,

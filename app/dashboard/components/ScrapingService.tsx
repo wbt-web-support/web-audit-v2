@@ -618,12 +618,7 @@ export default function ScrapingService({
           console.warn('   ALTER TABLE audit_projects ADD COLUMN links JSONB;');
 
           // Try updating without the problematic fields
-          const {
-            all_pages_html,
-            images,
-            links,
-            ...summaryDataWithoutNewFields
-          } = summaryData;
+          const {  ...summaryDataWithoutNewFields } = summaryData;
           const {
             error: retryError
           } = await updateAuditProject(projectId, summaryDataWithoutNewFields);

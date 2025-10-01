@@ -9,13 +9,13 @@ interface AdminAlertsProps {
     email: string
     first_name: string | null
     last_name: string | null
-    role: 'user' | 'admin' | 'moderator'
+    role: 'user' | 'admin'
     email_confirmed: boolean
     created_at: string
   }
 }
 
-export default function AdminAlerts({ userProfile }: AdminAlertsProps) {
+export default function AdminAlerts({ }: AdminAlertsProps) {
   const [alerts] = useState([
     {
       id: 1,

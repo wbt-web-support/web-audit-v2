@@ -22,8 +22,7 @@ export function useAuth() {
   const isAuthenticated = !!user;
   const isEmailConfirmed = userProfile?.email_confirmed || false;
   const isAdmin = userProfile?.role === 'admin';
-  const isModerator = userProfile?.role === 'moderator';
-  const isModeratorOrAdmin = isAdmin || isModerator;
+  const isAdminUser = isAdmin;
   const userRole = userProfile?.role || 'user';
 
   // Enhanced authentication checking with proper state management
@@ -96,8 +95,7 @@ export function useAuth() {
     isAuthenticated,
     isEmailConfirmed,
     isAdmin,
-    isModerator,
-    isModeratorOrAdmin,
+    isAdminUser,
     userRole,
     authChecked,
     signUp,

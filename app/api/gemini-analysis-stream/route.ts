@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
     }
     // If analysis already exists, return it immediately
     if (existingAnalysis?.gemini_analysis) {
-      const duration = Date.now() - startTime;
       return new Response(JSON.stringify({
         success: true,
         analysis: existingAnalysis.gemini_analysis,
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
             message: 'AI is analyzing your content...',
             progress: 25
           })}\n\n`));
-          const analysisStartTime = Date.now();
+   
 
           // Perform Gemini analysis with progress updates
           const analysisPromise = analyzeContentWithGemini(content, url);
@@ -97,7 +96,6 @@ export async function POST(request: NextRequest) {
           }, 2000);
           const analysis = await analysisPromise;
           clearInterval(progressInterval);
-          const analysisDuration = Date.now() - analysisStartTime;
           // Send progress update
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             status: 'saving',
@@ -125,7 +123,6 @@ export async function POST(request: NextRequest) {
               console.error('[API] Error saving Gemini analysis:', saveError);
             } else {}
           });
-          const totalDuration = Date.now() - startTime;
           controller.close();
         } catch (error) {
           console.error(`[API] Error in streaming analysis:`, error);

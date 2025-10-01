@@ -33,7 +33,7 @@ interface TicketCardProps {
   onTicketUpdate: () => void
 }
 
-export default function TicketCard({ ticket, onTicketUpdate }: TicketCardProps) {
+export default function TicketCard({ ticket }: TicketCardProps) {
   const { createTicketMessage, getTicketMessages, userProfile } = useSupabase()
   const [isExpanded, setIsExpanded] = useState(false)
   const [messages, setMessages] = useState<TicketMessage[]>([])
