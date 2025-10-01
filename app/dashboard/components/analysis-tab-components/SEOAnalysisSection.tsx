@@ -2,7 +2,7 @@
 
 import { SEOAnalysisResult, SEOHighlight } from '@/types/audit';
 import { analyzeSEO } from '@/lib/seo-analysis';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 interface Project {
   id: string;
@@ -36,6 +36,7 @@ export default function SEOAnalysisSection({
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisResult | null>(cachedAnalysis || (isPageAnalysis ? null : project?.seo_analysis || null));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const analysisTriggered = useRef(false);
   const {
     updateAuditProject
   } = useSupabase();
@@ -87,17 +88,24 @@ export default function SEOAnalysisSection({
     } finally {
       setLoading(false);
     }
-  }, [isPageAnalysis, page, scrapedPages, project, updateAuditProject]);
+  }, [isPageAnalysis, page?.html_content, page?.url, page?.audit_project_id, scrapedPages, project?.id, project?.site_url, updateAuditProject]);
+  useEffect(() => {
+    // Reset analysis trigger when key dependencies change
+    analysisTriggered.current = false;
+  }, [scrapedPages.length, project?.id, page?.url, isPageAnalysis]);
+
   useEffect(() => {
     // For page analysis, analyze immediately if we have page data
-    if (isPageAnalysis && page?.html_content && !seoAnalysis) {
+    if (isPageAnalysis && page?.html_content && !seoAnalysis && !analysisTriggered.current) {
+      analysisTriggered.current = true;
       analyzePage();
     }
     // For project analysis, only run if we have scraped pages and no existing analysis
-    else if (!isPageAnalysis && scrapedPages.length > 0 && !project?.seo_analysis) {
+    else if (!isPageAnalysis && scrapedPages.length > 0 && !project?.seo_analysis && !analysisTriggered.current) {
+      analysisTriggered.current = true;
       analyzePage();
     }
-  }, [scrapedPages, project?.seo_analysis, page, isPageAnalysis, seoAnalysis, analyzePage]);
+  }, [analyzePage, scrapedPages.length, project?.seo_analysis, page?.html_content, isPageAnalysis, seoAnalysis]);
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
