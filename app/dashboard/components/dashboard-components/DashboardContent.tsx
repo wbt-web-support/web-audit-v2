@@ -24,6 +24,9 @@ interface DashboardContentProps {
   projectsError: string | null
   refreshProjects: () => Promise<void>
   onProjectSelect?: (projectId: string) => void
+  onUpdateProject?: (projectId: string, data: any) => Promise<void>
+  onDeleteProject?: (projectId: string) => Promise<void>
+  onRecrawlProject?: (projectId: string) => Promise<void>
 }
 
 export default function DashboardContent({ 
@@ -33,7 +36,10 @@ export default function DashboardContent({
   projectsLoading, 
   projectsError, 
   refreshProjects,
-  onProjectSelect
+  onProjectSelect,
+  onUpdateProject,
+  onDeleteProject,
+  onRecrawlProject
 }: DashboardContentProps) {
   const renderContent = () => {
     switch (activeTab) {
@@ -56,6 +62,9 @@ export default function DashboardContent({
             projectsError={projectsError}
             refreshProjects={refreshProjects}
             onProjectSelect={onProjectSelect}
+            onUpdateProject={onUpdateProject}
+            onDeleteProject={onDeleteProject}
+            onRecrawlProject={onRecrawlProject}
           />
         )
       case 'profile':
@@ -76,12 +85,11 @@ export default function DashboardContent({
   }
 
   return (
-    <motion.main
-      key={activeTab}
+    <motion.main 
+      className="p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="p-4 lg:p-6"
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
       {renderContent()}
     </motion.main>

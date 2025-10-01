@@ -805,7 +805,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             pagespeed_insights_loading,
             pagespeed_insights_error,
             seo_analysis,
-            all_pages_html
+            all_pages_html,
+            images,
+            links
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })

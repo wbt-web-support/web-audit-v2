@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
-import SiteCrawlForm from '../SiteCrawlForm'
+import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 
 interface UserProfile {
@@ -263,11 +263,11 @@ export default function DashboardOverview({
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">
+      <div className="bg-white  rounded-lg ">
+        <h1 className="text-2xl font-bold text-black  mb-2">
           Welcome back, {userProfile?.first_name || 'User'}!
         </h1>
-        <p className="text-blue-100">
+        <p className="text-gray-600">
           Here&apos;s what&apos;s happening with your web audits today.
         </p>
       </div>
