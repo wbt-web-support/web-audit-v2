@@ -25,7 +25,7 @@ const testApiRoutes = async () => {
     const testPlan = {
       name: 'Test Plan',
       description: 'Test plan for API testing',
-      plan_type: 'free',
+      plan_type: 'Starter',
       amount: 0,
       currency: 'INR',
       interval_type: 'monthly',

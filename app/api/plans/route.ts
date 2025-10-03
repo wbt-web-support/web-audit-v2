@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate plan_type
-    if (!['free', 'pro', 'enterprise'].includes(plan_type)) {
+    if (!['Starter', 'Growth', 'Scale'].includes(plan_type)) {
       return NextResponse.json(
-        { error: 'Invalid plan_type. Must be free, pro, or enterprise' },
+        { error: 'Invalid plan_type. Must be Starter, Growth, or Scale' },
         { status: 400 }
       );
     }

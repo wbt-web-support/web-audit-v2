@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS plans (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   description TEXT,
-  plan_type VARCHAR(20) NOT NULL CHECK (plan_type IN ('free', 'pro', 'enterprise')),
+  plan_type VARCHAR(20) NOT NULL CHECK (plan_type IN ('Starter', 'Growth', 'Scale')),
   razorpay_plan_id VARCHAR(100) UNIQUE,
   amount INTEGER NOT NULL DEFAULT 0,
   currency VARCHAR(3) NOT NULL DEFAULT 'INR',
@@ -81,12 +81,12 @@ GRANT SELECT ON plans TO anon;
 DO $$
 BEGIN
   -- Insert Free plan
-  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'free') THEN
+  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'Starter') THEN
     INSERT INTO plans (name, description, plan_type, amount, currency, interval_type, features, limits, is_popular, color, sort_order) VALUES
     (
       'Free',
       'Perfect for personal projects and small websites',
-      'free',
+      'Starter',
       0,
       'INR',
       'monthly',
@@ -112,12 +112,12 @@ BEGIN
   END IF;
 
   -- Insert Pro plan
-  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'pro') THEN
+  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'Growth') THEN
     INSERT INTO plans (name, description, plan_type, amount, currency, interval_type, features, limits, is_popular, color, sort_order) VALUES
     (
       'Pro',
       'Ideal for growing businesses and agencies',
-      'pro',
+      'Growth',
       290000,
       'INR',
       'monthly',
@@ -148,12 +148,12 @@ BEGIN
   END IF;
 
   -- Insert Enterprise plan
-  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'enterprise') THEN
+  IF NOT EXISTS (SELECT 1 FROM plans WHERE plan_type = 'Scale') THEN
     INSERT INTO plans (name, description, plan_type, amount, currency, interval_type, features, limits, is_popular, color, sort_order) VALUES
     (
       'Enterprise',
       'For large organizations with specific needs',
-      'enterprise',
+      'Scale',
       0,
       'INR',
       'monthly',

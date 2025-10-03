@@ -41,9 +41,9 @@ export async function PUT(
     const body = await request.json();
     
     // Validate plan_type if provided
-    if (body.plan_type && !['free', 'pro', 'enterprise'].includes(body.plan_type)) {
+    if (body.plan_type && !['Starter', 'Growth', 'Scale'].includes(body.plan_type)) {
       return NextResponse.json(
-        { error: 'Invalid plan_type. Must be free, pro, or enterprise' },
+        { error: 'Invalid plan_type. Must be Starter, Growth, or Scale' },
         { status: 400 }
       );
     }

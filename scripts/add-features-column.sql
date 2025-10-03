@@ -15,17 +15,17 @@ CREATE INDEX idx_plans_can_use_features ON plans USING GIN (can_use_features);
 -- Free plans get core features only
 UPDATE plans 
 SET can_use_features = '["single_page_crawl", "grammar_content_analysis", "image_scan", "link_scanner", "performance_metrics", "page_speed_analysis", "broken_links_check"]'::jsonb
-WHERE plan_type = 'free';
+WHERE plan_type = 'Starter';
 
 -- Pro plans get all features except enterprise-only ones (if any)
 UPDATE plans 
 SET can_use_features = '["single_page_crawl", "full_site_crawl", "hidden_urls_detection", "brand_consistency_check", "grammar_content_analysis", "seo_structure", "stripe_key_detection", "google_tags_audit", "image_scan", "link_scanner", "social_share_preview", "performance_metrics", "ui_ux_quality_check", "technical_fix_recommendations", "accessibility_audit", "mobile_responsiveness", "page_speed_analysis", "broken_links_check"]'::jsonb
-WHERE plan_type = 'pro';
+WHERE plan_type = 'Growth';
 
 -- Enterprise plans get all features
 UPDATE plans 
 SET can_use_features = '["single_page_crawl", "full_site_crawl", "hidden_urls_detection", "brand_consistency_check", "grammar_content_analysis", "seo_structure", "stripe_key_detection", "google_tags_audit", "image_scan", "link_scanner", "social_share_preview", "performance_metrics", "ui_ux_quality_check", "technical_fix_recommendations", "accessibility_audit", "mobile_responsiveness", "page_speed_analysis", "broken_links_check"]'::jsonb
-WHERE plan_type = 'enterprise';
+WHERE plan_type = 'Scale';
 
 -- Verify the changes
 SELECT 

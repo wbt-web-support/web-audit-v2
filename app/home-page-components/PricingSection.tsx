@@ -12,8 +12,8 @@ declare global {
 // Default fallback plans
 const defaultPlans = [
   {
-    id: 'free',
-    name: 'Free',
+    id: 'Starter',
+    name: 'Starter',
     price: '$0',
     period: 'forever',
     description: 'Perfect for personal projects and small websites',
@@ -64,8 +64,8 @@ export default function PricingSection() {
                     plan.interval_type === 'daily' ? 'per day' : 'per ' + plan.interval_type,
             description: plan.description,
             features: plan.features.map((f: any) => f.name),
-            cta: plan.plan_type === 'free' ? 'Get Started Free' :
-                 plan.plan_type === 'enterprise' ? 'Contact Sales' : 'Start Pro Trial',
+            cta: plan.plan_type === 'Starter' ? 'Get Started Free' :
+                 plan.plan_type === 'Scale' ? 'Contact Sales' : 'Start Growth Trial',
             popular: plan.is_popular,
             color: plan.color,
             amount: plan.amount,
@@ -118,8 +118,8 @@ export default function PricingSection() {
             amount: 290000
           },
           {
-            id: 'enterprise',
-            name: 'Enterprise',
+            id: 'Scale',
+            name: 'Scale',
             price: 'Custom',
             period: 'contact us',
             description: 'For large organizations with specific needs',
@@ -149,7 +149,7 @@ export default function PricingSection() {
   }, []);
 
   const handlePayment = async (plan: any) => {
-    if (plan.id === 'free') {
+    if (plan.id === 'Starter') {
       alert('Free plan selected! No payment required.');
       return;
     }
@@ -391,7 +391,7 @@ export default function PricingSection() {
               </motion.button>
 
               {/* Payment Success Message */}
-              {paymentSuccess && plan.id !== 'free' && (
+              {paymentSuccess && plan.id !== 'Starter' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

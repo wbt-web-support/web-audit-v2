@@ -20,7 +20,7 @@ interface Plan {
   id: string
   name: string
   description: string
-  plan_type: 'free' | 'pro' | 'enterprise'
+  plan_type: 'Starter' | 'Growth' | 'Scale'
   razorpay_plan_id?: string
   amount: number
   currency: string
@@ -45,7 +45,7 @@ interface Plan {
 interface PlanFormData {
   name: string
   description: string
-  plan_type: 'free' | 'pro' | 'enterprise'
+  plan_type: 'Starter' | 'Growth' | 'Scale'
   amount: number
   currency: string
   interval_type: string
@@ -78,7 +78,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
   const [formData, setFormData] = useState<PlanFormData>({
     name: '',
     description: '',
-    plan_type: 'free',
+    plan_type: 'Starter',
     amount: 0,
     currency: 'INR',
     interval_type: 'monthly',
@@ -281,7 +281,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     setFormData({
       name: '',
       description: '',
-      plan_type: 'free',
+      plan_type: 'Starter',
       amount: 0,
       currency: 'INR',
       interval_type: 'monthly',
@@ -352,9 +352,9 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
 
   const getPlanTypeColor = (type: string) => {
     switch (type) {
-      case 'free': return 'bg-green-100 text-green-800'
-      case 'pro': return 'bg-blue-100 text-blue-800'
-      case 'enterprise': return 'bg-purple-100 text-purple-800'
+      case 'Starter': return 'bg-green-100 text-green-800'
+      case 'Growth': return 'bg-blue-100 text-blue-800'
+      case 'Scale': return 'bg-purple-100 text-purple-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -599,12 +599,12 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
               <span className="font-semibold text-green-600">{plans.filter(p => p.is_active).length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Free Plans</span>
-              <span className="font-semibold text-green-600">{plans.filter(p => p.plan_type === 'free').length}</span>
+              <span className="text-gray-700">Starter Plans</span>
+              <span className="font-semibold text-green-600">{plans.filter(p => p.plan_type === 'Starter').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Pro Plans</span>
-              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'pro').length}</span>
+              <span className="text-gray-700">Growth Plans</span>
+              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'Growth').length}</span>
             </div>
           </div>
         </motion.div>
@@ -644,16 +644,16 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
           <h3 className="text-lg font-semibold text-black mb-4">Plan Types</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-700">Free</span>
-              <span className="font-semibold text-green-600">{plans.filter(p => p.plan_type === 'free').length}</span>
+              <span className="text-gray-700">Starter</span>
+              <span className="font-semibold text-green-600">{plans.filter(p => p.plan_type === 'Starter').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Pro</span>
-              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'pro').length}</span>
+              <span className="text-gray-700">Growth</span>
+              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'Growth').length}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Enterprise</span>
-              <span className="font-semibold text-purple-600">{plans.filter(p => p.plan_type === 'enterprise').length}</span>
+              <span className="text-gray-700">Scale</span>
+              <span className="font-semibold text-purple-600">{plans.filter(p => p.plan_type === 'Scale').length}</span>
             </div>
           </div>
         </motion.div>
@@ -721,7 +721,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
                       <select
                         value={formData.plan_type}
-                        onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'free' | 'pro' | 'enterprise' }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'Starter' | 'Growth' | 'Scale' }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="free">Free</option>

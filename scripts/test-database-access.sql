@@ -36,7 +36,7 @@ INSERT INTO plans (name, description, plan_type, amount, currency, interval_type
 VALUES (
   'Test Plan',
   'Test plan for database testing',
-  'free',
+  'Starter',
   0,
   'INR',
   'monthly',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { useState, useEffect } from 'react';
 import { roleVerifier } from '@/lib/role-utils';
+import { useUserPlan } from '@/hooks/useUserPlan';
 interface DashboardSidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,6 +37,9 @@ export default function DashboardSidebar({
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  
+  // Get user plan information
+  const { planInfo, loading: planLoading } = useUserPlan();
 
   // Real-time role verification
   useEffect(() => {
@@ -186,6 +190,41 @@ export default function DashboardSidebar({
               </button>)}
           </nav>
 
+          {/* Plan Information */}
+          {planInfo && (
+            <div className="p-4 border-t border-gray-200">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Current Plan</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    planInfo.plan_type === 'Starter' 
+                      ? 'bg-green-100 text-green-700' 
+                      : planInfo.plan_type === 'Growth' 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {planInfo.plan_type}
+                  </span>
+                </div>
+                <div className="text-sm font-medium text-black mb-1">{planInfo.plan_name}</div>
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>{planInfo.can_use_features.length} features</span>
+                  <span>
+                    {planInfo.max_projects === -1 ? 'Unlimited' : planInfo.max_projects} projects
+                  </span>
+                </div>
+                {planInfo.plan_type === 'Starter' && (
+                  <button 
+                    onClick={() => onTabChange('profile')}
+                    className="w-full mt-2 text-xs bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Sign Out Button */}
           <div className="p-4 border-t border-gray-200">
             <button onClick={handleSignOut} className="w-full flex items-center space-x-3 px-3 py-3 rounded text-sm font-medium text-gray-700">
@@ -252,6 +291,41 @@ export default function DashboardSidebar({
                 <span>{item.name}</span>
               </button>)}
           </nav>
+
+          {/* Plan Information */}
+          {planInfo && (
+            <div className="p-4 border-t border-gray-200">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Current Plan</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    planInfo.plan_type === 'Starter' 
+                      ? 'bg-green-100 text-green-700' 
+                      : planInfo.plan_type === 'Growth' 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {planInfo.plan_type}
+                  </span>
+                </div>
+                <div className="text-sm font-medium text-black mb-1">{planInfo.plan_name}</div>
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>{planInfo.can_use_features.length} features</span>
+                  <span>
+                    {planInfo.max_projects === -1 ? 'Unlimited' : planInfo.max_projects} projects
+                  </span>
+                </div>
+                {planInfo.plan_type === 'Starter' && (
+                  <button 
+                    onClick={() => onTabChange('profile')}
+                    className="w-full mt-2 text-xs bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Sign Out Button */}
           <div className="p-4 border-t border-gray-200">

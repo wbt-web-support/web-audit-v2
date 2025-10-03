@@ -2,6 +2,11 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import { useUserPlan, type UserPlanInfo } from '@/hooks/useUserPlan'
+import { FEATURES } from '@/lib/features'
+
+type CrawlType = 'single' | 'multiple'
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
 interface BrandConsistencyData {
   companyName: string
@@ -16,37 +21,34 @@ interface HiddenUrl {
   url: string
 }
 
+interface SiteCrawlFormData {
+  siteUrl: string
+  pageType: CrawlType
+  brandConsistency: boolean
+  hiddenUrls: boolean
+  keysCheck: boolean
+  brandData: BrandConsistencyData
+  hiddenUrlsList: HiddenUrl[]
+}
+
 interface SiteCrawlFormProps {
-  onSubmit: (formData: {
-    siteUrl: string
-    pageType: 'single' | 'multiple'
-    brandConsistency: boolean
-    hiddenUrls: boolean
-    keysCheck: boolean
-    brandData: BrandConsistencyData
-    hiddenUrlsList: HiddenUrl[]
-  }) => void
+  onSubmit: (formData: SiteCrawlFormData) => void
   isSubmitting: boolean
-  submitStatus: 'idle' | 'submitting' | 'success' | 'error'
+  submitStatus: SubmitStatus
   isEditMode?: boolean
-  initialData?: {
-    siteUrl: string
-    pageType: 'single' | 'multiple'
-    brandConsistency: boolean
-    hiddenUrls: boolean
-    keysCheck: boolean
-    brandData: BrandConsistencyData
-    hiddenUrlsList: HiddenUrl[]
-  }
+  initialData?: SiteCrawlFormData
 }
 
 export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, isEditMode = false, initialData }: SiteCrawlFormProps) {
+  // User plan information
+  const { planInfo, loading: planLoading, hasFeature, canCreateProject } = useUserPlan()
+  
   // Form States
-  const [siteUrl, setSiteUrl] = useState('')
-  const [pageType, setPageType] = useState<'single' | 'multiple'>('single')
-  const [brandConsistency, setBrandConsistency] = useState(false)
-  const [hiddenUrls, setHiddenUrls] = useState(false)
-  const [keysCheck, setKeysCheck] = useState(false)
+  const [siteUrl, setSiteUrl] = useState<string>('')
+  const [pageType, setPageType] = useState<CrawlType>('single')
+  const [brandConsistency, setBrandConsistency] = useState<boolean>(false)
+  const [hiddenUrls, setHiddenUrls] = useState<boolean>(false)
+  const [keysCheck, setKeysCheck] = useState<boolean>(false)
   
   const [brandData, setBrandData] = useState<BrandConsistencyData>({
     companyName: '',
@@ -59,6 +61,9 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
   const [hiddenUrlsList, setHiddenUrlsList] = useState<HiddenUrl[]>([
     { id: '1', url: '' }
   ])
+
+  // Modal state for upgrade prompt
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false)
 
   // Initialize form data when in edit mode
   useEffect(() => {
@@ -73,31 +78,44 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
     }
   }, [isEditMode, initialData])
 
-  const handleBrandDataChange = (field: keyof BrandConsistencyData, value: string) => {
+  // Reset to single page if user doesn't have full site crawl access
+  useEffect(() => {
+    if (planInfo && !hasFeature('full_site_crawl') && pageType === 'multiple') {
+      setPageType('single')
+    }
+  }, [planInfo, hasFeature, pageType])
+
+  const handleBrandDataChange = (field: keyof BrandConsistencyData, value: string): void => {
     setBrandData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
-  const addHiddenUrl = () => {
+  const addHiddenUrl = (): void => {
     const newId = (hiddenUrlsList.length + 1).toString()
     setHiddenUrlsList(prev => [...prev, { id: newId, url: '' }])
   }
 
-  const removeHiddenUrl = (id: string) => {
+  const removeHiddenUrl = (id: string): void => {
     if (hiddenUrlsList.length > 1) {
       setHiddenUrlsList(prev => prev.filter(url => url.id !== id))
     }
   }
 
-  const updateHiddenUrl = (id: string, value: string) => {
+  const updateHiddenUrl = (id: string, value: string): void => {
     setHiddenUrlsList(prev => prev.map(url => 
       url.id === id ? { ...url, url: value } : url
     ))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUpgradeClick = (): void => {
+    if (!hasFeature('full_site_crawl')) {
+      setShowUpgradeModal(true)
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     console.log('SiteCrawlForm: Form submitted with data:', {
       siteUrl,
@@ -134,6 +152,49 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
   //   })
   //   setHiddenUrlsList([{ id: '1', url: '' }])
   // }
+
+  // Show loading state while plan is being fetched
+  if (planLoading) {
+    return (
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading plan information...</span>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Show error state if plan loading failed
+  if (!planInfo) {
+    return (
+      <motion.div 
+        className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <div className="p-6">
+          <div className="text-center py-8">
+            <div className="text-red-500 mb-2">
+              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <p className="text-red-600 font-medium">Failed to load plan information</p>
+            <p className="text-gray-500 text-sm mt-1">Please refresh the page or contact support</p>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div 
@@ -185,7 +246,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                   name="pageType"
                   value="single"
                   checked={pageType === 'single'}
-                  onChange={(e) => setPageType(e.target.value as 'single' | 'multiple')}
+                  onChange={(e) => setPageType(e.target.value as CrawlType)}
                   className="sr-only"
                 />
                 <div className="flex items-center">
@@ -194,20 +255,29 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                   }`}>
                     {pageType === 'single' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
                   </div>
-                  <span className="text-sm font-medium text-black">Single Page</span>
+                  <div>
+                    <span className="text-sm font-medium text-black">Single Page</span>
+                    {hasFeature('single_page_crawl') && (
+                      <span className="block text-xs text-green-600">✓ Available</span>
+                    )}
+                  </div>
                 </div>
               </label>
-              <label className={`flex items-center p-4 border rounded cursor-pointer ${
-                pageType === 'multiple' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200'
-              }`}>
+              <label 
+                className={`flex items-center p-4 border rounded cursor-pointer ${
+                  pageType === 'multiple' 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : hasFeature('full_site_crawl') ? 'border-gray-200' : 'border-gray-200 bg-gray-50'
+                } ${!hasFeature('full_site_crawl') ? 'opacity-60' : ''}`}
+                onClick={handleUpgradeClick}
+              >
                 <input
                   type="radio"
                   name="pageType"
                   value="multiple"
                   checked={pageType === 'multiple'}
-                  onChange={(e) => setPageType(e.target.value as 'single' | 'multiple')}
+                  onChange={(e) => hasFeature('full_site_crawl') && setPageType(e.target.value as CrawlType)}
+                  disabled={!hasFeature('full_site_crawl')}
                   className="sr-only"
                 />
                 <div className="flex items-center">
@@ -216,7 +286,17 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                   }`}>
                     {pageType === 'multiple' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
                   </div>
-                  <span className="text-sm font-medium text-black">Multiple Pages</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-black">Multiple Pages</span>
+                    {!hasFeature('full_site_crawl') && (
+                      <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    )}
+                    {hasFeature('full_site_crawl') && (
+                      <span className="block text-xs text-green-600">✓ Available</span>
+                    )}
+                  </div>
                 </div>
               </label>
             </div>
@@ -419,6 +499,121 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
           </div>
         </form>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowUpgradeModal(false)}
+        >
+          <motion.div
+            className="bg-white rounded-lg shadow-lg max-w-md w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-black">Upgrade Required</h3>
+                    <p className="text-sm text-gray-600">Full site crawling is a premium feature</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-4">
+              <div className="space-y-4">
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">Full Site Crawling Features:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Crawl entire website automatically</li>
+                    <li>• Discover all pages and subpages</li>
+                    <li>• Comprehensive site-wide analysis</li>
+                    <li>• Advanced SEO insights</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 font-semibold text-sm">P</span>
+                      </div>
+                      <div>
+                        <div className="font-medium text-black">Pro Plan</div>
+                        <div className="text-sm text-gray-600">Full site crawling + advanced features</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-black">₹999/month</div>
+                      <div className="text-xs text-gray-500">or ₹9,999/year</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 font-semibold text-sm">E</span>
+                      </div>
+                      <div>
+                        <div className="font-medium text-black">Enterprise Plan</div>
+                        <div className="text-sm text-gray-600">Unlimited everything + priority support</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-black">Custom</div>
+                      <div className="text-xs text-gray-500">Contact sales</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpgradeModal(false)
+                    // Navigate to profile/upgrade page
+                    window.location.href = '/dashboard?tab=profile'
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS plans (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   description TEXT,
-  plan_type VARCHAR(20) NOT NULL CHECK (plan_type IN ('free', 'pro', 'enterprise')),
+  plan_type VARCHAR(20) NOT NULL CHECK (plan_type IN ('Starter', 'Growth', 'Scale')),
   razorpay_plan_id VARCHAR(100) UNIQUE, -- Links to Razorpay plan ID
   amount INTEGER NOT NULL DEFAULT 0, -- Amount in paise/cents
   currency VARCHAR(3) NOT NULL DEFAULT 'INR',
@@ -79,7 +79,7 @@ SELECT * FROM (VALUES
   (
     'Free',
     'Perfect for personal projects and small websites',
-    'free',
+    'Starter',
     0,
     'INR',
     'monthly',
@@ -105,7 +105,7 @@ SELECT * FROM (VALUES
   (
     'Pro',
     'Ideal for growing businesses and agencies',
-    'pro',
+    'Growth',
     290000,
     'INR',
     'monthly',
@@ -136,7 +136,7 @@ SELECT * FROM (VALUES
   (
     'Enterprise',
     'For large organizations with specific needs',
-    'enterprise',
+    'Scale',
     0,
     'INR',
     'monthly',

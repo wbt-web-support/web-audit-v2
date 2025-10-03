@@ -2106,7 +2106,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       
       // This would need a subscription table - for now return mock data
       const mockSubscription = {
-        plan: 'free',
+        plan: 'Starter',
         status: 'active',
         startDate: '2024-01-01',
         endDate: null,

@@ -12,17 +12,17 @@ COMMENT ON COLUMN plans.max_projects IS 'Maximum number of projects a user can c
 -- Free plans get 1 project
 UPDATE plans 
 SET max_projects = 1
-WHERE plan_type = 'free';
+WHERE plan_type = 'Starter';
 
 -- Pro plans get 10 projects
 UPDATE plans 
 SET max_projects = 10
-WHERE plan_type = 'pro';
+WHERE plan_type = 'Growth';
 
 -- Enterprise plans get unlimited (-1)
 UPDATE plans 
 SET max_projects = -1
-WHERE plan_type = 'enterprise';
+WHERE plan_type = 'Scale';
 
 -- Verify the changes
 SELECT 
