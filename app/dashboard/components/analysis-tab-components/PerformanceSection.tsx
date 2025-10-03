@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { formatPageSpeedScore, getScoreColor, getScoreBgColor } from '@/lib/pagespeed'
@@ -16,11 +16,12 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false)
   
   const pagespeedData = project.pagespeed_insights_data
 
   // Reanalyze function
-  const handleReanalyze = async () => {
+  const handleReanalyze = useCallback(async () => {
     try {
       setIsReanalyzing(true)
       setIsLoading(true)
@@ -55,13 +56,21 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
           pagespeed_insights_loading: false
         }
         
-        await updateAuditProject(project.id, { 
+        const { error: updateError } = await updateAuditProject(project.id, { 
           pagespeed_insights_data: result.analysis,
           pagespeed_insights_loading: false
         })
         
-        if (onDataUpdate) {
-          onDataUpdate(updatedProject)
+        if (updateError) {
+          console.error('Failed to update project with performance data:', updateError)
+          // Still update the UI even if database update fails
+          if (onDataUpdate) {
+            onDataUpdate(updatedProject)
+          }
+        } else {
+          if (onDataUpdate) {
+            onDataUpdate(updatedProject)
+          }
         }
       } else {
         setError(result.error || 'PageSpeed analysis failed')
@@ -73,7 +82,22 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
       setIsReanalyzing(false)
       setIsLoading(false)
     }
-  }
+  }, [project, updateAuditProject, onDataUpdate])
+
+  // Auto-load performance analysis when component mounts if no data exists
+  useEffect(() => {
+    if (!pagespeedData && !hasAutoLoaded && !isLoading && !isReanalyzing && project.site_url) {
+      setHasAutoLoaded(true)
+      handleReanalyze()
+    }
+  }, [pagespeedData, hasAutoLoaded, isLoading, isReanalyzing, project.site_url, handleReanalyze])
+
+  // Force auto-load on mount if no data exists
+  useEffect(() => {
+    if (!pagespeedData && project.site_url && !isLoading && !isReanalyzing) {
+      handleReanalyze()
+    }
+  }, [handleReanalyze, pagespeedData, project.site_url, isLoading, isReanalyzing])
 
   // Loading state
   if (isLoading) {
@@ -435,41 +459,55 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Webpage Screenshots</h3>
           <div className="space-y-6">
-            {fullPageScreenshot && (
+            {fullPageScreenshot && fullPageScreenshot.data && fullPageScreenshot.mime_type && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Full Page Screenshot</h4>
                 <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <Image
                     src={`data:${fullPageScreenshot.mime_type};base64,${fullPageScreenshot.data}`}
                     alt="Full page screenshot"
-                    width={fullPageScreenshot.width}
-                    height={fullPageScreenshot.height}
+                    width={fullPageScreenshot.width || 800}
+                    height={fullPageScreenshot.height || 600}
                     className="w-full h-auto"
                     style={{ maxHeight: '600px', objectFit: 'contain' }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Dimensions: {fullPageScreenshot.width} × {fullPageScreenshot.height}px
+                  Dimensions: {fullPageScreenshot.width || 'Unknown'} × {fullPageScreenshot.height || 'Unknown'}px
                 </p>
               </div>
             )}
             
-            {screenshots && (
+            {screenshots && screenshots.data && screenshots.mime_type && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Viewport Screenshot</h4>
                 <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <Image
                     src={`data:${screenshots.mime_type};base64,${screenshots.data}`}
                     alt="Page screenshot"
-                    width={screenshots.width}
-                    height={screenshots.height}
+                    width={screenshots.width || 800}
+                    height={screenshots.height || 600}
                     className="w-full h-auto"
                     style={{ maxHeight: '400px', objectFit: 'contain' }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Dimensions: {screenshots.width} × {screenshots.height}px
+                  Dimensions: {screenshots.width || 'Unknown'} × {screenshots.height || 'Unknown'}px
                 </p>
+              </div>
+            )}
+            
+            {/* Show message if screenshots exist but data is invalid */}
+            {((fullPageScreenshot && (!fullPageScreenshot.data || !fullPageScreenshot.mime_type)) ||
+              (screenshots && (!screenshots.data || !screenshots.mime_type))) && (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600">Screenshot data is not available</p>
+                <p className="text-sm text-gray-500 mt-1">The PageSpeed API did not return valid screenshot data</p>
               </div>
             )}
           </div>

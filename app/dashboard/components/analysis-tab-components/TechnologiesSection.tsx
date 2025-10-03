@@ -48,7 +48,7 @@ export default function TechnologiesSection({ project }: TechnologiesSectionProp
       case 'technologies':
         return <TechnologiesTab project={project} />
       case 'keys':
-        return <KeysTab project={project} />
+        return <KeysTab key={`keys-${project.id}-${project.detected_keys ? 'has-data' : 'no-data'}`} project={project} />
       case 'social':
         return <SocialPreviewTab project={project} />
       default:

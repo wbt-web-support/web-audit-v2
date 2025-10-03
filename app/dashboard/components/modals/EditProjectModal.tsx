@@ -31,7 +31,6 @@ interface EditProjectModalProps {
     brandData: BrandConsistencyData;
     hiddenUrlsList: HiddenUrl[];
   }) => void;
-  onRecrawl: (projectId: string) => void;
   onDelete: (projectId: string) => void;
   isSubmitting: boolean;
 }
@@ -41,7 +40,6 @@ export default function EditProjectModal({
   onClose,
   project,
   onSave,
-  onRecrawl,
   onDelete,
   isSubmitting
 }: EditProjectModalProps) {
@@ -65,12 +63,6 @@ export default function EditProjectModal({
     }
   };
 
-  const handleRecrawl = () => {
-    if (project) {
-      onRecrawl(project.id);
-      onClose();
-    }
-  };
 
   const handleDelete = () => {
     if (project) {

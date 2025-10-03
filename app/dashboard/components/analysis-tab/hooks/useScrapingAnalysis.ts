@@ -47,10 +47,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     }));
   }, []);
 
-  // Check if project has data
-  const hasProjectData = useCallback((project: AuditProject | null) => {
-    return project && project.status === 'completed' && project.scraping_data;
-  }, []);
 
   // Load scraped pages
   const loadScrapedPages = useCallback(async () => {
@@ -58,17 +54,33 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     try {
       const { data: pages, error: pagesError } = await getScrapedPages(projectId);
       if (pagesError) {
+        // Handle "Request already in progress" as a non-error case
+        if (pagesError.message === 'Request already in progress') {
+          console.log('Request already in progress, waiting for existing request to complete');
+          return; // Don't treat this as an error
+        }
+        
         console.error('Error loading scraped pages:', pagesError);
+        console.error('Error details:', JSON.stringify(pagesError, null, 2));
+        // Don't return early - still try to update state to show error
+        updateState({
+          error: `Failed to load scraped pages: ${pagesError.message || 'Unknown error'}`
+        });
         return;
       }
       if (pages) {
         updateState({
           scrapedPages: pages,
-          scrapedPagesLoaded: true
+          scrapedPagesLoaded: true,
+          error: null // Clear any previous errors
         });
       }
     } catch (error) {
-      console.error('Error loading scraped pages:', error);
+      console.error('Unexpected error loading scraped pages:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      updateState({
+        error: `Failed to load scraped pages: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   }, [projectId, getScrapedPages, updateState]);
 
@@ -209,7 +221,7 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         loading: false
       });
     }
-  }, [projectId, getAuditProject, hasProjectData, startScraping, updateState, loadScrapedPages, scrapingInitiated]);
+  }, [projectId, getAuditProject, startScraping, updateState, loadScrapedPages, scrapingInitiated]);
 
   // Handle section change
   const handleSectionChange = useCallback((section: string) => {

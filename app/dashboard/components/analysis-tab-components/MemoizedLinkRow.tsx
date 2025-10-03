@@ -14,10 +14,9 @@ interface LinkData {
 
 interface MemoizedLinkRowProps {
   link: LinkData
-  index: number
 }
 
-const MemoizedLinkRow = React.memo(({ link, index }: MemoizedLinkRowProps) => {
+const MemoizedLinkRow = React.memo(({ link }: MemoizedLinkRowProps) => {
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4">

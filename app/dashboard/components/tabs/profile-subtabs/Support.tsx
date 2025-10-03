@@ -234,7 +234,7 @@ export default function Support({ userProfile }: SupportProps) {
               {ticketsError.includes('not set up') || ticketsError.includes('does not exist') ? (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
                   <p className="text-sm text-yellow-800 mb-2">
-                    <strong>🚨 Setup Required:</strong> The ticket system database tables haven't been created yet.
+                    <strong>🚨 Setup Required:</strong> The ticket system database tables haven&apos;t been created yet.
                   </p>
                   <p className="text-xs text-yellow-700 mb-2">
                     <strong>Quick Fix:</strong> Go to your Supabase dashboard → SQL Editor → Run the <code className="bg-yellow-100 px-1 rounded">create-tickets-table-fixed.sql</code> script.

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology, PageSpeedInsightsData, MetaTagsData, SocialMetaTagsData } from '@/types/audit'
+import { AuditProject, CmsPlugin, CmsTheme, CmsComponent, Technology, PageSpeedInsightsData, MetaTagsData, SocialMetaTagsData, DetectedKeysData } from '@/types/audit'
 
 interface UserProfile {
   id: string
@@ -33,6 +33,7 @@ interface AuditProjectWithUserId extends AuditProject {
   pagespeed_insights_error: string | null
   meta_tags_data: MetaTagsData | null
   social_meta_tags_data: SocialMetaTagsData | null
+  detected_keys: DetectedKeysData | null
 }
 
 interface ScrapedPage {
@@ -147,6 +148,8 @@ interface SupabaseContextType {
   getUserActivity: (userId: string) => Promise<{ data: any | null; error: any }>
   getUserProjects: (userId: string) => Promise<{ data: any[] | null; error: any }>
   getUserSubscription: (userId: string) => Promise<{ data: any | null; error: any }>
+  // Keys detection functions
+  getDetectedKeys: (auditProjectId: string, page?: number, limit?: number, statusFilter?: string, severityFilter?: string) => Promise<{ data: any | null; error: any }>
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
@@ -922,10 +925,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-  const updateAuditProject = async (id: string, updates: Partial<AuditProjectWithUserId>) => {
+  const updateAuditProject = async (id: string, updates: Partial<AuditProjectWithUserId>, retryCount = 0) => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
     }
+
+    const maxRetries = 3
+    const retryDelay = 1000 * Math.pow(2, retryCount) // Exponential backoff
 
     try {
       const { data, error } = await supabase
@@ -946,6 +952,20 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Unexpected error updating audit project:', error)
       console.error('Unexpected error details:', JSON.stringify(error, null, 2))
+      
+      // Check if it's a network error and retry
+      if (error instanceof Error && 
+          (error.message.includes('Failed to fetch') || 
+           error.message.includes('NetworkError') ||
+           error.message.includes('fetch')) &&
+          retryCount < maxRetries) {
+        
+        console.log(`Retrying updateAuditProject in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`)
+        
+        await new Promise(resolve => setTimeout(resolve, retryDelay))
+        return updateAuditProject(id, updates, retryCount + 1)
+      }
+      
       return { data: null, error: error instanceof Error ? error : { message: 'Unknown error occurred' } }
     }
   }
@@ -1004,29 +1024,75 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const getScrapedPages = async (auditProjectId: string) => {
+  // Global request throttling to prevent multiple simultaneous calls
+  const activeRequests = new Map<string, Promise<{ data: any[] | null; error: any }>>()
+  
+  const getScrapedPages = async (auditProjectId: string, retryCount = 0): Promise<{ data: any[] | null; error: any }> => {
     if (!user) {
       return { data: null, error: { message: 'No user logged in' } }
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('scraped_pages')
-        .select('*')
-        .eq('audit_project_id', auditProjectId)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching scraped pages:', error)
-        return { data: null, error }
-      }
-
-      return { data, error: null }
-    } catch (error) {
-      console.error('Error fetching scraped pages:', error)
-      return { data: null, error }
+    // Check if request is already in progress for this project
+    if (activeRequests.has(auditProjectId)) {
+      console.log('Request already in progress for project:', auditProjectId, '- returning existing promise')
+      return activeRequests.get(auditProjectId)!
     }
+
+    const maxRetries = 1 // Further reduced to prevent server overload
+    const retryDelay = 3000 * Math.pow(2, retryCount) // Even longer delays
+
+    // Create the request promise
+    const requestPromise = (async (): Promise<{ data: any[] | null; error: any }> => {
+      try {
+        const { data, error } = await supabase
+          .from('scraped_pages')
+          .select('*')
+          .eq('audit_project_id', auditProjectId)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching scraped pages:', error)
+          console.error('Error details:', JSON.stringify(error, null, 2))
+          
+          // Handle database timeout errors specifically
+          if (error.code === '57014') {
+            console.log('Database timeout detected, not retrying to prevent server overload')
+            return { data: null, error: { message: 'Database timeout - please try again later' } }
+          }
+          
+          return { data: null, error }
+        }
+
+        return { data, error: null }
+      } catch (error) {
+        console.error('Unexpected error fetching scraped pages:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        
+        // Check if it's a network error and retry (but not for timeout errors)
+        if (error instanceof Error && 
+            (error.message.includes('Failed to fetch') || 
+             error.message.includes('NetworkError') ||
+             error.message.includes('fetch')) &&
+            !error.message.includes('timeout') &&
+            retryCount < maxRetries) {
+          
+          console.log(`Retrying getScrapedPages in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`)
+          
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+          return getScrapedPages(auditProjectId, retryCount + 1)
+        }
+        
+        return { data: null, error: error instanceof Error ? error : { message: 'Unknown error occurred' } }
+      } finally {
+        // Always remove from active requests when done
+        activeRequests.delete(auditProjectId)
+      }
+    })()
+
+    // Store the promise and return it
+    activeRequests.set(auditProjectId, requestPromise)
+    return requestPromise
   }
 
   const getScrapedPage = async (id: string) => {
@@ -2184,6 +2250,77 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Fetch detected keys from database with pagination and filtering
+  const getDetectedKeys = async (auditProjectId: string, page = 1, limit = 20, statusFilter?: string, severityFilter?: string) => {
+    if (!user) {
+      return { data: null, error: { message: 'No user logged in' } }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('audit_projects')
+        .select('detected_keys')
+        .eq('id', auditProjectId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching detected keys:', error)
+        return { data: null, error }
+      }
+
+      if (!data?.detected_keys) {
+        return { data: { keys: [], total: 0, page, limit }, error: null }
+      }
+
+      const keysData = data.detected_keys
+      let allKeys = keysData.detected_keys || []
+      
+      // Apply filters
+      if (statusFilter && statusFilter !== 'all') {
+        allKeys = allKeys.filter((key: any) => key.status === statusFilter)
+      }
+      
+      if (severityFilter && severityFilter !== 'all') {
+        allKeys = allKeys.filter((key: any) => key.severity === severityFilter)
+      }
+      
+      // Calculate pagination
+      const total = allKeys.length
+      const startIndex = (page - 1) * limit
+      const endIndex = startIndex + limit
+      const paginatedKeys = allKeys.slice(startIndex, endIndex)
+
+      return {
+        data: {
+          keys: paginatedKeys,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          filters: {
+            status: statusFilter || 'all',
+            severity: severityFilter || 'all'
+          },
+          summary: {
+            totalKeys: keysData.total_keys || 0,
+            exposedKeys: keysData.exposed_keys || 0,
+            secureKeys: keysData.secure_keys || 0,
+            criticalKeys: keysData.critical_keys || 0,
+            highRiskKeys: keysData.high_risk_keys || 0,
+            analysisComplete: keysData.analysis_complete || false,
+            processingTime: keysData.processing_time || 0
+          }
+        },
+        error: null
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching detected keys:', error)
+      return { data: null, error }
+    }
+   }
+
+
   const value = {
     user,
     userProfile,
@@ -2232,6 +2369,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     getUserActivity,
     getUserProjects,
     getUserSubscription,
+    getDetectedKeys,
   }
 
   return (

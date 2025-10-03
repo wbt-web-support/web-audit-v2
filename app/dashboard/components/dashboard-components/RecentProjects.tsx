@@ -43,45 +43,7 @@ export default function RecentProjects({
     // Update the ref with current projects
     previousProjectsRef.current = currentProjects;
   }, [projects, refreshProjects, projectsLoading]);
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-  const getStatusDisplayName = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'In Progress';
-      case 'pending':
-        return 'Pending';
-      case 'failed':
-        return 'Failed';
-      default:
-        return status;
-    }
-  };
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString();
-  };
+
   const getProjectName = (siteUrl: string) => {
     try {
       const url = new URL(siteUrl);
@@ -203,5 +165,5 @@ export default function RecentProjects({
           </button>
         </div>
       </div>
-    </motion.div>;
+    </motion.div>
 }

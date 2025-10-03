@@ -24,7 +24,15 @@ interface DashboardContentProps {
   projectsError: string | null
   refreshProjects: () => Promise<void>
   onProjectSelect?: (projectId: string) => void
-  onUpdateProject?: (projectId: string, data: any) => Promise<void>
+  onUpdateProject?: (projectId: string, data: {
+    siteUrl: string;
+    pageType: 'single' | 'multiple';
+    brandConsistency: boolean;
+    hiddenUrls: boolean;
+    keysCheck: boolean;
+    brandData: any;
+    hiddenUrlsList: any[];
+  }) => Promise<void>
   onDeleteProject?: (projectId: string) => Promise<void>
   onRecrawlProject?: (projectId: string) => Promise<void>
 }

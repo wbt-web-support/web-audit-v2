@@ -205,7 +205,9 @@ export default function DashboardOverview({
         seo_analysis: null,
         // Meta tags fields
         meta_tags_data: null,
-        social_meta_tags_data: null
+        social_meta_tags_data: null,
+        // Keys detection fields
+        detected_keys: null
       }
 
       

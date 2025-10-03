@@ -1,22 +1,139 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { detectKeysInPages } from '@/lib/key-detection'
 
 interface ScrapingServiceProps {
   projectId: string | null
-  scrapingData: any
+  scrapingData: ScrapingData
   onScrapingComplete: (success: boolean) => void
   forceProcess?: boolean
 }
 
-export default function ScrapingService({ projectId, scrapingData, onScrapingComplete, forceProcess = false }: ScrapingServiceProps) {
+interface ScrapingData {
+  pages: PageData[]
+  extractedData?: {
+    cms?: CmsData
+    technologies?: TechnologyData[]
+  }
+  summary?: {
+    totalPages?: number
+    totalLinks?: number
+    totalImages?: number
+    totalMetaTags?: number
+    technologiesFound?: number
+    cmsDetected?: boolean
+    technologies?: string[]
+    totalHtmlContent?: number
+    averageHtmlPerPage?: number
+  }
+  performance?: {
+    pagesPerSecond?: number
+    totalTime?: number
+  }
+  responseTime?: number
+}
+
+interface PageData {
+  url: string
+  statusCode: number
+  title: string
+  html: string
+  htmlContentLength: number
+  links?: LinkData[]
+  images?: ImageData[]
+  metaTags?: MetaTagData[]
+  technologies?: TechnologyData[]
+}
+
+interface LinkData {
+  href: string
+  text: string
+  title?: string
+  target?: string
+  rel?: string
+}
+
+interface ImageData {
+  src: string
+  alt?: string
+  title?: string
+  width?: number
+  height?: number
+}
+
+interface MetaTagData {
+  name?: string
+  property?: string
+  content: string
+  httpEquiv?: string
+}
+
+interface TechnologyData {
+  name: string
+  version?: string | null
+  category?: string
+  confidence?: number
+  detection_method?: string | null
+  description?: string | null
+  website?: string | null
+  icon?: string | null
+  first_seen?: string
+  last_seen?: string
+}
+
+interface CmsData {
+  type?: string
+  version?: string
+  plugins?: PluginData[]
+  themes?: ThemeData[]
+  components?: ComponentData[]
+  confidence?: number
+  detection_method?: string
+  metadata?: Record<string, unknown>
+}
+
+interface PluginData {
+  name: string
+  version?: string | null
+  active?: boolean
+  path?: string | null
+  description?: string | null
+  author?: string | null
+  confidence?: number
+  detection_method?: string | null
+}
+
+interface ThemeData {
+  name: string
+  version?: string | null
+  active?: boolean
+  path?: string | null
+  description?: string | null
+  author?: string | null
+  confidence?: number
+  detection_method?: string | null
+}
+
+interface ComponentData {
+  name: string
+  type: string
+  version?: string | null
+  active?: boolean
+  path?: string | null
+  description?: string | null
+  confidence?: number
+  detection_method?: string | null
+}
+
+export default function ScrapingService({ projectId, scrapingData, onScrapingComplete }: ScrapingServiceProps) {
   const { createScrapedPages, updateAuditProject, processMetaTagsData, getAuditProject } = useSupabase()
   const isProcessing = useRef(false)
   const processedDataRef = useRef<string | null>(null)
 
   // Function to process CMS data and remove duplicates
-  const processCmsData = (cmsData: any) => {
+  const processCmsData = (cmsData: CmsData | null | undefined) => {
     if (!cmsData) {
       return {
         cms_type: null,
@@ -32,7 +149,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process plugins - remove duplicates and add metadata
     const uniquePlugins = cmsData.plugins ? 
-      cmsData.plugins.reduce((acc: any[], plugin: any) => {
+      cmsData.plugins.reduce((acc: PluginData[], plugin: PluginData) => {
         const existing = acc.find(p => p.name === plugin.name)
         if (!existing) {
           acc.push({
@@ -47,7 +164,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           })
         } else {
           // Update existing plugin with higher confidence or more info
-          if ((plugin.confidence || 0.8) > existing.confidence) {
+          if ((plugin.confidence || 0.8) > (existing.confidence || 0)) {
             Object.assign(existing, {
               version: plugin.version || existing.version,
               active: plugin.active !== false ? plugin.active : existing.active,
@@ -64,7 +181,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process themes - remove duplicates and add metadata
     const uniqueThemes = cmsData.themes ? 
-      cmsData.themes.reduce((acc: any[], theme: any) => {
+      cmsData.themes.reduce((acc: ThemeData[], theme: ThemeData) => {
         const existing = acc.find(t => t.name === theme.name)
         if (!existing) {
           acc.push({
@@ -79,7 +196,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           })
         } else {
           // Update existing theme with higher confidence or more info
-          if ((theme.confidence || 0.8) > existing.confidence) {
+          if ((theme.confidence || 0.8) > (existing.confidence || 0)) {
             Object.assign(existing, {
               version: theme.version || existing.version,
               active: theme.active !== false ? theme.active : existing.active,
@@ -96,7 +213,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Process components - remove duplicates and add metadata
     const uniqueComponents = cmsData.components ? 
-      cmsData.components.reduce((acc: any[], component: any) => {
+      cmsData.components.reduce((acc: ComponentData[], component: ComponentData) => {
         const existing = acc.find(c => c.name === component.name && c.type === component.type)
         if (!existing) {
           acc.push({
@@ -111,7 +228,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           })
         } else {
           // Update existing component with higher confidence or more info
-          if ((component.confidence || 0.8) > existing.confidence) {
+          if ((component.confidence || 0.8) > (existing.confidence || 0)) {
             Object.assign(existing, {
               version: component.version || existing.version,
               active: component.active !== false ? component.active : existing.active,
@@ -138,18 +255,18 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         total_plugins: uniquePlugins?.length || 0,
         total_themes: uniqueThemes?.length || 0,
         total_components: uniqueComponents?.length || 0,
-        active_plugins: uniquePlugins?.filter((p: any) => p.active).length || 0,
-        active_themes: uniqueThemes?.filter((t: any) => t.active).length || 0,
-        active_components: uniqueComponents?.filter((c: any) => c.active).length || 0,
+        active_plugins: uniquePlugins?.filter((p: PluginData) => p.active).length || 0,
+        active_themes: uniqueThemes?.filter((t: ThemeData) => t.active).length || 0,
+        active_components: uniqueComponents?.filter((c: ComponentData) => c.active).length || 0,
         ...cmsData.metadata
       }
     }
   }
 
   // Function to process technologies data and remove duplicates
-  const processTechnologiesData = (technologiesData: any, summaryTechnologies: string[] = []) => {
+  const processTechnologiesData = (technologiesData: TechnologyData[] | null | undefined, summaryTechnologies: string[] = []) => {
     // Combine both detailed technologies and summary technologies
-    const allTechnologies: any[] = []
+    const allTechnologies: TechnologyData[] = []
     
     // Add detailed technologies if available
     if (technologiesData && Array.isArray(technologiesData)) {
@@ -199,7 +316,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
     }
 
     // Process technologies - remove duplicates and add metadata
-    const uniqueTechnologies = allTechnologies.reduce((acc: any[], tech: any) => {
+    const uniqueTechnologies = allTechnologies.reduce((acc: TechnologyData[], tech: TechnologyData) => {
       const existing = acc.find(t => t.name === tech.name && t.category === (tech.category || 'unknown'))
       
       if (!existing) {
@@ -217,7 +334,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         })
       } else {
         // Update existing technology with higher confidence or more info
-        if ((tech.confidence || 0.8) > existing.confidence) {
+        if ((tech.confidence || 0.8) > (existing.confidence || 0)) {
           Object.assign(existing, {
             version: tech.version || existing.version,
             confidence: tech.confidence || existing.confidence,
@@ -237,11 +354,11 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
     // Calculate overall confidence
     const overallConfidence = uniqueTechnologies.length > 0 
-      ? uniqueTechnologies.reduce((sum, tech) => sum + tech.confidence, 0) / uniqueTechnologies.length
+      ? uniqueTechnologies.reduce((sum, tech) => sum + (tech.confidence || 0), 0) / uniqueTechnologies.length
       : 0
 
     // Group technologies by category
-    const technologiesByCategory = uniqueTechnologies.reduce((acc: any, tech: any) => {
+    const technologiesByCategory = uniqueTechnologies.reduce((acc: Record<string, TechnologyData[]>, tech: TechnologyData) => {
       const category = tech.category || 'unknown'
       if (!acc[category]) {
         acc[category] = []
@@ -259,16 +376,52 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         total_technologies: uniqueTechnologies.length,
         categories: Object.keys(technologiesByCategory),
         technologies_by_category: technologiesByCategory,
-        high_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence >= 0.8).length,
-        medium_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence >= 0.5 && t.confidence < 0.8).length,
-        low_confidence_technologies: uniqueTechnologies.filter((t: any) => t.confidence < 0.5).length
+        high_confidence_technologies: uniqueTechnologies.filter((t: TechnologyData) => (t.confidence || 0) >= 0.8).length,
+        medium_confidence_technologies: uniqueTechnologies.filter((t: TechnologyData) => (t.confidence || 0) >= 0.5 && (t.confidence || 0) < 0.8).length,
+        low_confidence_technologies: uniqueTechnologies.filter((t: TechnologyData) => (t.confidence || 0) < 0.5).length
       }
     }
   }
 
 
+  // Function to process keys detection from all pages
+  const processKeysDetection = async (scrapingData: ScrapingData, projectId: string) => {
+    try {
+      console.log('🔑 Starting keys detection analysis...')
+      
+      if (!scrapingData.pages || !Array.isArray(scrapingData.pages)) {
+        console.warn('⚠️ No pages data found for keys detection')
+        return null
+      }
+
+      // Prepare pages data for key detection
+      const pagesForDetection = scrapingData.pages.map((page: PageData, index: number) => ({
+        pageName: page.title || `Page ${index + 1}`,
+        pageUrl: page.url,
+        pageHtml: page.html
+      }))
+
+      console.log(`🔍 Analyzing ${pagesForDetection.length} pages for security keys...`)
+
+      // Detect keys in all pages
+      const keyDetectionResult = await detectKeysInPages(pagesForDetection)
+      
+      console.log('🔑 Keys detection completed:', {
+        totalKeys: keyDetectionResult.summary.totalKeys,
+        exposedKeys: keyDetectionResult.summary.exposedKeys,
+        secureKeys: keyDetectionResult.summary.secureKeys,
+        criticalKeys: keyDetectionResult.summary.criticalKeys
+      })
+
+      return keyDetectionResult
+    } catch (error) {
+      console.error('❌ Keys detection failed:', error)
+      return null
+    }
+  }
+
   // Function to process scraping data and save to database
-  const processScrapingData = async (scrapingData: any, projectId: string) => {
+  const processScrapingData = useCallback(async (scrapingData: ScrapingData, projectId: string) => {
     try {
       
       
@@ -297,7 +450,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           meta[name^="slack:"]
         `)
         
-        const extractedTags: any[] = []
+        const extractedTags: MetaTagData[] = []
         socialMetaTags.forEach((tag) => {
           const element = tag as HTMLMetaElement
           extractedTags.push({
@@ -312,7 +465,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       }
 
       // Prepare scraped pages data (including HTML content for individual pages)
-      const scrapedPagesData = scrapingData.pages.map((page: any) => {
+      const scrapedPagesData = scrapingData.pages.map((page: PageData) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
         return {
@@ -320,7 +473,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           url: page.url,
           status_code: page.statusCode,
           title: page.title,
-          description: page.metaTags?.find((tag: any) => tag.name === 'description')?.content || null,
+          description: page.metaTags?.find((tag: MetaTagData) => tag.name === 'description')?.content || null,
           html_content: page.html, // Keep original HTML content
           html_content_length: page.htmlContentLength, // Keep original HTML length
           links_count: page.links?.length || 0,
@@ -329,14 +482,15 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
           images: page.images || null, // Store actual images data
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
-          technologies: page.technologies || null,
+          technologies: page.technologies?.map(tech => tech.name) || null,
           cms_type: scrapingData.extractedData?.cms?.type || null,
           cms_version: scrapingData.extractedData?.cms?.version || null,
-          cms_plugins: scrapingData.extractedData?.cms?.plugins || null,
+          cms_plugins: scrapingData.extractedData?.cms?.plugins?.map(plugin => plugin.name) || null,
           social_meta_tags: socialMetaTags, // Store full social meta tags data
           social_meta_tags_count: socialMetaTagsCount, // Store count as well
           is_external: false, // Main page is not external
-          response_time: scrapingData.responseTime
+          response_time: scrapingData.responseTime || null,
+          performance_analysis: null // Add missing required property
         }
       })
 
@@ -370,13 +524,17 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         scrapingData.extractedData?.technologies,
         scrapingData.summary?.technologies
       )
+
+      // Process keys detection from all pages
+      console.log('🔑 Starting keys detection analysis...')
+      const keysDetectionResult = await processKeysDetection(scrapingData, projectId)
       
       // Aggregate images and links from all pages
       console.log('🖼️ Aggregating images and links data from all pages...')
-      const allImages: any[] = []
-      const allLinks: any[] = []
+      const allImages: (ImageData & { page_url: string; page_title: string; page_index: number })[] = []
+      const allLinks: (LinkData & { page_url: string; page_title: string; page_index: number })[] = []
       
-      scrapingData.pages.forEach((page: any, index: number) => {
+      scrapingData.pages.forEach((page: PageData, index: number) => {
         console.log(`📄 Processing page ${index + 1} for images and links:`, {
           url: page.url,
           imagesCount: page.images?.length || 0,
@@ -385,7 +543,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         
         // Add images with page context
         if (page.images && Array.isArray(page.images)) {
-          page.images.forEach((image: any) => {
+          page.images.forEach((image: ImageData) => {
             allImages.push({
               ...image,
               page_url: page.url,
@@ -397,7 +555,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         
         // Add links with page context
         if (page.links && Array.isArray(page.links)) {
-          page.links.forEach((link: any) => {
+          page.links.forEach((link: LinkData) => {
             allLinks.push({
               ...link,
               page_url: page.url,
@@ -424,6 +582,18 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         cms_detected: scrapingData.summary?.cmsDetected || false,
         ...cmsData, // Spread CMS data
         ...technologiesData, // Spread technologies data
+        // Add keys detection data to dedicated column
+        detected_keys: keysDetectionResult ? {
+          total_keys: keysDetectionResult.summary.totalKeys,
+          exposed_keys: keysDetectionResult.summary.exposedKeys,
+          secure_keys: keysDetectionResult.summary.secureKeys,
+          critical_keys: keysDetectionResult.summary.criticalKeys,
+          high_risk_keys: keysDetectionResult.summary.highRiskKeys,
+          analysis_complete: keysDetectionResult.summary.analysisComplete,
+          processing_time: keysDetectionResult.summary.processingTime,
+          detected_keys: keysDetectionResult.allKeys,
+          keys_by_page: keysDetectionResult.keysByPage
+        } : null,
         total_html_content: scrapingData.summary?.totalHtmlContent || 0,
         average_html_per_page: scrapingData.summary?.averageHtmlPerPage || 0,
         pages_per_second: scrapingData.performance?.pagesPerSecond || 0,
@@ -484,7 +654,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
         
         // Verify the data was saved by fetching it back
         try {
-          const { data: verifyData, error: verifyError } = await getAuditProject(projectId)
+          const { error: verifyError } = await getAuditProject(projectId)
           if (verifyError) {
             console.warn('⚠️ Could not verify saved data:', verifyError)
           } else {
@@ -507,7 +677,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       console.error('❌ Error processing scraping data:', error)
       onScrapingComplete(false)
     }
-  }
+  }, [createScrapedPages, updateAuditProject, processMetaTagsData, getAuditProject, onScrapingComplete])
 
   // Process data when component receives it using useEffect
   useEffect(() => {

@@ -16,11 +16,10 @@ interface ImageData {
 
 interface MemoizedImageRowProps {
   img: ImageData
-  index: number
   onImageClick: (image: ImageData) => void
 }
 
-const MemoizedImageRow = React.memo(({ img, index, onImageClick }: MemoizedImageRowProps) => {
+const MemoizedImageRow = React.memo(({ img, onImageClick }: MemoizedImageRowProps) => {
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">

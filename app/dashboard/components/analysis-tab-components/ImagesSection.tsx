@@ -148,6 +148,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             
             
             if (src) {
+              // Filter out localhost URLs
+              if (src.includes('localhost') || src.includes('127.0.0.1')) {
+                return
+              }
+              
               // Convert relative URLs to absolute
               let absoluteUrl = src
               if (!src.startsWith('http')) {
@@ -157,6 +162,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 } else {
                   absoluteUrl = `${baseUrl}/${src}`
                 }
+              }
+              
+              // Convert HTTP to HTTPS
+              if (absoluteUrl.startsWith('http://')) {
+                absoluteUrl = absoluteUrl.replace('http://', 'https://')
               }
               
               
@@ -204,6 +214,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               
               
               if (src) {
+                // Filter out localhost URLs
+                if (src.includes('localhost') || src.includes('127.0.0.1')) {
+                  return
+                }
+                
                 // Convert relative URLs to absolute
                 let absoluteUrl = src
                 if (!src.startsWith('http')) {
@@ -213,6 +228,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   } else {
                     absoluteUrl = `${baseUrl}/${src}`
                   }
+                }
+                
+                // Convert HTTP to HTTPS
+                if (absoluteUrl.startsWith('http://')) {
+                  absoluteUrl = absoluteUrl.replace('http://', 'https://')
                 }
                 
                 

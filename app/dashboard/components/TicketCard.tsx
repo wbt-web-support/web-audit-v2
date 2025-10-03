@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
@@ -34,7 +34,7 @@ interface TicketCardProps {
 }
 
 export default function TicketCard({ ticket }: TicketCardProps) {
-  const { createTicketMessage, getTicketMessages, userProfile } = useSupabase()
+  const { createTicketMessage, getTicketMessages } = useSupabase()
   const [isExpanded, setIsExpanded] = useState(false)
   const [messages, setMessages] = useState<TicketMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -42,14 +42,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasDatabaseError, setHasDatabaseError] = useState(false)
 
-  // Load messages when ticket is expanded
-  useEffect(() => {
-    if (isExpanded) {
-      loadMessages()
-    }
-  }, [isExpanded, ticket.id])
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     setIsLoading(true)
     try {
       console.log('Loading messages for ticket:', ticket.id)
@@ -98,7 +91,14 @@ export default function TicketCard({ ticket }: TicketCardProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [getTicketMessages, ticket.id])
+
+  // Load messages when ticket is expanded
+  useEffect(() => {
+    if (isExpanded) {
+      loadMessages()
+    }
+  }, [isExpanded, ticket.id, loadMessages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -248,7 +248,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
                           <p className="text-sm font-medium text-red-800">Database Setup Required</p>
                         </div>
                         <p className="text-xs text-red-700">
-                          The ticket system database tables haven't been created yet or RLS policies are too restrictive. 
+                          The ticket system database tables haven&apos;t been created yet or RLS policies are too restrictive. 
                           Please run the <code className="bg-red-100 px-1 rounded">fix-ticket-messages-rls-permissive.sql</code> script 
                           in your Supabase SQL Editor to fix the RLS policies and enable the chat functionality.
                         </p>

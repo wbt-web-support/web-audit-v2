@@ -36,6 +36,8 @@ export interface AuditProject {
   // Meta tags data storage
   meta_tags_data: MetaTagsData | null
   social_meta_tags_data: SocialMetaTagsData | null
+  // Keys detection data storage
+  detected_keys: DetectedKeysData | null
 }
 
 export interface SEOIssue {
@@ -67,6 +69,29 @@ export interface SEOAnalysisResult {
     totalHighlights: number
   }
   recommendations: string[]
+}
+
+export interface DetectedKeysData {
+  total_keys: number
+  exposed_keys: number
+  secure_keys: number
+  critical_keys: number
+  high_risk_keys: number
+  analysis_complete: boolean
+  processing_time: number
+  detected_keys: Array<{
+    id: string
+    type: string
+    key: string
+    location: string
+    status: 'exposed' | 'secure' | 'warning'
+    severity: 'critical' | 'high' | 'medium' | 'low'
+    description: string
+    pattern: string
+    confidence: number
+    context?: string
+  }>
+  keys_by_page: Record<string, any[]>
 }
 
 export interface CmsPlugin {

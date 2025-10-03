@@ -87,7 +87,7 @@ export default function Security({ userProfile }: SecurityProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            We'll send you a secure link to reset your password at <strong>{userProfile.email}</strong>
+            We&apos;ll send you a secure link to reset your password at <strong>{userProfile.email}</strong>
           </motion.p>
 
           {/* Message Display */}
@@ -146,7 +146,7 @@ export default function Security({ userProfile }: SecurityProps) {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             >
-              Didn't receive the email? Check your spam folder or try again.
+              Didn&apos;t receive the email? Check your spam folder or try again.
             </motion.p>
           </motion.div>
         </div>

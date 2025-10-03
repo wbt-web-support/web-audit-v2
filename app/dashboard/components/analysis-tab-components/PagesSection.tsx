@@ -1,24 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
+import { ScrapedPage } from '../analysis-tab/types'
+
 interface PagesSectionProps {
-  scrapedPages: Array<{
-    id: string;
-    url: string;
-    title: string | null;
-    status_code: number | null;
-    created_at: string;
-    description?: string | null;
-    links_count: number;
-    images_count: number;
-    meta_tags_count: number;
-    technologies_count: number;
-  }>
+  scrapedPages: ScrapedPage[]
   projectId?: string
   onPageSelect?: (pageId: string) => void
-  onPagesUpdate?: (pages: any[]) => void
+  onPagesUpdate?: (pages: ScrapedPage[]) => void
 }
 
 export default function PagesSection({ 
@@ -30,43 +21,44 @@ export default function PagesSection({
   const { getScrapedPages } = useSupabase()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pages, setPages] = useState(scrapedPages)
-  const [hasLoadedPages, setHasLoadedPages] = useState(false)
+  const [pages, setPages] = useState(scrapedPages || [])
+  const [hasLoadedPages, setHasLoadedPages] = useState(scrapedPages && scrapedPages.length > 0)
   const [sortBy, setSortBy] = useState<'created_at' | 'title' | 'status_code'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'error' | 'redirect'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [isRequestInProgress, setIsRequestInProgress] = useState(false)
 
   // Update pages when scrapedPages prop changes and handle persistence
   useEffect(() => {
     if (scrapedPages && scrapedPages.length > 0) {
       setPages(scrapedPages)
       setHasLoadedPages(true)
-    } else if (!hasLoadedPages && projectId) {
-      // Auto-load pages if we don't have any data yet
-      fetchPages()
     }
-  }, [scrapedPages, hasLoadedPages, projectId])
-
-  // Auto-load pages when component mounts if no data is available
-  useEffect(() => {
-    if (projectId && !hasLoadedPages && pages.length === 0) {
-      fetchPages()
-    }
-  }, [projectId, hasLoadedPages, pages.length])
+  }, [scrapedPages])
 
   // Fetch pages function
-  const fetchPages = async () => {
-    if (!projectId) return
+  const fetchPages = useCallback(async () => {
+    if (!projectId || isRequestInProgress) return
     
+    setIsRequestInProgress(true)
     setIsLoading(true)
     setError(null)
     
     try {
       const { data, error: fetchError } = await getScrapedPages(projectId)
       if (fetchError) {
-        throw new Error(fetchError.message || 'Failed to fetch pages')
+        console.error('Error fetching pages:', fetchError)
+        console.error('Error details:', JSON.stringify(fetchError, null, 2))
+        
+        // Handle database timeout errors gracefully
+        if (fetchError.code === '57014') {
+          setError('Database timeout - please try again later')
+        } else {
+          throw new Error(fetchError.message || 'Failed to fetch pages')
+        }
+        return
       }
       
       if (data) {
@@ -78,11 +70,20 @@ export default function PagesSection({
       }
     } catch (err) {
       console.error('Error fetching pages:', err)
+      console.error('Error details:', JSON.stringify(err, null, 2))
       setError(err instanceof Error ? err.message : 'Failed to fetch pages')
     } finally {
       setIsLoading(false)
+      setIsRequestInProgress(false)
     }
-  }
+  }, [projectId, isRequestInProgress, getScrapedPages, onPagesUpdate])
+
+  // Auto-load pages when component mounts if no data is available - single consolidated effect
+  useEffect(() => {
+    if (projectId && !hasLoadedPages && pages.length === 0 && !isLoading && !isRequestInProgress) {
+      fetchPages()
+    }
+  }, [projectId, hasLoadedPages, pages.length, isLoading, isRequestInProgress, fetchPages])
 
   // Filter and sort pages
   const filteredAndSortedPages = pages
@@ -94,7 +95,7 @@ export default function PagesSection({
       return true
     })
     .sort((a, b) => {
-      let aValue: any, bValue: any
+      let aValue: string | number, bValue: string | number
       
       switch (sortBy) {
         case 'title':
@@ -161,7 +162,7 @@ export default function PagesSection({
           <label className="text-sm font-medium text-gray-700">Filter:</label>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as 'all' | 'success' | 'error' | 'redirect')}
             className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Pages</option>
@@ -175,7 +176,7 @@ export default function PagesSection({
           <label className="text-sm font-medium text-gray-700">Sort by:</label>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as 'created_at' | 'title' | 'status_code')}
             className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="created_at">Date</option>
@@ -188,7 +189,7 @@ export default function PagesSection({
           <label className="text-sm font-medium text-gray-700">Order:</label>
           <select
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as any)}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
             className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="desc">Descending</option>

@@ -33,7 +33,7 @@ export default function LazyImage({
   onError
 }: LazyImageProps) {
   const [isVisible, setIsVisible] = useState(priority) // Load immediately if priority
-  const [hasLoaded, setHasLoaded] = useState(false)
+  const [, setHasLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
   const imgRef = useRef<HTMLDivElement>(null)
 

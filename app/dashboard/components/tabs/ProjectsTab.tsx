@@ -881,7 +881,6 @@ export default function ProjectsTab({
         }}
         project={selectedProject}
         onSave={handleSaveProject}
-        onRecrawl={handleRecrawlProject}
         onDelete={handleDeleteProject}
         isSubmitting={isSubmitting}
       />

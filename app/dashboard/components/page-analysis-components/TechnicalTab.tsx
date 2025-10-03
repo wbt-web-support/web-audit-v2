@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import KeysTab from '../analysis-tab-components/subtabs/KeysTab'
 import TechnologiesTab from '../analysis-tab-components/subtabs/TechnologiesTab'
 
 interface TechnicalTabProps {
@@ -290,9 +289,7 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               seo_analysis: null,
               meta_tags_data: null,
               social_meta_tags_data: null,
-             
-              images: null,
-              links: null
+              detected_keys: null
             }} 
           />
         )

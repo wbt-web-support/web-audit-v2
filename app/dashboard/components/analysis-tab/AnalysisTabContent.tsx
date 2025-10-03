@@ -127,6 +127,7 @@ export default function AnalysisTabContent({
         {state.activeSection === 'pages' && (
           <Suspense fallback={<SectionSkeleton />}>
             <PagesSection 
+              key={`pages-${projectId}-${state.scrapedPages?.length || 0}`}
               scrapedPages={state.scrapedPages} 
               projectId={projectId} 
               onPageSelect={onPageSelect}
@@ -142,7 +143,11 @@ export default function AnalysisTabContent({
         
         {state.activeSection === 'technologies' && (
           <Suspense fallback={<SectionSkeleton />}>
-            <TechnologiesSection project={state.project} scrapedPages={state.scrapedPages} />
+            <TechnologiesSection 
+              key={`technologies-${projectId}-${state.project?.detected_keys ? 'has-data' : 'no-data'}`}
+              project={state.project} 
+              scrapedPages={state.scrapedPages} 
+            />
           </Suspense>
         )}
         
@@ -155,6 +160,7 @@ export default function AnalysisTabContent({
         {state.activeSection === 'performance' && (
           <Suspense fallback={<SectionSkeleton />}>
             <PerformanceSection 
+              key={`performance-${projectId}-${state.project?.pagespeed_insights_data ? 'has-data' : 'no-data'}`}
               project={state.project} 
               onDataUpdate={(updatedProject) => {
                 updateState({ project: updatedProject })

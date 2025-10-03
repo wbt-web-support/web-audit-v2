@@ -67,7 +67,7 @@ export default function SEOAnalysisSection({
         console.log('🔍 SEO Analysis - Project scraping data exists:', !!project.scraping_data);
         if (project.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
           console.log('🔍 SEO Analysis - Project scraping pages count:', project.scraping_data.pages.length);
-          console.log('🔍 SEO Analysis - First scraping page HTML length:', (project.scraping_data.pages[0] as any)?.html?.length || 0);
+          console.log('🔍 SEO Analysis - First scraping page HTML length:', (project.scraping_data.pages[0] as { html?: string })?.html?.length || 0);
         }
       }
       
@@ -155,7 +155,7 @@ export default function SEOAnalysisSection({
           // Try to get HTML from project scraping data as fallback
           if (project?.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
             console.log('🔍 SEO Analysis - Project scraping pages:', project.scraping_data.pages.length);
-            const scrapingPage = project.scraping_data.pages.find((p: any) => p.html && p.html.trim().length > 0);
+            const scrapingPage = project.scraping_data.pages.find((p: { html?: string }) => p.html && p.html.trim().length > 0);
             if (scrapingPage?.html) {
               htmlContent = scrapingPage.html;
               siteUrl = project.site_url;
@@ -173,13 +173,14 @@ export default function SEOAnalysisSection({
           console.log('🔄 SEO Analysis - Trying final fallback methods...');
           
           // Try different possible structures in scraping_data
+          const scrapingData = project.scraping_data as Record<string, unknown>;
           const possibleHtmlSources = [
-            (project.scraping_data as any).html,
-            (project.scraping_data as any).content,
-            (project.scraping_data as any).body,
-            (project.scraping_data as any).page?.html,
-            (project.scraping_data as any).homepage?.html,
-            (project.scraping_data as any).main_page?.html
+            scrapingData.html,
+            scrapingData.content,
+            scrapingData.body,
+            (scrapingData.page as { html?: string })?.html,
+            (scrapingData.homepage as { html?: string })?.html,
+            (scrapingData.main_page as { html?: string })?.html
           ];
           
           for (const source of possibleHtmlSources) {
@@ -228,8 +229,11 @@ export default function SEOAnalysisSection({
           });
           if (updateError) {
             console.error('❌ Failed to store SEO analysis:', updateError);
-            setError('Analysis completed but failed to save to database');
-          } else {}
+            // Don't set error for database update failures - analysis still completed successfully
+            console.log('✅ SEO analysis completed successfully, but database update failed');
+          } else {
+            console.log('✅ SEO analysis completed and saved to database');
+          }
         }
       } else {
         setError('No HTML content available for analysis');
@@ -240,7 +244,7 @@ export default function SEOAnalysisSection({
     } finally {
       setLoading(false);
     }
-  }, [isPageAnalysis, page?.html_content, page?.url, page?.audit_project_id, scrapedPages, project?.id, project?.site_url, updateAuditProject]);
+  }, [isPageAnalysis, page?.html_content, page?.url, page?.audit_project_id, scrapedPages, updateAuditProject, getScrapedPages, project]);
   useEffect(() => {
     // Reset analysis trigger when key dependencies change
     analysisTriggered.current = false;

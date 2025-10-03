@@ -36,6 +36,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -52,10 +53,20 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
           page.links.forEach((link) => {
             const href = link.url || ''
             if (href && href !== '#') {
+              // Filter out localhost URLs
+              if (href.includes('localhost') || href.includes('127.0.0.1')) {
+                return
+              }
+              
               // Convert relative URLs to absolute
-              const absoluteUrl = href.startsWith('http') ? href : 
+              let absoluteUrl = href.startsWith('http') ? href : 
                 href.startsWith('/') ? `${project.site_url}${href}` : 
                 `${project.site_url}/${href}`
+              
+              // Convert HTTP to HTTPS
+              if (absoluteUrl.startsWith('http://')) {
+                absoluteUrl = absoluteUrl.replace('http://', 'https://')
+              }
               
               const isInternal = href.startsWith('/') || 
                 (href.startsWith('http') && href.includes(baseDomain))
@@ -95,10 +106,20 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
               const anchorElement = link as HTMLAnchorElement
               const href = anchorElement.href || anchorElement.getAttribute('href') || ''
               if (href && href !== '#') {
+                // Filter out localhost URLs
+                if (href.includes('localhost') || href.includes('127.0.0.1')) {
+                  return
+                }
+                
                 // Convert relative URLs to absolute
-                const absoluteUrl = href.startsWith('http') ? href : 
+                let absoluteUrl = href.startsWith('http') ? href : 
                   href.startsWith('/') ? `${project.site_url}${href}` : 
                   `${project.site_url}/${href}`
+                
+                // Convert HTTP to HTTPS
+                if (absoluteUrl.startsWith('http://')) {
+                  absoluteUrl = absoluteUrl.replace('http://', 'https://')
+                }
                 
                 const isInternal = href.startsWith('/') || 
                   (href.startsWith('http') && href.includes(baseDomain))
@@ -169,22 +190,187 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return () => clearTimeout(timeoutId)
   }, [])
 
+  // Export functions
+  const exportToCSV = () => {
+    setIsExporting(true)
+    try {
+      const csvContent = [
+        ['URL', 'Text', 'Title', 'Type', 'Target', 'Page URL'],
+        ...filteredLinks.map(link => [
+          link.url,
+          link.text || '',
+          link.title || '',
+          link.type,
+          link.target || '_self',
+          link.page_url || ''
+        ])
+      ].map(row => row.map(field => `"${field.replace(/"/g, '""')}"`).join(',')).join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `links-export-${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportToJSON = () => {
+    setIsExporting(true)
+    try {
+      const jsonContent = {
+        exportDate: new Date().toISOString(),
+        project: project.site_url,
+        totalLinks: filteredLinks.length,
+        links: filteredLinks.map(link => ({
+          url: link.url,
+          text: link.text,
+          title: link.title,
+          type: link.type,
+          target: link.target,
+          page_url: link.page_url,
+          rel: link.rel
+        }))
+      }
+
+      const blob = new Blob([JSON.stringify(jsonContent, null, 2)], { type: 'application/json' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `links-export-${new Date().toISOString().split('T')[0]}.json`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Error exporting JSON:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportToTXT = () => {
+    setIsExporting(true)
+    try {
+      const txtContent = [
+        `Links Export - ${project.site_url}`,
+        `Export Date: ${new Date().toLocaleString()}`,
+        `Total Links: ${filteredLinks.length}`,
+        '',
+        '='.repeat(80),
+        '',
+        ...filteredLinks.map((link, index) => [
+          `${index + 1}. ${link.url}`,
+          `   Text: ${link.text || 'No text'}`,
+          `   Title: ${link.title || 'No title'}`,
+          `   Type: ${link.type}`,
+          `   Target: ${link.target || '_self'}`,
+          `   Page: ${link.page_url || 'Unknown'}`,
+          ''
+        ].join('\n'))
+      ].join('\n')
+
+      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `links-export-${new Date().toISOString().split('T')[0]}.txt`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Error exporting TXT:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Links Analysis</h3>
-        <div className="text-sm text-gray-500">
-          {isProcessing ? (
-            <span className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-              Processing links...
-            </span>
-          ) : (
-            <>
-              Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
-              {filteredLinks.length !== stats.total && ` (${stats.total} total)`}
-            </>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                Processing links...
+              </span>
+            ) : (
+              <>
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredLinks.length)} of {filteredLinks.length} links
+                {filteredLinks.length !== stats.total && ` (${stats.total} total)`}
+              </>
+            )}
+          </div>
+          
+          {/* Export Button */}
+          {filteredLinks.length > 0 && (
+            <div className="relative group">
+              <button
+                disabled={isExporting}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isExporting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export
+                  </>
+                )}
+              </button>
+              
+              {/* Export Options Dropdown */}
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={exportToCSV}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={exportToJSON}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    Export as JSON
+                  </button>
+                  <button
+                    onClick={exportToTXT}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export as TXT
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -78,7 +78,7 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
           Welcome back, {userProfile?.first_name || 'Admin'}!
         </h1>
         <p className="text-gray-600">
-          Here's an overview of your system performance and recent activity.
+          Here&apos;s an overview of your system performance and recent activity.
         </p>
       </motion.div>
 

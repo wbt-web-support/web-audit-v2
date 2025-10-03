@@ -130,7 +130,7 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-black mb-2">Access Denied</h2>
-        <p className="text-gray-600">You don't have admin permissions to access this panel.</p>
+        <p className="text-gray-600">You don&apos;t have admin permissions to access this panel.</p>
         <p className="text-sm text-gray-500 mt-2">Database verification failed.</p>
         {verificationError && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">

@@ -41,7 +41,7 @@ export default function DynamicImage({
     setImageLoaded(false)
   }, [src])
 
-  const handleError = (e?: any) => {
+  const handleError = () => {
     setImageError(true)
     onError?.()
   }
@@ -78,6 +78,7 @@ export default function DynamicImage({
   if ((isExternalUrl || isRelativeUrl) && !isDataUrl) {
     return (
       <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={alt}
