@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface AdminUsersProps {
@@ -65,7 +65,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setUsersLoading(true)
     setUsersError(null)
     try {
@@ -85,12 +85,12 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
     } finally {
       setUsersLoading(false)
     }
-  }
+  }, [getUsers])
 
   // Load users on component mount
   useEffect(() => {
     loadUsers()
-  }, [loadUsers])
+  }, [])
 
   const handleUserAction = async (userId: string, action: string, value?: unknown) => {
     setActionLoading(action)

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
 import AdminOverview from './admin-subtabs/AdminOverview'
 import AdminUsers from './admin-subtabs/AdminUsers'
+import AdminPlans from './admin-subtabs/AdminPlans'
 import AdminSubscription from './admin-subtabs/AdminSubscription'
 import AdminRevenue from './admin-subtabs/AdminRevenue'
 import AdminAlerts from './admin-subtabs/AdminAlerts'
@@ -25,7 +26,7 @@ interface AdminTabProps {
   userProfile: UserProfile
 }
 
-type AdminTabType = 'overview' | 'users' | 'subscription' | 'revenue' | 'alerts' | 'support'
+type AdminTabType = 'overview' | 'users' | 'plans' | 'subscription' | 'revenue' | 'alerts' | 'support'
 
 export default function AdminTab({ userProfile }: AdminTabProps) {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
@@ -80,6 +81,7 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'users', label: 'Users' },
+    { id: 'plans', label: 'Plans & Usage' },
     { id: 'subscription', label: 'Subscription' },
     { id: 'revenue', label: 'Revenue' },
     { id: 'alerts', label: 'Alerts' },
@@ -92,6 +94,8 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
         return <AdminOverview userProfile={userProfile} />
       case 'users':
         return <AdminUsers userProfile={userProfile} />
+      case 'plans':
+        return <AdminPlans userProfile={userProfile} />
       case 'subscription':
         return <AdminSubscription userProfile={userProfile} />
       case 'revenue':

@@ -27,6 +27,7 @@ export default function RootLayout({
         <SupabaseProvider>
           {children}
         </SupabaseProvider>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       </body>
     </html>
   );
