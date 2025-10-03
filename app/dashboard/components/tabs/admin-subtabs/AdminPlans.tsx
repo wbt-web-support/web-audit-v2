@@ -31,6 +31,8 @@ interface Plan {
     description: string
     icon: string
   }>
+  can_use_features: string[]
+  max_projects: number
   limits: Record<string, any>
   is_active: boolean
   is_popular: boolean
@@ -53,6 +55,8 @@ interface PlanFormData {
     description: string
     icon: string
   }>
+  can_use_features: string[]
+  max_projects: number
   limits: Record<string, any>
   is_active: boolean
   is_popular: boolean
@@ -80,6 +84,8 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     interval_type: 'monthly',
     interval_count: 1,
     features: [],
+    can_use_features: [],
+    max_projects: 1,
     limits: {},
     is_active: true,
     is_popular: false,
@@ -281,6 +287,8 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       interval_type: 'monthly',
       interval_count: 1,
       features: [],
+      can_use_features: [],
+      max_projects: 1,
       limits: {},
       is_active: true,
       is_popular: false,
@@ -302,6 +310,8 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       interval_type: plan.interval_type,
       interval_count: plan.interval_count,
       features: plan.features,
+      can_use_features: plan.can_use_features || [],
+      max_projects: plan.max_projects || 1,
       limits: plan.limits,
       is_active: plan.is_active,
       is_popular: plan.is_popular,
@@ -330,6 +340,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       features: prev.features.filter((_, i) => i !== index)
     }))
   }
+
 
   const handleSubmit = () => {
     if (isEditing && selectedPlan) {
@@ -526,7 +537,13 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {plan.features.length} features
+                        {plan.can_use_features?.length || 0} features enabled
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {plan.features.length} custom features
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        {plan.max_projects === -1 ? 'Unlimited projects' : `${plan.max_projects} project${plan.max_projects !== 1 ? 's' : ''}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -675,7 +692,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
 
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 {/* Basic Information */}
                 <div>
                   <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
@@ -770,16 +787,43 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                         placeholder="Optional Razorpay plan ID"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Projects</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          value={formData.max_projects}
+                          onChange={(e) => setFormData(prev => ({ ...prev, max_projects: parseInt(e.target.value) || 1 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="1"
+                          placeholder="Number of projects"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, max_projects: -1 }))}
+                          className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                            formData.max_projects === -1
+                              ? 'bg-blue-100 text-blue-700 border-blue-300'
+                              : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                          }`}
+                        >
+                          Unlimited
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formData.max_projects === -1 ? 'Unlimited projects' : `${formData.max_projects} project${formData.max_projects !== 1 ? 's' : ''} allowed`}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Features Management */}
                 <div>
-                  <h3 className="text-lg font-semibold text-black mb-4">Features</h3>
+                  <h3 className="text-lg font-semibold text-black mb-4">Custom Features</h3>
                   <div className="space-y-4">
                     {/* Add New Feature */}
                     <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-black mb-3">Add Feature</h4>
+                      <h4 className="font-medium text-black mb-3">Add Custom Feature</h4>
                       <div className="space-y-3">
                         <input
                           type="text"
@@ -833,6 +877,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                     </div>
                   </div>
                 </div>
+
               </div>
 
               {/* Settings */}
