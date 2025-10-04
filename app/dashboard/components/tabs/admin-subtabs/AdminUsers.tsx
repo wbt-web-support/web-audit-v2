@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { supabase } from '@/lib/supabase'
 
 interface AdminUsersProps {
   userProfile: {
@@ -33,10 +34,25 @@ interface User {
   last_activity_at?: string
   login_count?: number
   notes?: string
+  plan_type?: string
   auth_users?: {
     last_sign_in_at: string
     email_confirmed_at: string
   }
+  project_count?: number
+  plan_limit?: number
+  plan_name?: string
+  subscription_status?: string
+}
+
+interface Plan {
+  id: string
+  name: string
+  plan_type: string
+  max_projects: number
+  features: string[]
+  price: number
+  is_active: boolean
 }
 
 export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
@@ -52,6 +68,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   } = useSupabase()
   
   const [users, setUsers] = useState<User[]>([])
+  const [plans, setPlans] = useState<Plan[]>([])
   const [usersLoading, setUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -64,8 +81,97 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterPlan, setFilterPlan] = useState('all')
+  const [filterProjectLimit, setFilterProjectLimit] = useState('all')
+  const [sortBy, setSortBy] = useState('created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  const loadUsers = useCallback(async () => {
+  const loadPlans = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true })
+      
+      if (error) {
+        console.error('Error loading plans:', error)
+      } else {
+        setPlans(data || [])
+      }
+    } catch (error) {
+      console.error('Unexpected error loading plans:', error)
+    }
+  }, [])
+
+  const calculateUserProjectCounts = useCallback(async (usersData: User[], plansData: Plan[]) => {
+    try {
+      const usersWithCounts = await Promise.all(
+        usersData.map(async (user) => {
+           // Get project count from scraped_pages table
+           console.log(`Counting projects for user ${user.email} (ID: ${user.id})`)
+           
+           const { count, error } = await supabase
+             .from('scraped_pages')
+             .select('*', { count: 'exact', head: true })
+             .eq('user_id', user.id)
+           
+           console.log(`Project count query result for ${user.email}:`, { count, error })
+           
+           // Let's also check what's actually in the scraped_pages table for this user
+           const { data: sampleData, error: sampleError } = await supabase
+             .from('scraped_pages')
+             .select('id, user_id, url')
+             .eq('user_id', user.id)
+             .limit(3)
+           
+           console.log(`Sample scraped_pages data for ${user.email}:`, { sampleData, sampleError })
+           
+           if (error) {
+             console.error(`Error counting projects for user ${user.id}:`, error)
+             return { ...user, project_count: 0 }
+           }
+
+           // Find the plan details by searching in plans table using plan_type field
+           console.log(`Looking for plan_type: "${user.plan_type}" in plans:`, plansData.map(p => ({ name: p.name, plan_type: p.plan_type, max_projects: p.max_projects })))
+           
+           let userPlan = null
+           
+           if (user.plan_type) {
+             // Match by plan_type field (not name field)
+             userPlan = plansData.find(plan => plan.plan_type === user.plan_type)
+             console.log(`Exact match for plan_type "${user.plan_type}":`, userPlan)
+             
+             // If no exact match, try case-insensitive match
+             if (!userPlan) {
+               userPlan = plansData.find(plan => 
+                 plan.plan_type.toLowerCase() === user.plan_type?.toLowerCase()
+               )
+               console.log(`Case-insensitive match for plan_type "${user.plan_type}":`, userPlan)
+             }
+           }
+           
+           const planLimit = userPlan?.max_projects || 0
+           const planName = userPlan?.name || (user.plan_type || 'No Plan')
+           
+           console.log(`Final result for user ${user.email}: plan="${planName}", limit=${planLimit}`)
+
+          return {
+            ...user,
+            project_count: count || 0,
+            plan_limit: planLimit,
+            plan_name: planName
+          }
+        })
+      )
+      return usersWithCounts
+    } catch (error) {
+      console.error('Error calculating project counts:', error)
+      return usersData
+    }
+  }, [])
+
+  const loadUsers = useCallback(async (plansData: Plan[]) => {
     setUsersLoading(true)
     setUsersError(null)
     try {
@@ -77,7 +183,9 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
         setUsersError(error.message || 'Failed to load users')
       } else {
         console.log('Successfully loaded users:', data?.length || 0, 'users')
-        setUsers(data || [])
+        // Calculate project counts for each user
+        const usersWithCounts = await calculateUserProjectCounts(data || [], plansData)
+        setUsers(usersWithCounts)
       }
     } catch (error) {
       console.error('Unexpected error loading users:', error)
@@ -85,12 +193,62 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
     } finally {
       setUsersLoading(false)
     }
-  }, [getUsers])
+  }, [getUsers, calculateUserProjectCounts])
 
-  // Load users on component mount
+  // Load plans and users on component mount
   useEffect(() => {
-    loadUsers()
-  }, [])
+    const loadData = async () => {
+      // First load plans
+      const { data: plansData, error: plansError } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true })
+      
+       if (plansError) {
+         console.error('Error loading plans:', plansError)
+       } else {
+         console.log('Loaded plans from database:', plansData)
+         setPlans(plansData || [])
+         
+         // Let's also check the scraped_pages table structure
+         const { data: tableInfo, error: tableError } = await supabase
+           .from('scraped_pages')
+           .select('*')
+           .limit(1)
+         
+         console.log('Sample scraped_pages table structure:', { tableInfo, tableError })
+        
+        // Then load users with plans data
+        setUsersLoading(true)
+        setUsersError(null)
+        try {
+          console.log('Loading users...')
+          const { data, error } = await getUsers()
+          
+           if (error) {
+             console.error('Error loading users:', error)
+             setUsersError(error.message || 'Failed to load users')
+           } else {
+             console.log('Successfully loaded users:', data?.length || 0, 'users')
+             console.log('Sample user data:', data?.slice(0, 3).map(u => ({ 
+               email: u.email, 
+               plan_type: u.plan_type 
+             })))
+             // Calculate project counts for each user
+             const usersWithCounts = await calculateUserProjectCounts(data || [], plansData || [])
+             setUsers(usersWithCounts)
+           }
+        } catch (error) {
+          console.error('Unexpected error loading users:', error)
+          setUsersError('Failed to load users')
+        } finally {
+          setUsersLoading(false)
+        }
+      }
+    }
+    loadData()
+  }, [getUsers, calculateUserProjectCounts]) // Include dependencies but they won't change
 
   const handleUserAction = async (userId: string, action: string, value?: unknown) => {
     setActionLoading(action)
@@ -119,7 +277,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
       } else {
         console.log(`Successfully ${action}ed user`)
         // Reload users to show updated data
-        await loadUsers()
+        await loadUsers(plans)
         alert(`User ${action}ed successfully!`)
       }
     } catch (error) {
@@ -202,8 +360,51 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
                          (filterStatus === 'verified' && !user.blocked && user.email_confirmed) ||
                          (filterStatus === 'blocked' && user.blocked) ||
                          (filterStatus === 'not-verified' && !user.email_confirmed)
+    const matchesPlan = filterPlan === 'all' || 
+                       (user.plan_type === filterPlan) ||
+                       (filterPlan === 'no-plan' && !user.plan_type)
+    const matchesProjectLimit = filterProjectLimit === 'all' ||
+                               (filterProjectLimit === 'unlimited' && user.plan_limit === -1) ||
+                               (filterProjectLimit === 'limited' && user.plan_limit && user.plan_limit > 0) ||
+                               (filterProjectLimit === 'exceeded' && user.plan_limit && user.project_count && user.project_count > user.plan_limit)
     
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole && matchesStatus && matchesPlan && matchesProjectLimit
+  }).sort((a, b) => {
+    let aValue: any, bValue: any
+    
+    switch (sortBy) {
+      case 'name':
+        aValue = getUserDisplayName(a).toLowerCase()
+        bValue = getUserDisplayName(b).toLowerCase()
+        break
+      case 'email':
+        aValue = a.email.toLowerCase()
+        bValue = b.email.toLowerCase()
+        break
+      case 'role':
+        aValue = a.role
+        bValue = b.role
+        break
+      case 'plan':
+        aValue = a.plan_name || 'No Plan'
+        bValue = b.plan_name || 'No Plan'
+        break
+      case 'projects':
+        aValue = a.project_count || 0
+        bValue = b.project_count || 0
+        break
+      case 'created_at':
+      default:
+        aValue = new Date(a.created_at).getTime()
+        bValue = new Date(b.created_at).getTime()
+        break
+    }
+    
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1
+    } else {
+      return aValue < bValue ? 1 : -1
+    }
   })
 
   return (
@@ -231,7 +432,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <input
@@ -267,6 +468,81 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
               <option value="not-verified">Not Verified</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+            <select
+              value={filterPlan}
+              onChange={(e) => setFilterPlan(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Plans</option>
+              {plans.map(plan => (
+                <option key={plan.id} value={plan.plan_type}>
+                  {plan.name} ({plan.plan_type})
+                </option>
+              ))}
+              <option value="no-plan">No Plan</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Limit</label>
+            <select
+              value={filterProjectLimit}
+              onChange={(e) => setFilterProjectLimit(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Limits</option>
+              <option value="unlimited">Unlimited</option>
+              <option value="limited">Limited</option>
+              <option value="exceeded">Exceeded</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Sort Controls */}
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-48">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="created_at">Created Date</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+              <option value="role">Role</option>
+              <option value="plan">Plan</option>
+              <option value="projects">Project Count</option>
+            </select>
+          </div>
+          <div className="min-w-32">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setSearchTerm('')
+                setFilterRole('all')
+                setFilterStatus('all')
+                setFilterPlan('all')
+                setFilterProjectLimit('all')
+                setSortBy('created_at')
+                setSortOrder('desc')
+              }}
+              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
       </motion.div>
 
@@ -290,7 +566,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
             </div>
             <p className="text-red-600 font-medium">{usersError}</p>
             <button 
-              onClick={loadUsers}
+              onClick={() => loadUsers(plans)}
               className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
               Try again
@@ -306,6 +582,12 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Plan
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Projects
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
@@ -341,6 +623,45 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
                         {user.role}
                       </span>
+                    </td>
+                     <td className="px-6 py-4 whitespace-nowrap">
+                       <div className="text-sm">
+                         <div className="font-medium text-black">
+                           {user.plan_name || 'No Plan'}
+                         </div>
+                         <div className="text-gray-500 text-xs">
+                           {user.plan_limit === -1 
+                             ? 'Unlimited' 
+                             : user.plan_limit !== undefined && user.plan_limit !== null
+                               ? `${user.plan_limit} projects`
+                               : user.plan_type 
+                                 ? 'No limit set'
+                                 : 'No plan assigned'
+                           }
+                         </div>
+                       </div>
+                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className="font-medium text-black">
+                          {user.project_count || 0}
+                        </div>
+                         <div className="text-gray-500 text-xs">
+                           {user.plan_limit === -1
+                             ? 'unlimited'
+                             : user.plan_limit !== undefined && user.plan_limit !== null
+                               ? `of ${user.plan_limit}`
+                               : user.plan_type 
+                                 ? 'no limit set'
+                                 : 'no plan'
+                           }
+                         </div>
+                        {user.plan_limit && user.project_count && user.project_count > user.plan_limit && (
+                          <div className="text-red-500 text-xs font-medium">
+                            Exceeded!
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(user.created_at)}
@@ -381,7 +702,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
       </motion.div>
 
       {/* User Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div
           className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
@@ -415,15 +736,17 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <h3 className="text-lg font-semibold text-black mb-4">Role Distribution</h3>
+          <h3 className="text-lg font-semibold text-black mb-4">Plan Distribution</h3>
           <div className="space-y-3">
+            {plans.map(plan => (
+              <div key={plan.id} className="flex justify-between">
+                <span className="text-gray-700">{plan.name} ({plan.plan_type})</span>
+                <span className="font-semibold text-blue-600">{users.filter(u => u.plan_type === plan.plan_type).length}</span>
+              </div>
+            ))}
             <div className="flex justify-between">
-              <span className="text-gray-700">Admins</span>
-              <span className="font-semibold text-red-600">{users.filter(u => u.role === 'admin').length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Users</span>
-              <span className="font-semibold text-blue-600">{users.filter(u => u.role === 'user').length}</span>
+              <span className="text-gray-700">No Plan</span>
+              <span className="font-semibold text-red-600">{users.filter(u => !u.plan_type).length}</span>
             </div>
           </div>
         </motion.div>
@@ -434,10 +757,41 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
+          <h3 className="text-lg font-semibold text-black mb-4">Project Usage</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Total Projects</span>
+              <span className="font-semibold text-black">{users.reduce((sum, u) => sum + (u.project_count || 0), 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Users at Limit</span>
+              <span className="font-semibold text-orange-600">
+                {users.filter(u => u.plan_limit && u.project_count && u.project_count >= u.plan_limit).length}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Exceeded Limit</span>
+              <span className="font-semibold text-red-600">
+                {users.filter(u => u.plan_limit && u.project_count && u.project_count > u.plan_limit).length}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Unlimited Users</span>
+              <span className="font-semibold text-green-600">{users.filter(u => u.plan_limit === -1).length}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="bg-white rounded-lg border border-gray-200 p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
           <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
           <div className="space-y-2">
             <button 
-              onClick={loadUsers}
+              onClick={() => loadUsers(plans)}
               className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
             >
               <span className="font-medium text-black">Refresh Users</span>
@@ -447,6 +801,9 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
             </button>
             <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
               <span className="font-medium text-black">Bulk Actions</span>
+            </button>
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+              <span className="font-medium text-black">View Exceeded Limits</span>
             </button>
           </div>
         </motion.div>
@@ -541,6 +898,62 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
                         <p className="text-black font-medium">{formatDate(selectedUser.last_activity_at)}</p>
                       </div>
                     )}
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">Current Plan</label>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${
+                          selectedUser.plan_name === 'pro' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : selectedUser.plan_name === 'basic'
+                              ? 'bg-blue-100 text-blue-800'
+                              : selectedUser.plan_name === 'free'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedUser.plan_name || 'No Plan'}
+                        </span>
+                        {selectedUser.plan_type && (
+                          <span className="text-xs text-gray-500">
+                            ({selectedUser.plan_type})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                     <div>
+                       <label className="text-sm text-gray-600 block mb-1">Project Limit</label>
+                       <p className="text-black font-medium">
+                         {selectedUser.plan_limit === -1 
+                           ? 'Unlimited' 
+                           : selectedUser.plan_limit !== undefined && selectedUser.plan_limit !== null
+                             ? `${selectedUser.plan_limit} projects`
+                             : selectedUser.plan_type 
+                               ? 'No limit set'
+                               : 'No plan assigned'
+                         }
+                       </p>
+                     </div>
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">Current Projects</label>
+                       <div className="flex items-center gap-2">
+                         <p className="text-black font-medium">{selectedUser.project_count || 0}</p>
+                         {selectedUser.plan_limit === -1 ? (
+                           <span className="text-sm text-gray-500">unlimited</span>
+                         ) : selectedUser.plan_limit !== undefined && selectedUser.plan_limit !== null ? (
+                           <span className="text-sm text-gray-500">
+                             of {selectedUser.plan_limit}
+                           </span>
+                         ) : selectedUser.plan_type ? (
+                           <span className="text-sm text-gray-500">no limit set</span>
+                         ) : (
+                           <span className="text-sm text-gray-500">no plan</span>
+                         )}
+                         {selectedUser.plan_limit && selectedUser.plan_limit > 0 && selectedUser.project_count && selectedUser.project_count > selectedUser.plan_limit && (
+                           <span className="text-xs text-red-500 font-medium">
+                             (Exceeded!)
+                           </span>
+                         )}
+                       </div>
+                    </div>
                   </div>
                 </div>
 

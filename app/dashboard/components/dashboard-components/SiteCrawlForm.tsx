@@ -337,7 +337,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
           </div>
 
           {/* Feature Checkboxes */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-black mb-3">
               Audit Features
             </label>
@@ -362,7 +362,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Brand Consistency Fields */}
           {brandConsistency && (
@@ -483,7 +483,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
           )}
 
           {/* Plan Information */}
-          {planInfo && (
+          {/* {planInfo && (
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -505,7 +505,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Submit Button */}
           <div className="pt-4">
