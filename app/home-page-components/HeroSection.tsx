@@ -102,243 +102,454 @@ export default function HeroSection() {
         <head>
           <title>Website Performance Analysis - ${url}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; background: white; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px 0; }
-            .score-card { text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-            .score-circle { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
-            .score-good { background: #10b981; color: white; }
-            .score-warning { background: #f59e0b; color: white; }
-            .score-poor { background: #ef4444; color: white; }
-            .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
-            .metric-card { padding: 15px; background: #f9fafb; border-radius: 6px; }
-            .metric-value { font-size: 20px; font-weight: bold; color: #1f2937; }
-            .metric-label { font-size: 12px; color: #6b7280; margin-top: 5px; }
-            .section { margin: 30px 0; }
-            .section h3 { color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
-            .recommendation { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 10px 0; }
-            .recommendation h4 { color: #92400e; margin: 0 0 10px 0; }
-            .recommendation p { color: #92400e; margin: 0; font-size: 14px; }
-            @media print { body { margin: 0; } }
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: #333;
+            }
+            .container {
+              background: white;
+              border-radius: 15px;
+              box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+              overflow: hidden;
+            }
+            .header { 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              text-align: left; 
+              padding: 40px 20px; 
+              margin: 0;
+            }
+            .header h1 { 
+              font-size: 2.5em; 
+              margin: 0 0 10px 0; 
+              font-weight: 700;
+              text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .header p { 
+              font-size: 1.1em; 
+              margin: 5px 0; 
+              opacity: 0.9;
+            }
+            .content { padding: 30px; }
+            .score-grid { 
+              display: grid; 
+              grid-template-columns: repeat(4, 1fr); 
+              gap: 20px; 
+              margin: 30px 0; 
+            }
+            .score-card { 
+              text-align: center; 
+              padding: 15px; 
+              border-radius: 8px; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              border: 1px solid #e2e8f0;
+              background: white;
+            }
+            .score-circle { 
+              width: 60px; 
+              height: 60px; 
+              border-radius: 50%; 
+              margin: 0 auto 8px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              font-size: 18px; 
+              font-weight: bold;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .score-good { 
+              background: linear-gradient(135deg, #10b981, #059669); 
+              color: white; 
+            }
+            .score-warning { 
+              background: linear-gradient(135deg, #f59e0b, #d97706); 
+              color: white; 
+            }
+            .score-poor { 
+              background: linear-gradient(135deg, #ef4444, #dc2626); 
+              color: white; 
+            }
+            .metrics-grid { 
+              display: grid; 
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+              gap: 20px; 
+              margin: 25px 0; 
+            }
+            .metric-card { 
+              padding: 12px; 
+              background: #f8fafc; 
+              border-radius: 6px; 
+              border-left: 3px solid #667eea;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              border: 1px solid #e2e8f0;
+            }
+            .metric-value { 
+              font-size: 18px; 
+              font-weight: bold; 
+              color: #1e293b; 
+              margin-bottom: 3px;
+            }
+            .metric-label { 
+              font-size: 12px; 
+              color: #64748b; 
+              font-weight: 500;
+            }
+            .section { 
+              margin: 20px 0; 
+              padding: 15px;
+              background: #f8fafc;
+              border-radius: 6px;
+              border: 1px solid #e2e8f0;
+            }
+            .section h3 { 
+              color: #1e293b; 
+              border-bottom: 2px solid #667eea; 
+              padding-bottom: 8px; 
+              margin-bottom: 15px;
+              font-size: 1.2em;
+              font-weight: 600;
+            }
+            .recommendation { 
+              background: #fef3c7; 
+              border: 1px solid #f59e0b; 
+              border-radius: 6px; 
+              padding: 12px; 
+              margin: 8px 0; 
+              box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+            }
+            .recommendation h4 { 
+              color: #92400e; 
+              margin: 0 0 5px 0; 
+              font-size: 1em;
+              font-weight: 600;
+            }
+            .recommendation p { 
+              color: #92400e; 
+              margin: 0; 
+              font-size: 13px; 
+              line-height: 1.4;
+            }
+            .performance-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 10px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            }
+            .badge-excellent { background: #10b981; color: white; }
+            .badge-good { background: #3b82f6; color: white; }
+            .badge-needs-improvement { background: #f59e0b; color: white; }
+            .badge-poor { background: #ef4444; color: white; }
+            .summary-stats {
+              background: linear-gradient(135deg, #667eea, #764ba2);
+              color: white;
+              padding: 15px;
+              border-radius: 6px;
+              margin: 15px 0;
+              text-align: left;
+            }
+            .summary-stats h3 {
+              color: white;
+              border: none;
+              margin-bottom: 10px;
+            }
+            .footer {
+              background: #1e293b;
+              color: white;
+              text-align: left;
+              padding: 15px;
+              margin-top: 20px;
+            }
+            .footer p {
+              margin: 5px 0;
+              opacity: 0.8;
+            }
+            @media print { 
+              body { margin: 0; background: white; }
+              .container { box-shadow: none; }
+            }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Website Performance Analysis</h1>
-            <p><strong>URL:</strong> ${url}</p>
-            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-          </div>
+          <div class="container">
+            <div class="header">
+              <h1>Website Performance Analysis</h1>
+              <p><strong>URL:</strong> ${url}</p>
+              <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+              <p><strong>Analysis Type:</strong> Comprehensive Performance Audit</p>
+            </div>
 
-          <div class="section">
-            <h3>Overall Performance Scores</h3>
-            <div class="score-grid">
-              <div class="score-card">
-                <div class="score-circle ${categories.performance.score > 0.9 ? 'score-good' : categories.performance.score > 0.5 ? 'score-warning' : 'score-poor'}">
-                  ${Math.round(categories.performance.score * 100)}
+            <div class="content">
+              <div class="summary-stats">
+                <h3>Executive Summary</h3>
+                <p>This comprehensive analysis evaluates your website's performance across multiple critical dimensions including speed, accessibility, SEO, and best practices. The scores below provide a quick overview of your site's current state.</p>
+              </div>
+
+              <div class="section">
+                <h3>Overall Performance Scores</h3>
+                <div class="score-grid">
+                  <div class="score-card">
+                    <div class="score-circle ${categories.performance.score > 0.9 ? 'score-good' : categories.performance.score > 0.5 ? 'score-warning' : 'score-poor'}">
+                      ${Math.round(categories.performance.score * 100)}
+                    </div>
+                    <h4>Performance</h4>
+                    <span class="performance-badge ${categories.performance.score > 0.9 ? 'badge-excellent' : categories.performance.score > 0.7 ? 'badge-good' : categories.performance.score > 0.5 ? 'badge-needs-improvement' : 'badge-poor'}">
+                      ${categories.performance.score > 0.9 ? 'Excellent' : categories.performance.score > 0.7 ? 'Good' : categories.performance.score > 0.5 ? 'Needs Improvement' : 'Poor'}
+                    </span>
+                  </div>
+                  <div class="score-card">
+                    <div class="score-circle ${categories.accessibility.score > 0.9 ? 'score-good' : categories.accessibility.score > 0.5 ? 'score-warning' : 'score-poor'}">
+                      ${Math.round(categories.accessibility.score * 100)}
+                    </div>
+                    <h4>Accessibility</h4>
+                    <span class="performance-badge ${categories.accessibility.score > 0.9 ? 'badge-excellent' : categories.accessibility.score > 0.7 ? 'badge-good' : categories.accessibility.score > 0.5 ? 'badge-needs-improvement' : 'badge-poor'}">
+                      ${categories.accessibility.score > 0.9 ? 'Excellent' : categories.accessibility.score > 0.7 ? 'Good' : categories.accessibility.score > 0.5 ? 'Needs Improvement' : 'Poor'}
+                    </span>
+                  </div>
+                  <div class="score-card">
+                    <div class="score-circle ${categories['best-practices'].score > 0.9 ? 'score-good' : categories['best-practices'].score > 0.5 ? 'score-warning' : 'score-poor'}">
+                      ${Math.round(categories['best-practices'].score * 100)}
+                    </div>
+                    <h4>Best Practices</h4>
+                    <span class="performance-badge ${categories['best-practices'].score > 0.9 ? 'badge-excellent' : categories['best-practices'].score > 0.7 ? 'badge-good' : categories['best-practices'].score > 0.5 ? 'badge-needs-improvement' : 'badge-poor'}">
+                      ${categories['best-practices'].score > 0.9 ? 'Excellent' : categories['best-practices'].score > 0.7 ? 'Good' : categories['best-practices'].score > 0.5 ? 'Needs Improvement' : 'Poor'}
+                    </span>
+                  </div>
+                  <div class="score-card">
+                    <div class="score-circle ${categories.seo.score > 0.9 ? 'score-good' : categories.seo.score > 0.5 ? 'score-warning' : 'score-poor'}">
+                      ${Math.round(categories.seo.score * 100)}
+                    </div>
+                    <h4>SEO</h4>
+                    <span class="performance-badge ${categories.seo.score > 0.9 ? 'badge-excellent' : categories.seo.score > 0.7 ? 'badge-good' : categories.seo.score > 0.5 ? 'badge-needs-improvement' : 'badge-poor'}">
+                      ${categories.seo.score > 0.9 ? 'Excellent' : categories.seo.score > 0.7 ? 'Good' : categories.seo.score > 0.5 ? 'Needs Improvement' : 'Poor'}
+                    </span>
+                  </div>
                 </div>
-                <h4>Performance</h4>
               </div>
-              <div class="score-card">
-                <div class="score-circle ${categories.accessibility.score > 0.9 ? 'score-good' : categories.accessibility.score > 0.5 ? 'score-warning' : 'score-poor'}">
-                  ${Math.round(categories.accessibility.score * 100)}
+
+              <div class="section">
+                <h3>Core Web Vitals</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">These metrics are crucial for user experience and are used by Google for ranking. They measure the loading, interactivity, and visual stability of your page.</p>
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['first-contentful-paint']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">First Contentful Paint</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Time to first content render</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['largest-contentful-paint']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">Largest Contentful Paint</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Time to largest content render</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['cumulative-layout-shift']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">Cumulative Layout Shift</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Visual stability measure</div>
+                  </div>
                 </div>
-                <h4>Accessibility</h4>
               </div>
-              <div class="score-card">
-                <div class="score-circle ${categories['best-practices'].score > 0.9 ? 'score-good' : categories['best-practices'].score > 0.5 ? 'score-warning' : 'score-poor'}">
-                  ${Math.round(categories['best-practices'].score * 100)}
+
+              <div class="section">
+                <h3>Performance Metrics</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Detailed performance measurements that help identify specific areas for optimization.</p>
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['speed-index']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">Speed Index</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Visual loading speed</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['total-blocking-time']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">Total Blocking Time</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Time blocked by long tasks</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['interactive']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">Time to Interactive</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Time until page is interactive</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['max-potential-fid']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">First Input Delay</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Input responsiveness</div>
+                  </div>
                 </div>
-                <h4>Best Practices</h4>
               </div>
-              <div class="score-card">
-                <div class="score-circle ${categories.seo.score > 0.9 ? 'score-good' : categories.seo.score > 0.5 ? 'score-warning' : 'score-poor'}">
-                  ${Math.round(categories.seo.score * 100)}
+
+              <div class="section">
+                <h3>🔧 Additional Performance Details</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Additional metrics that provide deeper insights into your website's performance characteristics.</p>
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['first-meaningful-paint']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">🎨 First Meaningful Paint</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Time to meaningful content</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['render-blocking-resources']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">🚫 Render Blocking Resources</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Resources blocking render</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['unused-css-rules']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">🎨 Unused CSS Rules</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Unused CSS detected</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['unused-javascript']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">📜 Unused JavaScript</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Unused JS detected</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['efficient-animated-content']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">🎬 Efficient Animated Content</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Animation efficiency</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['uses-optimized-images']?.displayValue || 'N/A'}</div>
+                    <div class="metric-label">🖼️ Optimized Images</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Image optimization status</div>
+                  </div>
                 </div>
-                <h4>SEO</h4>
+              </div>
+
+              <div class="section">
+                <h3>📊 Resource Analysis</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Analysis of your website's resource usage and network performance.</p>
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.total || 'N/A'}</div>
+                    <div class="metric-label">📦 Total Resources</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Number of resources loaded</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.totalBytes ? (audits['resource-summary'].details.items[0].totalBytes / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}</div>
+                    <div class="metric-label">💾 Total Size</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Total resource size</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${audits['network-requests']?.details?.items?.length || 'N/A'}</div>
+                    <div class="metric-label">🌐 Network Requests</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Number of network requests</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${(() => {
+                      const items = audits['network-requests']?.details?.items;
+                      if (!items) return 'N/A';
+                      const totalSize = items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0);
+                      return totalSize ? (totalSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A';
+                    })()}</div>
+                    <div class="metric-label">📡 Transfer Size</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Data transferred over network</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section">
+                <h3>💡 Performance Recommendations</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Actionable recommendations to improve your website's performance based on the analysis results.</p>
+                ${categories.performance.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🚀 Improve Performance Score</h4>
+                    <p>Your performance score is ${Math.round(categories.performance.score * 100)}. Focus on optimizing Core Web Vitals, reducing JavaScript execution time, and optimizing images.</p>
+                  </div>
+                ` : ''}
+                ${audits['first-contentful-paint']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🎨 Optimize First Contentful Paint</h4>
+                    <p>Improve server response times, eliminate render-blocking resources, and optimize critical rendering path.</p>
+                  </div>
+                ` : ''}
+                ${audits['largest-contentful-paint']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🖼️ Optimize Largest Contentful Paint</h4>
+                    <p>Optimize images, preload important resources, and eliminate render-blocking resources.</p>
+                  </div>
+                ` : ''}
+                ${audits['cumulative-layout-shift']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>📐 Reduce Cumulative Layout Shift</h4>
+                    <p>Ensure images and ads have size attributes, avoid inserting content above existing content, and use transform animations instead of properties that trigger layout.</p>
+                  </div>
+                ` : ''}
+                ${audits['render-blocking-resources']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🚫 Eliminate Render-Blocking Resources</h4>
+                    <p>Remove or defer render-blocking CSS and JavaScript. Use media queries for non-critical CSS and load JavaScript asynchronously.</p>
+                  </div>
+                ` : ''}
+                ${audits['unused-css-rules']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🎨 Remove Unused CSS</h4>
+                    <p>Eliminate unused CSS rules to reduce file size and improve loading performance. Use tools like PurgeCSS or similar.</p>
+                  </div>
+                ` : ''}
+                ${audits['unused-javascript']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>📜 Remove Unused JavaScript</h4>
+                    <p>Remove unused JavaScript code to reduce bundle size and improve loading performance. Use code splitting and tree shaking.</p>
+                  </div>
+                ` : ''}
+                ${audits['uses-optimized-images']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🖼️ Optimize Images</h4>
+                    <p>Use modern image formats (WebP, AVIF), compress images, and implement responsive images with proper sizing.</p>
+                  </div>
+                ` : ''}
+                ${audits['efficient-animated-content']?.score < 0.9 ? `
+                  <div class="recommendation">
+                    <h4>🎬 Optimize Animations</h4>
+                    <p>Use CSS transforms and opacity for animations instead of properties that trigger layout or paint. Consider using will-change property.</p>
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="section">
+                <h3>📋 Technical Summary</h3>
+                <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Final overview of all performance categories and their scores.</p>
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-value">${categories.performance.score ? Math.round(categories.performance.score * 100) : 'N/A'}</div>
+                    <div class="metric-label">⚡ Overall Performance</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Combined performance score</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${categories.accessibility.score ? Math.round(categories.accessibility.score * 100) : 'N/A'}</div>
+                    <div class="metric-label">♿ Accessibility Score</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Accessibility compliance</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${categories['best-practices'].score ? Math.round(categories['best-practices'].score * 100) : 'N/A'}</div>
+                    <div class="metric-label">✅ Best Practices</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Web development best practices</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-value">${categories.seo.score ? Math.round(categories.seo.score * 100) : 'N/A'}</div>
+                    <div class="metric-label">🔍 SEO Score</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Search engine optimization</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="footer">
+                <h3 style="color: white; margin-bottom: 15px;">Thank You for Using WebAudit!</h3>
+                <p><strong>Generated by WebAudit</strong> - Professional Website Analysis Tool</p>
+                <p>For more detailed analysis, continuous monitoring, and advanced recommendations, visit our dashboard at <strong>webaudit.com</strong></p>
+                <p style="margin-top: 20px; font-size: 14px; opacity: 0.7;">
+                  Contact: support@webaudit.com | Website: webaudit.com
+                </p>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                  <p style="margin: 0; font-size: 13px; opacity: 0.9;">
+                    <strong>Pro Tip:</strong> Run this analysis monthly to track your website's performance improvements over time!
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div class="section">
-            <h3>Core Web Vitals</h3>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${audits['first-contentful-paint']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">First Contentful Paint</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['largest-contentful-paint']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Largest Contentful Paint</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['cumulative-layout-shift']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Cumulative Layout Shift</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Performance Metrics</h3>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${audits['speed-index']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Speed Index</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['total-blocking-time']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Total Blocking Time</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['interactive']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Time to Interactive</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['max-potential-fid']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">First Input Delay</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Additional Performance Details</h3>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${audits['first-meaningful-paint']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">First Meaningful Paint</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['render-blocking-resources']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Render Blocking Resources</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['unused-css-rules']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Unused CSS Rules</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['unused-javascript']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Unused JavaScript</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['efficient-animated-content']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Efficient Animated Content</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['uses-optimized-images']?.displayValue || 'N/A'}</div>
-                <div class="metric-label">Optimized Images</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Resource Analysis</h3>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.total || 'N/A'}</div>
-                <div class="metric-label">Total Resources</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.totalBytes ? (audits['resource-summary'].details.items[0].totalBytes / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}</div>
-                <div class="metric-label">Total Size</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${audits['network-requests']?.details?.items?.length || 'N/A'}</div>
-                <div class="metric-label">Network Requests</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${(() => {
-                  const items = audits['network-requests']?.details?.items;
-                  if (!items) return 'N/A';
-                  const totalSize = items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0);
-                  return totalSize ? (totalSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A';
-                })()}</div>
-                <div class="metric-label">Transfer Size</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Performance Recommendations</h3>
-            ${categories.performance.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Improve Performance Score</h4>
-                <p>Your performance score is ${Math.round(categories.performance.score * 100)}. Focus on optimizing Core Web Vitals, reducing JavaScript execution time, and optimizing images.</p>
-              </div>
-            ` : ''}
-            ${audits['first-contentful-paint']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Optimize First Contentful Paint</h4>
-                <p>Improve server response times, eliminate render-blocking resources, and optimize critical rendering path.</p>
-              </div>
-            ` : ''}
-            ${audits['largest-contentful-paint']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Optimize Largest Contentful Paint</h4>
-                <p>Optimize images, preload important resources, and eliminate render-blocking resources.</p>
-              </div>
-            ` : ''}
-            ${audits['cumulative-layout-shift']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Reduce Cumulative Layout Shift</h4>
-                <p>Ensure images and ads have size attributes, avoid inserting content above existing content, and use transform animations instead of properties that trigger layout.</p>
-              </div>
-            ` : ''}
-            ${audits['render-blocking-resources']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Eliminate Render-Blocking Resources</h4>
-                <p>Remove or defer render-blocking CSS and JavaScript. Use media queries for non-critical CSS and load JavaScript asynchronously.</p>
-              </div>
-            ` : ''}
-            ${audits['unused-css-rules']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Remove Unused CSS</h4>
-                <p>Eliminate unused CSS rules to reduce file size and improve loading performance. Use tools like PurgeCSS or similar.</p>
-              </div>
-            ` : ''}
-            ${audits['unused-javascript']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Remove Unused JavaScript</h4>
-                <p>Remove unused JavaScript code to reduce bundle size and improve loading performance. Use code splitting and tree shaking.</p>
-              </div>
-            ` : ''}
-            ${audits['uses-optimized-images']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Optimize Images</h4>
-                <p>Use modern image formats (WebP, AVIF), compress images, and implement responsive images with proper sizing.</p>
-              </div>
-            ` : ''}
-            ${audits['efficient-animated-content']?.score < 0.9 ? `
-              <div class="recommendation">
-                <h4>Optimize Animations</h4>
-                <p>Use CSS transforms and opacity for animations instead of properties that trigger layout or paint. Consider using will-change property.</p>
-              </div>
-            ` : ''}
-          </div>
-
-          <div class="section">
-            <h3>Technical Summary</h3>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-value">${categories.performance.score ? Math.round(categories.performance.score * 100) : 'N/A'}</div>
-                <div class="metric-label">Overall Performance</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${categories.accessibility.score ? Math.round(categories.accessibility.score * 100) : 'N/A'}</div>
-                <div class="metric-label">Accessibility Score</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${categories['best-practices'].score ? Math.round(categories['best-practices'].score * 100) : 'N/A'}</div>
-                <div class="metric-label">Best Practices</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">${categories.seo.score ? Math.round(categories.seo.score * 100) : 'N/A'}</div>
-                <div class="metric-label">SEO Score</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px;">
-            <p>Generated by WebAudit - Professional Website Analysis Tool</p>
-            <p>For more detailed analysis and recommendations, visit our dashboard at webaudit.com</p>
           </div>
         </body>
         </html>
@@ -463,7 +674,7 @@ export default function HeroSection() {
               }}
               className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-xs sm:text-sm font-semibold rounded-full mb-3 sm:mb-4"
             >
-              🤖 AI-POWERED
+               AI-POWERED
             </motion.span>
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-gray-300 font-light px-4">
               Complete Website Analysis in Minutes
@@ -563,14 +774,46 @@ export default function HeroSection() {
               </div>
             </motion.div>
           )}
+          {/* Stats - Only show when no analysis results */}
+          {!analysisResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 1 }}
+              className="mt-12 sm:mt-16 flex flex-row justify-center items-center gap-4 sm:gap-8 md:gap-12 max-w-4xl mx-auto px-4"
+            >
+              {[
+                { number: "10K+", label: "Websites Audited" },
+                { number: "99.9%", label: "Accuracy Rate" },
+                { number: "< 2min", label: "Average Scan Time" }
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
+                  className="text-center flex-shrink-0"
+                >
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1">
+                    {stat.number}
+                  </div>
+                  <div className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                    {stat.label}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
 
-      {/* Analysis Results */}
+      {/* Analysis Results - Separate Section Below Hero */}
       {analysisResult && (
         <motion.div
           id="analysis-results"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 max-w-7xl mx-auto px-4 pb-8"
+          className="relative z-10 max-w-7xl mx-auto px-4 pb-8"
         >
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
@@ -888,39 +1131,6 @@ export default function HeroSection() {
           </div>
         </motion.div>
       )}
-
-          {/* Stats - Only show when no analysis results */}
-          {!analysisResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 1 }}
-              className="mt-12 sm:mt-16 flex flex-row justify-center items-center gap-4 sm:gap-8 md:gap-12 max-w-4xl mx-auto px-4"
-            >
-              {[
-                { number: "10K+", label: "Websites Audited" },
-                { number: "99.9%", label: "Accuracy Rate" },
-                { number: "< 2min", label: "Average Scan Time" }
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
-                  className="text-center flex-shrink-0"
-                >
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
-                    {stat.label}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
 
       {/* Scroll Indicator - Only show when no analysis results */}
       {!analysisResult && (
