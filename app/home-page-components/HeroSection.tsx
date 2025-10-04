@@ -19,6 +19,7 @@ export default function HeroSection() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Function to analyze website
   const analyzeWebsite = async () => {
@@ -51,6 +52,28 @@ export default function HeroSection() {
 
       const pagespeedData = await pagespeedResponse.json();
       setAnalysisResult(pagespeedData);
+      
+      // Scroll down to analysis results after completion
+      setIsScrolling(true);
+      setTimeout(() => {
+        const analysisElement = document.getElementById('analysis-results');
+        if (analysisElement) {
+          analysisElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+          
+          // Add a subtle highlight effect
+          analysisElement.style.transition = 'box-shadow 0.3s ease';
+          analysisElement.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+          setTimeout(() => {
+            analysisElement.style.boxShadow = '';
+            setIsScrolling(false);
+          }, 2000);
+        } else {
+          setIsScrolling(false);
+        }
+      }, 500); // Small delay to ensure content is rendered
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -64,11 +87,10 @@ export default function HeroSection() {
 
     setIsExporting(true);
     try {
-      // Create a new window for PDF generation
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Unable to open print window. Please allow popups for this site.');
-      }
+      // Create a hidden iframe for PDF generation
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
 
       const { lighthouseResult } = analysisResult.analysis;
       const { categories, audits } = lighthouseResult;
@@ -322,13 +344,16 @@ export default function HeroSection() {
         </html>
       `;
 
-      printWindow.document.write(pdfContent);
-      printWindow.document.close();
+      iframe.contentDocument?.write(pdfContent);
+      iframe.contentDocument?.close();
       
       // Wait for content to load, then trigger print
       setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
+        iframe.contentWindow?.print();
+        // Clean up iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
       }, 1000);
 
     } catch (err) {
@@ -394,7 +419,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <motion.div
-        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8"
+        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 pt-20"
       >
         <div className="text-center max-w-6xl mx-auto px-4">
           {/* Main Title with AI Integration */}
@@ -523,9 +548,26 @@ export default function HeroSection() {
             </motion.div>
           )}
 
+          {/* Scrolling Indicator */}
+          {isScrolling && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 max-w-2xl mx-auto px-4"
+            >
+              <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 text-green-200 text-center">
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-green-300 border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Analysis complete! Scrolling to results...
+                </div>
+              </div>
+            </motion.div>
+          )}
+
       {/* Analysis Results */}
       {analysisResult && (
         <motion.div
+          id="analysis-results"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 max-w-7xl mx-auto px-4 pb-8"
@@ -810,6 +852,22 @@ export default function HeroSection() {
             )}
 
             <div className="mt-6 text-center space-x-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  const analysisElement = document.getElementById('analysis-results');
+                  if (analysisElement) {
+                    analysisElement.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'start' 
+                    });
+                  }
+                }}
+                className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors duration-300"
+              >
+                📊 View Analysis Results
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
