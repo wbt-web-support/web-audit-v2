@@ -85,6 +85,9 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
     }
   }, [planInfo, hasFeature, pageType])
 
+  // Check if user can create projects based on their plan
+  const canCreateNewProject = canCreateProject()
+
   const handleBrandDataChange = (field: keyof BrandConsistencyData, value: string): void => {
     setBrandData(prev => ({
       ...prev,
@@ -117,6 +120,13 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
+    
+    // Check if user can create projects
+    if (!canCreateNewProject) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
     console.log('SiteCrawlForm: Form submitted with data:', {
       siteUrl,
       pageType,
@@ -448,13 +458,40 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
             </div>
           )}
 
+          {/* Plan Information */}
+          {planInfo && (
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Current Plan: {planInfo.plan_name}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {planInfo.current_projects} / {planInfo.max_projects === -1 ? 'Unlimited' : planInfo.max_projects} projects used
+                  </div>
+                </div>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  planInfo.plan_type === 'Starter' 
+                    ? 'bg-green-100 text-green-700' 
+                    : planInfo.plan_type === 'Growth' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {planInfo.plan_type}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="pt-4">
             <button
               type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium cursor-pointer ${
-                submitStatus === 'success' 
+              disabled={isSubmitting || !canCreateNewProject}
+              className={`w-full py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${
+                !canCreateNewProject
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : submitStatus === 'success' 
                   ? 'bg-green-600 text-white' 
                   : submitStatus === 'error'
                   ? 'bg-red-600 text-white'
@@ -485,6 +522,13 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     {isEditMode ? 'Updating Project...' : 'Creating Project...'}
+                  </>
+                ) : !canCreateNewProject ? (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    Project Limit Reached - Upgrade Required
                   </>
                 ) : (
                   <>
@@ -557,33 +601,33 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-600 font-semibold text-sm">P</span>
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">G</span>
                       </div>
                       <div>
-                        <div className="font-medium text-black">Pro Plan</div>
+                        <div className="font-medium text-black">Growth Plan</div>
                         <div className="text-sm text-gray-600">Full site crawling + advanced features</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-black">₹999/month</div>
-                      <div className="text-xs text-gray-500">or ₹9,999/year</div>
+                      <div className="font-semibold text-black">₹29.99/month</div>
+                      <div className="text-xs text-gray-500">Up to 5 projects</div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-purple-600 font-semibold text-sm">E</span>
+                        <span className="text-purple-600 font-semibold text-sm">S</span>
                       </div>
                       <div>
-                        <div className="font-medium text-black">Enterprise Plan</div>
+                        <div className="font-medium text-black">Scale Plan</div>
                         <div className="text-sm text-gray-600">Unlimited everything + priority support</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-black">Custom</div>
-                      <div className="text-xs text-gray-500">Contact sales</div>
+                      <div className="font-semibold text-black">₹99.99/month</div>
+                      <div className="text-xs text-gray-500">Up to 50 projects</div>
                     </div>
                   </div>
                 </div>
