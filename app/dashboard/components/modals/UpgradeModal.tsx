@@ -25,7 +25,7 @@ export default function UpgradeModal({
   featureName,
   currentPlan 
 }: UpgradeModalProps) {
-  const { planInfo } = useUserPlan()
+  useUserPlan() // Get plan info if needed in the future
 
   if (!isOpen) return null
 

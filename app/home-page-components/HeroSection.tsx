@@ -2,6 +2,34 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
+import Image from 'next/image';
+
+interface AnalysisResult {
+  analysis: {
+    lighthouseResult: {
+      categories: {
+        performance: { score: number }
+        accessibility: { score: number }
+        'best-practices': { score: number }
+        seo: { score: number }
+      }
+      audits: Record<string, {
+        displayValue?: string
+        score?: number
+        details?: {
+          items?: Array<{
+            total?: number
+            totalBytes?: number
+            transferSize?: number
+            duration?: number
+            wastedBytes?: number
+          }>
+        }
+      }>
+    }
+    screenshot?: string
+  }
+}
 
 export default function HeroSection() {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,7 +44,7 @@ export default function HeroSection() {
   // State for website analysis
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -93,7 +121,7 @@ export default function HeroSection() {
       document.body.appendChild(iframe);
 
       const { lighthouseResult } = analysisResult.analysis;
-      const { categories, audits } = lighthouseResult;
+      const { categories, audits } = lighthouseResult || {};
 
       // Generate PDF content
       const pdfContent = `
@@ -441,7 +469,7 @@ export default function HeroSection() {
                     <div class="metric-value">${(() => {
                       const items = audits['network-requests']?.details?.items;
                       if (!items) return 'N/A';
-                      const totalSize = items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0);
+                      const totalSize = items.reduce((total: number, item: { transferSize?: number }) => total + (item.transferSize || 0), 0);
                       return totalSize ? (totalSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A';
                     })()}</div>
                     <div class="metric-label">📡 Transfer Size</div>
@@ -453,55 +481,55 @@ export default function HeroSection() {
               <div class="section">
                 <h3>💡 Performance Recommendations</h3>
                 <p style="color: #64748b; margin-bottom: 20px; font-style: italic;">Actionable recommendations to improve your website's performance based on the analysis results.</p>
-                ${categories.performance.score < 0.9 ? `
+                ${categories?.performance?.score && categories.performance.score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🚀 Improve Performance Score</h4>
                     <p>Your performance score is ${Math.round(categories.performance.score * 100)}. Focus on optimizing Core Web Vitals, reducing JavaScript execution time, and optimizing images.</p>
                   </div>
                 ` : ''}
-                ${audits['first-contentful-paint']?.score < 0.9 ? `
+                ${audits?.['first-contentful-paint']?.score && audits['first-contentful-paint'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🎨 Optimize First Contentful Paint</h4>
                     <p>Improve server response times, eliminate render-blocking resources, and optimize critical rendering path.</p>
                   </div>
                 ` : ''}
-                ${audits['largest-contentful-paint']?.score < 0.9 ? `
+                ${audits?.['largest-contentful-paint']?.score && audits['largest-contentful-paint'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🖼️ Optimize Largest Contentful Paint</h4>
                     <p>Optimize images, preload important resources, and eliminate render-blocking resources.</p>
                   </div>
                 ` : ''}
-                ${audits['cumulative-layout-shift']?.score < 0.9 ? `
+                ${audits?.['cumulative-layout-shift']?.score && audits['cumulative-layout-shift'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>📐 Reduce Cumulative Layout Shift</h4>
                     <p>Ensure images and ads have size attributes, avoid inserting content above existing content, and use transform animations instead of properties that trigger layout.</p>
                   </div>
                 ` : ''}
-                ${audits['render-blocking-resources']?.score < 0.9 ? `
+                ${audits?.['render-blocking-resources']?.score && audits['render-blocking-resources'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🚫 Eliminate Render-Blocking Resources</h4>
                     <p>Remove or defer render-blocking CSS and JavaScript. Use media queries for non-critical CSS and load JavaScript asynchronously.</p>
                   </div>
                 ` : ''}
-                ${audits['unused-css-rules']?.score < 0.9 ? `
+                ${audits?.['unused-css-rules']?.score && audits['unused-css-rules'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🎨 Remove Unused CSS</h4>
                     <p>Eliminate unused CSS rules to reduce file size and improve loading performance. Use tools like PurgeCSS or similar.</p>
                   </div>
                 ` : ''}
-                ${audits['unused-javascript']?.score < 0.9 ? `
+                ${audits?.['unused-javascript']?.score && audits['unused-javascript'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>📜 Remove Unused JavaScript</h4>
                     <p>Remove unused JavaScript code to reduce bundle size and improve loading performance. Use code splitting and tree shaking.</p>
                   </div>
                 ` : ''}
-                ${audits['uses-optimized-images']?.score < 0.9 ? `
+                ${audits?.['uses-optimized-images']?.score && audits['uses-optimized-images'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🖼️ Optimize Images</h4>
                     <p>Use modern image formats (WebP, AVIF), compress images, and implement responsive images with proper sizing.</p>
                   </div>
                 ` : ''}
-                ${audits['efficient-animated-content']?.score < 0.9 ? `
+                ${audits?.['efficient-animated-content']?.score && audits['efficient-animated-content'].score < 0.9 ? `
                   <div class="recommendation">
                     <h4>🎬 Optimize Animations</h4>
                     <p>Use CSS transforms and opacity for animations instead of properties that trigger layout or paint. Consider using will-change property.</p>
@@ -846,9 +874,11 @@ export default function HeroSection() {
             {/* Screenshot */}
             {analysisResult.analysis?.screenshot && (
               <div className="mb-8 text-center">
-                <img
+                <Image
                   src={analysisResult.analysis.screenshot}
                   alt="Website Screenshot"
+                  width={800}
+                  height={600}
                   className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
                   style={{ maxHeight: '400px' }}
                 />
@@ -1041,7 +1071,7 @@ export default function HeroSection() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-300">Transfer Size:</span>
-                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['network-requests']?.details?.items?.reduce((total: number, item: any) => total + (item.transferSize || 0), 0) ? `${(analysisResult.analysis.lighthouseResult.audits['network-requests'].details.items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0) / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['network-requests']?.details?.items?.reduce((total: number, item: { transferSize?: number }) => total + (item.transferSize || 0), 0) ? `${(analysisResult.analysis.lighthouseResult.audits['network-requests'].details.items.reduce((total: number, item: { transferSize?: number }) => total + (item.transferSize || 0), 0) / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-300">Resource Load Time:</span>
@@ -1065,7 +1095,7 @@ export default function HeroSection() {
                         </p>
                       </div>
                     )}
-                    {analysisResult.analysis.lighthouseResult.audits?.['first-contentful-paint']?.score < 0.9 && (
+                    {analysisResult.analysis.lighthouseResult.audits?.['first-contentful-paint']?.score && analysisResult.analysis.lighthouseResult.audits['first-contentful-paint'].score < 0.9 && (
                       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                         <h5 className="font-medium text-blue-300 mb-2">Optimize First Contentful Paint</h5>
                         <p className="text-sm text-blue-200">
@@ -1073,7 +1103,7 @@ export default function HeroSection() {
                         </p>
                       </div>
                     )}
-                    {analysisResult.analysis.lighthouseResult.audits?.['largest-contentful-paint']?.score < 0.9 && (
+                    {analysisResult.analysis.lighthouseResult.audits?.['largest-contentful-paint']?.score && analysisResult.analysis.lighthouseResult.audits['largest-contentful-paint'].score < 0.9 && (
                       <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
                         <h5 className="font-medium text-purple-300 mb-2">Optimize Largest Contentful Paint</h5>
                         <p className="text-sm text-purple-200">
@@ -1081,7 +1111,7 @@ export default function HeroSection() {
                         </p>
                       </div>
                     )}
-                    {analysisResult.analysis.lighthouseResult.audits?.['cumulative-layout-shift']?.score < 0.9 && (
+                    {analysisResult.analysis.lighthouseResult.audits?.['cumulative-layout-shift']?.score && analysisResult.analysis.lighthouseResult.audits['cumulative-layout-shift'].score < 0.9 && (
                       <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                         <h5 className="font-medium text-red-300 mb-2">Reduce Cumulative Layout Shift</h5>
                         <p className="text-sm text-red-200">

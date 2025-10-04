@@ -15,7 +15,7 @@ interface AdminSubscriptionProps {
   }
 }
 
-export default function AdminSubscription({ userProfile }: AdminSubscriptionProps) {
+export default function AdminSubscription({ userProfile: _userProfile }: AdminSubscriptionProps) {
   const [subscriptionStats] = useState({
     totalSubscriptions: 1247,
     activeSubscriptions: 1156,

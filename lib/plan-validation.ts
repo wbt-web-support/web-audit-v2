@@ -1,6 +1,13 @@
 import { supabase } from './supabase'
 import { FEATURES } from './features'
 
+interface SupabaseError {
+  message: string
+  code?: string
+  details?: string
+  hint?: string
+}
+
 export type PlanType = 'Starter' | 'Growth' | 'Scale'
 export type CrawlType = 'single' | 'multiple'
 
@@ -60,7 +67,7 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single() as { data: SubscriptionData | null; error: any }
+      .single() as { data: SubscriptionData | null; error: SupabaseError | null }
 
     if (subError || !subscription) {
       // If no active subscription, check for free plan
@@ -69,7 +76,7 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
         .select('id, name, plan_type, can_use_features, max_projects')
         .eq('plan_type', 'Starter')
         .eq('is_active', true)
-        .single() as { data: PlanData | null; error: any }
+        .single() as { data: PlanData | null; error: SupabaseError | null }
 
       if (freeError || !freePlan) {
         return null

@@ -135,7 +135,7 @@ Provide only the JSON response, no additional text or explanations.
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     // Clean the response text before parsing
     let cleanedText = text.trim();
 
@@ -172,7 +172,7 @@ export async function getGeminiAnalysisStatus(): Promise<boolean> {
     });
     const startTime = Date.now();
     await model.generateContent('test');
-    const duration = Date.now() - startTime;
+    const _duration = Date.now() - startTime;
     return true;
   } catch (error) {
     console.error('[GEMINI] API not available:', error);

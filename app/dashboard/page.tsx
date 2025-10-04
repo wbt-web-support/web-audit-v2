@@ -208,8 +208,17 @@ function DashboardContentWrapper() {
     brandConsistency: boolean;
     hiddenUrls: boolean;
     keysCheck: boolean;
-    brandData: any;
-    hiddenUrlsList: any[];
+    brandData: {
+      companyName: string;
+      phoneNumber: string;
+      emailAddress: string;
+      address: string;
+      additionalInformation: string;
+    };
+    hiddenUrlsList: {
+      id: string;
+      url: string;
+    }[];
   }) => {
     console.log('Dashboard: handleUpdateProject called with:', { projectId, data });
     

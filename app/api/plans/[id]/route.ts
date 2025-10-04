@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+interface SupabaseError {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
 // GET /api/plans/[id] - Fetch a specific plan
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data: plan, error } = await supabase
       .from('plans')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) {
@@ -35,9 +43,10 @@ export async function GET(
 // PUT /api/plans/[id] - Update a plan
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     
     // Validate plan_type if provided
@@ -62,15 +71,15 @@ export async function PUT(
     const { data, error } = await supabase
       .from('plans')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select();
 
     // Check if any rows were affected
     if (!data || data.length === 0) {
-      console.error('No rows affected for plan ID:', params.id);
+      console.error('No rows affected for plan ID:', id);
       console.error('Update data:', updateData);
       return NextResponse.json(
-        { error: `Plan not found with ID: ${params.id}` },
+        { error: `Plan not found with ID: ${id}` },
         { status: 404 }
       );
     }
@@ -80,15 +89,16 @@ export async function PUT(
 
     if (error) {
       console.error('Error updating plan:', error);
+      const supabaseError = error as SupabaseError;
       console.error('Error details:', {
-        message: (error as any).message,
-        code: (error as any).code,
-        details: (error as any).details,
-        hint: (error as any).hint
+        message: supabaseError.message,
+        code: supabaseError.code,
+        details: supabaseError.details,
+        hint: supabaseError.hint
       });
       
       // Handle specific error cases
-      if ((error as any).code === '23505') {
+      if (supabaseError.code === '23505') {
         return NextResponse.json(
           { error: 'A plan with this Razorpay ID already exists. Please use a different Razorpay ID or leave it empty.' },
           { status: 400 }
@@ -96,7 +106,7 @@ export async function PUT(
       }
       
       return NextResponse.json(
-        { error: `Failed to update plan: ${(error as any).message || 'Unknown error'}` },
+        { error: `Failed to update plan: ${supabaseError.message || 'Unknown error'}` },
         { status: 500 }
       );
     }
@@ -118,16 +128,17 @@ export async function PUT(
 // DELETE /api/plans/[id] - Delete a plan (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data, error } = await supabase
       .from('plans')
       .update({ 
         is_active: false,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select();
 
     // Check if any rows were affected

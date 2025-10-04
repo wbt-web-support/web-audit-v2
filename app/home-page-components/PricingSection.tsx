@@ -5,7 +5,9 @@ import { useRef, useState, useEffect } from 'react';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: new (options: Record<string, unknown>) => {
+      open: () => void;
+    };
   }
 }
 
@@ -28,7 +30,9 @@ const defaultPlans = [
     cta: 'Get Started Free',
     popular: false,
     color: 'gray',
-    amount: 0
+    amount: 0,
+    currency: 'USD',
+    plan_type: 'Starter'
   }
 ];
 
@@ -51,19 +55,19 @@ export default function PricingSection() {
           console.log('Database plans loaded:', data.plans?.length || 0, 'plans');
           
           // Transform database plans to match component format
-          const transformedPlans = data.plans.map((plan: any) => ({
+          const transformedPlans = data.plans.map((plan: { id: string; name: string; plan_type: string; price: number; interval_type: string; description: string; features: Array<{ name: string }>; currency?: string; amount?: number; is_popular?: boolean; color?: string; razorpay_plan_id?: string }) => ({
             id: plan.id,
             name: plan.name,
-            price: plan.amount === 0 ? 'Free' : 
+            price: (plan.amount || plan.price) === 0 ? 'Free' : 
                    plan.currency === 'INR' ? 
-                   `₹${Math.round(plan.amount / 100).toLocaleString()}` : 
-                   `$${Math.round(plan.amount / 100).toLocaleString()}`,
+                   `₹${Math.round((plan.amount || plan.price) / 100).toLocaleString()}` : 
+                   `$${Math.round((plan.amount || plan.price) / 100).toLocaleString()}`,
             period: plan.interval_type === 'monthly' ? 'per month' : 
                     plan.interval_type === 'yearly' ? 'per year' : 
                     plan.interval_type === 'weekly' ? 'per week' : 
                     plan.interval_type === 'daily' ? 'per day' : 'per ' + plan.interval_type,
             description: plan.description,
-            features: plan.features.map((f: any) => f.name),
+            features: plan.features.map((f: { name: string }) => f.name),
             cta: plan.plan_type === 'Starter' ? 'Get Started Free' :
                  plan.plan_type === 'Scale' ? 'Contact Sales' : 'Start Growth Trial',
             popular: plan.is_popular,
@@ -115,7 +119,9 @@ export default function PricingSection() {
             cta: 'Start Pro Trial',
             popular: true,
             color: 'black',
-            amount: 290000
+            amount: 290000,
+            currency: 'INR',
+            plan_type: 'Growth'
           },
           {
             id: 'Scale',
@@ -136,7 +142,9 @@ export default function PricingSection() {
             cta: 'Contact Sales',
             popular: false,
             color: 'gray',
-            amount: 0
+            amount: 0,
+            currency: 'USD',
+            plan_type: 'Scale'
           }
         ];
         setPlans(fallbackPlans);
@@ -148,7 +156,7 @@ export default function PricingSection() {
     fetchPlans();
   }, []);
 
-  const handlePayment = async (plan: any) => {
+  const handlePayment = async (plan: { id: string; name: string; amount: number; currency: string; plan_type: string; description?: string; price?: string; period?: string; features?: string[]; cta?: string; popular?: boolean; color?: string; razorpay_plan_id?: string }) => {
     if (plan.id === 'Starter') {
       alert('Free plan selected! No payment required.');
       return;
@@ -207,10 +215,10 @@ export default function PricingSection() {
       }
 
       // Create options based on payment type
-      const options: any = {
+      const options: Record<string, unknown> = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXXXXXX',
         name: plan.name,
-        description: plan.description,
+        description: plan.description || plan.name,
         prefill: {
           name: 'Test User',
           email: 'test@example.com',
@@ -242,7 +250,7 @@ export default function PricingSection() {
           phonepe: true,
           gpay: true
         },
-        handler: function (response: any) {
+        handler: function (response: { razorpay_payment_id: string }) {
           console.log('Payment successful:', response);
           setPaymentSuccess(response.razorpay_payment_id);
           alert(`Payment successful! You now have ${plan.name} access. Payment ID: ${response.razorpay_payment_id}`);

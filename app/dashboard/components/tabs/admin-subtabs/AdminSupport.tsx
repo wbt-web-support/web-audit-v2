@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface AdminSupportProps {
@@ -61,12 +61,7 @@ export default function AdminSupport({  }: AdminSupportProps) {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterPriority, setFilterPriority] = useState<string>('all')
 
-  // Load tickets on component mount
-  useEffect(() => {
-    loadTickets()
-  }, [])
-
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     setTicketsLoading(true)
     setTicketsError(null)
     try {
@@ -120,7 +115,12 @@ export default function AdminSupport({  }: AdminSupportProps) {
     } finally {
       setTicketsLoading(false)
     }
-  }
+  }, [getTickets, testTicketSystemConnection])
+
+  // Load tickets on component mount
+  useEffect(() => {
+    loadTickets()
+  }, [loadTickets])
 
   const loadTicketMessages = async (ticketId: string) => {
     try {

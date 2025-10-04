@@ -55,7 +55,7 @@ interface Plan {
   is_active: boolean
 }
 
-export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
+export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProps) {
   const { 
     getUsers, 
     updateUser, 
@@ -73,8 +73,8 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   const [usersError, setUsersError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userActivity, setUserActivity] = useState<Record<string, unknown> | null>(null)
-  const [userProjects, setUserProjects] = useState<Record<string, unknown>[]>([])
-  const [userSubscription, setUserSubscription] = useState<Record<string, unknown> | null>(null)
+  const [_userProjects, setUserProjects] = useState<Record<string, unknown>[]>([])
+  const [_userSubscription, setUserSubscription] = useState<Record<string, unknown> | null>(null)
   const [showUserDetails, setShowUserDetails] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
@@ -86,23 +86,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  const loadPlans = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price', { ascending: true })
-      
-      if (error) {
-        console.error('Error loading plans:', error)
-      } else {
-        setPlans(data || [])
-      }
-    } catch (error) {
-      console.error('Unexpected error loading plans:', error)
-    }
-  }, [])
+  // Removed unused loadPlans function
 
   const calculateUserProjectCounts = useCallback(async (usersData: User[], plansData: Plan[]) => {
     try {
@@ -370,7 +354,7 @@ export default function AdminUsers({ userProfile: _ }: AdminUsersProps) {
     
     return matchesSearch && matchesRole && matchesStatus && matchesPlan && matchesProjectLimit
   }).sort((a, b) => {
-    let aValue: any, bValue: any
+    let aValue: string | number, bValue: string | number
     
     switch (sortBy) {
       case 'name':

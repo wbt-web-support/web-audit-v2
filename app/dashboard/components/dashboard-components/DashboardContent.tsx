@@ -30,8 +30,17 @@ interface DashboardContentProps {
     brandConsistency: boolean;
     hiddenUrls: boolean;
     keysCheck: boolean;
-    brandData: any;
-    hiddenUrlsList: any[];
+    brandData: {
+      companyName: string;
+      phoneNumber: string;
+      emailAddress: string;
+      address: string;
+      additionalInformation: string;
+    };
+    hiddenUrlsList: {
+      id: string;
+      url: string;
+    }[];
   }) => Promise<void>
   onDeleteProject?: (projectId: string) => Promise<void>
   onRecrawlProject?: (projectId: string) => Promise<void>

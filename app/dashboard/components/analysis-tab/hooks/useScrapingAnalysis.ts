@@ -194,7 +194,7 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         scrapingError: error instanceof Error ? error.message : 'Scraping failed'
       });
     }
-  }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion]);
+  }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion, session?.access_token]);
 
   // Load project data from database
   const loadProjectData = useCallback(async (skipAutoScraping = false) => {

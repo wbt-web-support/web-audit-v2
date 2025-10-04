@@ -83,7 +83,7 @@ export default function DashboardSidebar({
     if (planInfo) {
       console.log('Plan info updated:', { planInfo, planLoading, user: user?.id });
     }
-  }, [planInfo?.plan_id, planInfo?.plan_type, planLoading, user?.id]);
+  }, [planInfo, planLoading, user?.id]);
 
   // Memoize navigation items to prevent re-creation on every render
   const navigationItems = useMemo(() => {

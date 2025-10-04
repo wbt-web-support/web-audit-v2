@@ -1,12 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
+interface RazorpayPlan {
+  id: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  interval_count: number;
+  status: string;
+  created_at: number;
+  item?: {
+    amount: number;
+    currency: string;
+    name: string;
+    description?: string;
+    notes?: {
+      features?: string[];
+      popular?: string;
+      color?: string;
+    };
+  };
+}
+
+
+interface RazorpaySubscription {
+  id: string;
+  plan_id: string;
+  status: string;
+}
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXXXXXX',
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'your_key_secret_here',
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check if Razorpay keys are configured
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -41,7 +69,7 @@ export async function GET(request: NextRequest) {
       });
       
       // Find corresponding subscription if exists
-      const subscription = subscriptions.items.find((sub: any) => 
+      const subscription = subscriptions.items.find((sub: RazorpaySubscription) => 
         sub.plan_id === plan.id
       );
 

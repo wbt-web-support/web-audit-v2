@@ -385,7 +385,7 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
 
 
   // Function to process keys detection from all pages
-  const processKeysDetection = async (scrapingData: ScrapingData, projectId: string) => {
+  const processKeysDetection = async (scrapingData: ScrapingData, _projectId: string) => {
     try {
       console.log('🔑 Starting keys detection analysis...')
       

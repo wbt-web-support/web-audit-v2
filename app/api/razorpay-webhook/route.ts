@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateWebhookSignature } from 'razorpay/dist/utils/razorpay-utils';
 
+interface PaymentData {
+  id: string;
+  amount: number;
+  currency: string;
+  method: string;
+  status: string;
+  error_code?: string;
+  error_description?: string;
+}
+
+interface OrderData {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the raw body for webhook signature validation
@@ -87,7 +104,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Handle successful payment capture
-async function handlePaymentCaptured(paymentData: any, orderData: any) {
+async function handlePaymentCaptured(paymentData: PaymentData, orderData: OrderData) {
   try {
     console.log('Payment captured:', {
       paymentId: paymentData.id,
@@ -112,7 +129,7 @@ async function handlePaymentCaptured(paymentData: any, orderData: any) {
 }
 
 // Handle failed payment
-async function handlePaymentFailed(paymentData: any, orderData: any) {
+async function handlePaymentFailed(paymentData: PaymentData, orderData: OrderData) {
   try {
     console.log('Payment failed:', {
       paymentId: paymentData.id,
@@ -130,7 +147,7 @@ async function handlePaymentFailed(paymentData: any, orderData: any) {
 }
 
 // Handle order paid event
-async function handleOrderPaid(paymentData: any, orderData: any) {
+async function handleOrderPaid(paymentData: PaymentData, orderData: OrderData) {
   try {
     console.log('Order paid:', {
       paymentId: paymentData.id,

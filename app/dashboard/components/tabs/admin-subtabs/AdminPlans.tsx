@@ -16,6 +16,22 @@ interface AdminPlansProps {
   }
 }
 
+interface PlanLimits {
+  max_pages?: number
+  max_audits_per_month?: number
+  max_team_members?: number
+  storage_gb?: number
+  api_calls_per_month?: number
+  [key: string]: number | string | boolean | undefined
+}
+
+interface SupabaseError {
+  message: string
+  code?: string
+  details?: string
+  hint?: string
+}
+
 interface Plan {
   id: string
   name: string
@@ -33,7 +49,7 @@ interface Plan {
   }>
   can_use_features: string[]
   max_projects: number
-  limits: Record<string, any>
+  limits: PlanLimits
   is_active: boolean
   is_popular: boolean
   color: string
@@ -57,7 +73,7 @@ interface PlanFormData {
   }>
   can_use_features: string[]
   max_projects: number
-  limits: Record<string, any>
+  limits: PlanLimits
   is_active: boolean
   is_popular: boolean
   color: string
@@ -65,7 +81,7 @@ interface PlanFormData {
   razorpay_plan_id?: string
 }
 
-export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
+export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProps) {
   
   const [plans, setPlans] = useState<Plan[]>([])
   const [plansLoading, setPlansLoading] = useState(true)
@@ -141,7 +157,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     } finally {
       setPlansLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   // Load plans on component mount
   useEffect(() => {
@@ -153,7 +169,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     console.log('Form data changed:', formData)
   }, [formData])
 
-  const handlePlanAction = async (planId: string, action: string, data?: any) => {
+  const handlePlanAction = async (planId: string, action: string, data?: Partial<PlanFormData>) => {
     setActionLoading(action)
     try {
       console.log(`Attempting ${action} action with:`, { planId, action, data })
@@ -180,7 +196,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
         return
       }
       
-      let result: any = null
+      let result: { data: Plan | null; error: SupabaseError | null } | null = null
       let useApiFallback = false
       
       try {

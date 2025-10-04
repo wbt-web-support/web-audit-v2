@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { useUserPlan, type UserPlanInfo } from '@/hooks/useUserPlan'
-import { FEATURES } from '@/lib/features'
+import { useUserPlan } from '@/hooks/useUserPlan'
 import UpgradeModal from '@/app/dashboard/components/modals/UpgradeModal'
 
 type CrawlType = 'single' | 'multiple'

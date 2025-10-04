@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 import { checkFeatureAccess, checkProjectLimit, validateCrawlRequest } from '@/lib/plan-validation'
 
 export async function POST(request: NextRequest) {

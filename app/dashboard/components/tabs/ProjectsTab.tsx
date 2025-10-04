@@ -6,6 +6,19 @@ import Image from 'next/image';
 import { AuditProject } from '@/types/audit';
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader';
 import EditProjectModal from '../modals/EditProjectModal';
+
+interface BrandConsistencyData {
+  companyName: string;
+  phoneNumber: string;
+  emailAddress: string;
+  address: string;
+  additionalInformation: string;
+}
+
+interface HiddenUrl {
+  id: string;
+  url: string;
+}
 interface ProjectsTabProps {
   userProfile: unknown;
   projects: AuditProject[];
@@ -13,7 +26,15 @@ interface ProjectsTabProps {
   projectsError: string | null;
   refreshProjects: () => Promise<void>;
   onProjectSelect?: (projectId: string) => void;
-  onUpdateProject?: (projectId: string, data: any) => Promise<void>;
+  onUpdateProject?: (projectId: string, data: {
+    siteUrl: string;
+    pageType: 'single' | 'multiple';
+    brandConsistency: boolean;
+    hiddenUrls: boolean;
+    keysCheck: boolean;
+    brandData: BrandConsistencyData;
+    hiddenUrlsList: HiddenUrl[];
+  }) => Promise<void>;
   onDeleteProject?: (projectId: string) => Promise<void>;
   onRecrawlProject?: (projectId: string) => Promise<void>;
 }
@@ -89,8 +110,8 @@ export default function ProjectsTab({
     brandConsistency: boolean;
     hiddenUrls: boolean;
     keysCheck: boolean;
-    brandData: any;
-    hiddenUrlsList: any[];
+    brandData: BrandConsistencyData;
+    hiddenUrlsList: HiddenUrl[];
   }) => {
     console.log('ProjectsTab: handleSaveProject called with:', { projectId, data });
     
@@ -115,16 +136,7 @@ export default function ProjectsTab({
     }
   };
 
-  const handleRecrawlProject = async (projectId: string) => {
-    if (!onRecrawlProject) return;
-    
-    try {
-      await onRecrawlProject(projectId);
-      await refreshProjects();
-    } catch (error) {
-      console.error('Error recrawling project:', error);
-    }
-  };
+  // Removed unused handleRecrawlProject function
 
   const handleDeleteProject = async (projectId: string) => {
     if (!onDeleteProject) return;
