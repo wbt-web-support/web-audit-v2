@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET /api/plans - Fetch all active plans for public use
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { data: plans, error } = await supabase
       .from('plans')
