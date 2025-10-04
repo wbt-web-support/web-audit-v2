@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type PlanType = 'Starter' | 'Growth' | 'Scale'
@@ -40,10 +40,33 @@ interface PlanData {
   max_projects: number
 }
 
+// Utility function to get plan name from database based on plan type
+const getPlanNameFromDB = async (planType: PlanType): Promise<string> => {
+  try {
+    const { data: plan, error } = await supabase
+      .from('plans')
+      .select('name')
+      .eq('plan_type', planType)
+      .eq('is_active', true)
+      .single()
+    
+    if (error || !plan) {
+      console.warn(`No plan found for type ${planType}, using fallback name`)
+      return `${planType} Plan` // Fallback to plan type + "Plan"
+    }
+    
+    return plan.name
+  } catch (err) {
+    console.error(`Error fetching plan name for ${planType}:`, err)
+    return `${planType} Plan` // Fallback to plan type + "Plan"
+  }
+}
+
 export function useUserPlan(): UseUserPlanResult {
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
 
   const fetchUserPlan = async () => {
     try {
@@ -56,56 +79,56 @@ export function useUserPlan(): UseUserPlanResult {
         throw new Error('User not authenticated')
       }
 
-      // Get user's current subscription/plan
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select(`
-          plan_id,
-          plans!inner(
-            id,
-            name,
-            plan_type,
-            can_use_features,
-            max_projects
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single() as { data: SubscriptionData | null; error: any }
+      // Get user's plan type from user table
+      const { data: userData, error: userDataError } = await supabase
+        .from('users')
+        .select('plan_type')
+        .eq('id', user.id)
+        .single()
 
       let userPlan: UserPlanInfo | null = null
 
-      if (subError || !subscription) {
-        // If no active subscription, check for free plan
-        const { data: freePlan, error: freeError } = await supabase
-          .from('plans')
-          .select('id, name, plan_type, can_use_features, max_projects')
-          .eq('plan_type', 'Starter')
-          .eq('is_active', true)
-          .single() as { data: PlanData | null; error: any }
-
-        if (freeError || !freePlan) {
-          throw new Error('No plan found')
-        }
-
+      if (userDataError || !userData || !userData.plan_type) {
+        console.warn('No plan_type found in user table, using fallback plan')
+        // Use a fallback plan if no plan_type is set
+        const fallbackPlanName = await getPlanNameFromDB('Starter')
         userPlan = {
-          plan_type: freePlan.plan_type,
-          plan_id: freePlan.id,
-          plan_name: freePlan.name,
-          can_use_features: freePlan.can_use_features || [],
-          max_projects: freePlan.max_projects || 1,
+          plan_type: 'Starter' as PlanType,
+          plan_id: 'fallback-starter',
+          plan_name: fallbackPlanName,
+          can_use_features: ['basic_audit'],
+          max_projects: 1,
           current_projects: 0
         }
       } else {
-        userPlan = {
-          plan_type: subscription.plans.plan_type,
-          plan_id: subscription.plans.id,
-          plan_name: subscription.plans.name,
-          can_use_features: subscription.plans.can_use_features || [],
-          max_projects: subscription.plans.max_projects || 1,
-          current_projects: 0
+        // Get plan details from plans table based on user's plan_type
+        const { data: planData, error: planError } = await supabase
+          .from('plans')
+          .select('id, name, plan_type, can_use_features, max_projects')
+          .eq('plan_type', userData.plan_type)
+          .eq('is_active', true)
+          .single() as { data: PlanData | null; error: any }
+
+        if (planError || !planData) {
+          console.warn(`No plan found for type ${userData.plan_type}, using fallback plan`)
+          const fallbackPlanName = await getPlanNameFromDB(userData.plan_type as PlanType)
+          userPlan = {
+            plan_type: userData.plan_type as PlanType,
+            plan_id: 'fallback-' + userData.plan_type.toLowerCase(),
+            plan_name: fallbackPlanName,
+            can_use_features: ['basic_audit'],
+            max_projects: 1,
+            current_projects: 0
+          }
+        } else {
+          userPlan = {
+            plan_type: planData.plan_type,
+            plan_id: planData.id,
+            plan_name: planData.name, // Use the actual name from database
+            can_use_features: planData.can_use_features || [],
+            max_projects: planData.max_projects || 1,
+            current_projects: 0
+          }
         }
       }
 
@@ -122,8 +145,20 @@ export function useUserPlan(): UseUserPlanResult {
       setPlanInfo(userPlan)
     } catch (err) {
       console.error('Error fetching user plan:', err)
+      
+            // If there's an error, provide a fallback plan instead of null
+            const fallbackPlanName = await getPlanNameFromDB('Starter')
+            const fallbackPlan: UserPlanInfo = {
+              plan_type: 'Starter' as PlanType,
+              plan_id: 'fallback-starter',
+              plan_name: fallbackPlanName,
+              can_use_features: ['basic_audit'],
+              max_projects: 1,
+              current_projects: 0
+            }
+      
       setError(err instanceof Error ? err.message : 'Failed to fetch plan information')
-      setPlanInfo(null)
+      setPlanInfo(fallbackPlan) // Use fallback instead of null
     } finally {
       setLoading(false)
     }
@@ -138,12 +173,34 @@ export function useUserPlan(): UseUserPlanResult {
     return planInfo.max_projects === -1 || planInfo.current_projects < planInfo.max_projects
   }
 
-  const refreshPlan = async () => {
+  const refreshPlan = useCallback(async () => {
     await fetchUserPlan()
-  }
+  }, [])
 
   useEffect(() => {
     fetchUserPlan()
+  }, [])
+
+  // Add a refresh mechanism that can be triggered externally
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'plan_updated' && e.newValue) {
+        fetchUserPlan()
+        localStorage.removeItem('plan_updated')
+      }
+    }
+
+    const handleCustomEvent = () => {
+      fetchUserPlan()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('planUpdated', handleCustomEvent)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('planUpdated', handleCustomEvent)
+    }
   }, [])
 
   return {

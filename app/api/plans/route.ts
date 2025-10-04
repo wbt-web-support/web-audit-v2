@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
       .from('plans')
       .select('*')
       .eq('is_active', true)
-      .order('sort_order', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error fetching plans:', error);
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    const { name, description, plan_type, amount, currency, interval_type, features, can_use_features, max_projects, limits } = body;
+    const { name, description, plan_type, price, currency, interval_type, features, can_use_features, max_projects, limits } = body;
     
     if (!name || !plan_type) {
       return NextResponse.json(
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       name,
       description: description || '',
       plan_type,
-      amount: amount || 0,
+      price: price || 0,
       currency: currency || 'INR',
       interval_type: interval_type || 'monthly',
       interval_count: body.interval_count || 1,

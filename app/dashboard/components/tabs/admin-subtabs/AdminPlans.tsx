@@ -22,7 +22,7 @@ interface Plan {
   description: string
   plan_type: 'Starter' | 'Growth' | 'Scale'
   razorpay_plan_id?: string
-  amount: number
+  price: number
   currency: string
   interval_type: string
   interval_count: number
@@ -46,7 +46,7 @@ interface PlanFormData {
   name: string
   description: string
   plan_type: 'Starter' | 'Growth' | 'Scale'
-  amount: number
+  price: number
   currency: string
   interval_type: string
   interval_count: number
@@ -79,7 +79,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     name: '',
     description: '',
     plan_type: 'Starter',
-    amount: 0,
+    price: 0,
     currency: 'INR',
     interval_type: 'monthly',
     interval_count: 1,
@@ -115,12 +115,12 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       const { data: directData, error: directError } = await supabase
         .from('plans')
         .select('*')
-        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
       
       console.log('Direct Supabase result:', { directData, directError })
       
-      if (directError) {
-        console.log('Direct access failed, trying API route...')
+      if (directError || !directData) {
+        console.log('Direct access failed, trying API route...', directError)
         // Fallback to API route
         const response = await fetch('/api/plans')
         if (response.ok) {
@@ -128,11 +128,12 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
           console.log('API route result:', apiData)
           setPlans(apiData.plans || [])
         } else {
+          console.error('API access also failed:', response.status, response.statusText)
           throw new Error('Both direct and API access failed')
         }
       } else {
         console.log('Direct access successful:', directData?.length || 0, 'plans')
-        setPlans(directData || [])
+        setPlans(directData)
       }
     } catch (error) {
       console.error('Unexpected error loading plans:', error)
@@ -147,6 +148,11 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     loadPlans()
   }, [loadPlans])
 
+  // Debug: Log form data changes
+  useEffect(() => {
+    console.log('Form data changed:', formData)
+  }, [formData])
+
   const handlePlanAction = async (planId: string, action: string, data?: any) => {
     setActionLoading(action)
     try {
@@ -155,8 +161,24 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       // Clean data to avoid unique constraint violations
       const cleanData = data ? {
         ...data,
+        plan_type: data.plan_type?.trim(), // Ensure plan_type is trimmed
         razorpay_plan_id: data.razorpay_plan_id && data.razorpay_plan_id.trim() !== '' ? data.razorpay_plan_id : null
       } : data
+      
+      // Debug: Log the data being sent
+      console.log('Data being sent:', cleanData)
+      console.log('Plan type being sent:', cleanData?.plan_type)
+      console.log('Plan type type:', typeof cleanData?.plan_type)
+      console.log('Plan type length:', cleanData?.plan_type?.length)
+      console.log('Plan type char codes:', cleanData?.plan_type?.split('').map((c: string) => c.charCodeAt(0)) || [])
+      
+      // Validate plan_type before proceeding
+      const validPlanTypes = ['Starter', 'Growth', 'Scale']
+      if (cleanData?.plan_type && !validPlanTypes.includes(cleanData.plan_type)) {
+        console.error('Invalid plan_type detected:', cleanData.plan_type)
+        alert(`Invalid plan type: "${cleanData.plan_type}". Must be one of: ${validPlanTypes.join(', ')}`)
+        return
+      }
       
       let result: any = null
       let useApiFallback = false
@@ -264,6 +286,12 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
         console.log(`Successfully ${action}d plan`)
         await loadPlans()
         alert(`Plan ${action}d successfully!`)
+        
+        // Trigger plan refresh across the application
+        window.dispatchEvent(new CustomEvent('planUpdated'))
+        localStorage.setItem('plan_updated', Date.now().toString())
+        setTimeout(() => localStorage.removeItem('plan_updated'), 100)
+        
         if (action === 'create' || action === 'update') {
           setShowPlanForm(false)
           resetForm()
@@ -282,7 +310,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
       name: '',
       description: '',
       plan_type: 'Starter',
-      amount: 0,
+      price: 0,
       currency: 'INR',
       interval_type: 'monthly',
       interval_count: 1,
@@ -301,15 +329,18 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
   }
 
   const handleEditPlan = (plan: Plan) => {
+    console.log('Editing plan:', plan)
+    console.log('Plan type from plan:', plan.plan_type)
+    
     setFormData({
       name: plan.name,
       description: plan.description,
       plan_type: plan.plan_type,
-      amount: plan.amount,
+      price: plan.price || 0,
       currency: plan.currency,
       interval_type: plan.interval_type,
       interval_count: plan.interval_count,
-      features: plan.features,
+      features: plan.features || [],
       can_use_features: plan.can_use_features || [],
       max_projects: plan.max_projects || 1,
       limits: plan.limits,
@@ -343,6 +374,15 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
 
 
   const handleSubmit = () => {
+    // Validate plan_type before submitting
+    const validPlanTypes = ['Starter', 'Growth', 'Scale']
+    if (!validPlanTypes.includes(formData.plan_type)) {
+      alert(`Invalid plan type: ${formData.plan_type}. Must be one of: ${validPlanTypes.join(', ')}`)
+      return
+    }
+    
+    console.log('Form data before submit:', formData)
+    
     if (isEditing && selectedPlan) {
       handlePlanAction(selectedPlan.id, 'update', formData)
     } else {
@@ -359,10 +399,10 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
     }
   }
 
-  const formatPrice = (amount: number, currency: string) => {
-    if (amount === 0) return 'Free'
-    const formattedAmount = Math.round(amount / 100)
-    return currency === 'INR' ? `₹${formattedAmount.toLocaleString()}` : `$${formattedAmount.toLocaleString()}`
+  const formatPrice = (price: number | null | undefined, currency: string | null | undefined) => {
+    if (!price || price === 0 || isNaN(price)) return 'Free'
+    const currencyCode = currency || 'INR'
+    return currencyCode === 'INR' ? `₹${price.toLocaleString()}` : `$${price.toLocaleString()}`
   }
 
   const filteredPlans = plans.filter(plan => {
@@ -397,6 +437,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
           </div>
           <button 
             onClick={() => {
+              console.log('Creating new plan - resetting form')
               resetForm()
               setShowPlanForm(true)
             }}
@@ -426,9 +467,9 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Types</option>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
+              <option value="Starter">Starter</option>
+              <option value="Growth">Growth</option>
+              <option value="Scale">Scale</option>
             </select>
           </div>
           <div>
@@ -529,7 +570,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-black">
-                        {formatPrice(plan.amount, plan.currency)}
+                        {formatPrice(plan.price, plan.currency)}
                       </div>
                       <div className="text-sm text-gray-500">
                         {plan.interval_type}
@@ -540,7 +581,7 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                         {plan.can_use_features?.length || 0} features enabled
                       </div>
                       <div className="text-xs text-gray-400">
-                        {plan.features.length} custom features
+                        {plan.features?.length || 0} custom features
                       </div>
                       <div className="text-xs text-blue-600 mt-1">
                         {plan.max_projects === -1 ? 'Unlimited projects' : `${plan.max_projects} project${plan.max_projects !== 1 ? 's' : ''}`}
@@ -724,18 +765,19 @@ export default function AdminPlans({ userProfile: _ }: AdminPlansProps) {
                         onChange={(e) => setFormData(prev => ({ ...prev, plan_type: e.target.value as 'Starter' | 'Growth' | 'Scale' }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
-                        <option value="free">Free</option>
-                        <option value="pro">Pro</option>
-                        <option value="enterprise">Enterprise</option>
+                        <option value="Starter">Starter</option>
+                        <option value="Growth">Growth</option>
+                        <option value="Scale">Scale</option>
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount (paise)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                         <input
                           type="number"
-                          value={formData.amount}
-                          onChange={(e) => setFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                          step="0.01"
+                          value={formData.price}
+                          onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="0"
                         />

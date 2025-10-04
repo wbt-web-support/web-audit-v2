@@ -48,19 +48,21 @@ export default function AdminFeatureManagement({ userProfile: _ }: AdminFeatureM
       const { data: directData, error: directError } = await supabase
         .from('plans')
         .select('id, name, description, plan_type, can_use_features, max_projects, is_active, created_at, updated_at')
-        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
       
-      if (directError) {
-        console.log('Direct access failed, trying API route...')
+      if (directError || !directData) {
+        console.log('Direct access failed, trying API route...', directError)
         const response = await fetch('/api/plans')
         if (response.ok) {
           const apiData = await response.json()
           setPlans(apiData.plans || [])
         } else {
+          console.error('API access also failed:', response.status, response.statusText)
           throw new Error('Both direct and API access failed')
         }
       } else {
-        setPlans(directData || [])
+        console.log('Direct access successful, loaded plans:', directData.length)
+        setPlans(directData)
       }
     } catch (error) {
       console.error('Error loading plans:', error)
@@ -100,10 +102,47 @@ export default function AdminFeatureManagement({ userProfile: _ }: AdminFeatureM
   }
 
   const handleSaveFeatures = async () => {
-    if (!selectedPlan) return
+    if (!selectedPlan) {
+      console.error('No plan selected for feature update')
+      alert('Please select a plan first')
+      return
+    }
 
     setActionLoading('save')
     try {
+      console.log('Updating features for plan:', selectedPlan.id, 'with features:', selectedFeatures)
+      
+      // Check if user is admin
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      console.log('User role check:', { userData, userId: user.id })
+
+      if (!userData || userData.role !== 'admin') {
+        throw new Error('Insufficient permissions: Admin role required')
+      }
+      
+      // First, let's check if we can access the plan
+      const { data: checkData, error: checkError } = await supabase
+        .from('plans')
+        .select('id, name, can_use_features')
+        .eq('id', selectedPlan.id)
+        .single()
+
+      console.log('Plan access check:', { checkData, checkError })
+
+      if (checkError) {
+        throw new Error(`Cannot access plan: ${checkError.message}`)
+      }
+
       const { data, error } = await supabase
         .from('plans')
         .update({ 
@@ -114,18 +153,28 @@ export default function AdminFeatureManagement({ userProfile: _ }: AdminFeatureM
         .select()
         .single()
 
+      console.log('Supabase update result:', { data, error })
+
       if (error) {
         console.error('Error updating features:', error)
-        alert('Failed to update features: ' + error.message)
+        alert('Failed to update features: ' + (error.message || 'Unknown error'))
+      } else if (!data) {
+        console.error('No data returned from update')
+        alert('Failed to update features: No data returned')
       } else {
-        console.log('Features updated successfully')
+        console.log('Features updated successfully:', data)
         await loadPlans()
         alert('Features updated successfully!')
         setSelectedPlan(data)
+        
+        // Trigger plan refresh across the application
+        window.dispatchEvent(new CustomEvent('planUpdated'))
+        localStorage.setItem('plan_updated', Date.now().toString())
+        setTimeout(() => localStorage.removeItem('plan_updated'), 100)
       }
     } catch (error) {
       console.error('Unexpected error updating features:', error)
-      alert('Failed to update features. Please try again.')
+      alert('Failed to update features: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setActionLoading(null)
     }
