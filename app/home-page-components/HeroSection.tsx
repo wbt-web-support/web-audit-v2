@@ -170,6 +170,67 @@ export default function HeroSection() {
                 <div class="metric-value">${audits['interactive']?.displayValue || 'N/A'}</div>
                 <div class="metric-label">Time to Interactive</div>
               </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['max-potential-fid']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">First Input Delay</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Additional Performance Details</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value">${audits['first-meaningful-paint']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">First Meaningful Paint</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['render-blocking-resources']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">Render Blocking Resources</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['unused-css-rules']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">Unused CSS Rules</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['unused-javascript']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">Unused JavaScript</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['efficient-animated-content']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">Efficient Animated Content</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['uses-optimized-images']?.displayValue || 'N/A'}</div>
+                <div class="metric-label">Optimized Images</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Resource Analysis</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.total || 'N/A'}</div>
+                <div class="metric-label">Total Resources</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['resource-summary']?.details?.items?.[0]?.totalBytes ? (audits['resource-summary'].details.items[0].totalBytes / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}</div>
+                <div class="metric-label">Total Size</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${audits['network-requests']?.details?.items?.length || 'N/A'}</div>
+                <div class="metric-label">Network Requests</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${(() => {
+                  const items = audits['network-requests']?.details?.items;
+                  if (!items) return 'N/A';
+                  const totalSize = items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0);
+                  return totalSize ? (totalSize / 1024 / 1024).toFixed(2) + ' MB' : 'N/A';
+                })()}</div>
+                <div class="metric-label">Transfer Size</div>
+              </div>
             </div>
           </div>
 
@@ -199,6 +260,58 @@ export default function HeroSection() {
                 <p>Ensure images and ads have size attributes, avoid inserting content above existing content, and use transform animations instead of properties that trigger layout.</p>
               </div>
             ` : ''}
+            ${audits['render-blocking-resources']?.score < 0.9 ? `
+              <div class="recommendation">
+                <h4>Eliminate Render-Blocking Resources</h4>
+                <p>Remove or defer render-blocking CSS and JavaScript. Use media queries for non-critical CSS and load JavaScript asynchronously.</p>
+              </div>
+            ` : ''}
+            ${audits['unused-css-rules']?.score < 0.9 ? `
+              <div class="recommendation">
+                <h4>Remove Unused CSS</h4>
+                <p>Eliminate unused CSS rules to reduce file size and improve loading performance. Use tools like PurgeCSS or similar.</p>
+              </div>
+            ` : ''}
+            ${audits['unused-javascript']?.score < 0.9 ? `
+              <div class="recommendation">
+                <h4>Remove Unused JavaScript</h4>
+                <p>Remove unused JavaScript code to reduce bundle size and improve loading performance. Use code splitting and tree shaking.</p>
+              </div>
+            ` : ''}
+            ${audits['uses-optimized-images']?.score < 0.9 ? `
+              <div class="recommendation">
+                <h4>Optimize Images</h4>
+                <p>Use modern image formats (WebP, AVIF), compress images, and implement responsive images with proper sizing.</p>
+              </div>
+            ` : ''}
+            ${audits['efficient-animated-content']?.score < 0.9 ? `
+              <div class="recommendation">
+                <h4>Optimize Animations</h4>
+                <p>Use CSS transforms and opacity for animations instead of properties that trigger layout or paint. Consider using will-change property.</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="section">
+            <h3>Technical Summary</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value">${categories.performance.score ? Math.round(categories.performance.score * 100) : 'N/A'}</div>
+                <div class="metric-label">Overall Performance</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${categories.accessibility.score ? Math.round(categories.accessibility.score * 100) : 'N/A'}</div>
+                <div class="metric-label">Accessibility Score</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${categories['best-practices'].score ? Math.round(categories['best-practices'].score * 100) : 'N/A'}</div>
+                <div class="metric-label">Best Practices</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value">${categories.seo.score ? Math.round(categories.seo.score * 100) : 'N/A'}</div>
+                <div class="metric-label">SEO Score</div>
+              </div>
+            </div>
           </div>
 
           <div style="margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px;">
@@ -577,6 +690,80 @@ export default function HeroSection() {
                         </div>
                       ) : null;
                     })}
+                  </div>
+                </div>
+
+                {/* Additional Performance Details */}
+                <div className="mb-8">
+                  <h4 className="text-lg font-semibold text-white mb-4">Additional Performance Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { key: 'first-meaningful-paint', label: 'First Meaningful Paint', desc: 'Time to meaningful content' },
+                      { key: 'render-blocking-resources', label: 'Render Blocking Resources', desc: 'Resources blocking render' },
+                      { key: 'unused-css-rules', label: 'Unused CSS Rules', desc: 'Unused CSS detected' },
+                      { key: 'unused-javascript', label: 'Unused JavaScript', desc: 'Unused JS detected' },
+                      { key: 'efficient-animated-content', label: 'Efficient Animated Content', desc: 'Animation efficiency' },
+                      { key: 'uses-optimized-images', label: 'Optimized Images', desc: 'Image optimization status' }
+                    ].map((metric, index) => {
+                      const audit = analysisResult.analysis.lighthouseResult.audits[metric.key];
+                      const score = audit?.score || 0;
+                      return audit ? (
+                        <div key={index} className="bg-white/5 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-sm font-medium text-white">{metric.label}</h5>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              score > 0.9 ? 'bg-green-500/20 text-green-300' : 
+                              score > 0.5 ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'
+                            }`}>
+                              {score > 0.9 ? 'Good' : score > 0.5 ? 'Needs Improvement' : 'Poor'}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-white mb-1">{audit.displayValue || 'N/A'}</p>
+                          <p className="text-xs text-gray-300">{metric.desc}</p>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+
+                {/* Resource Analysis */}
+                <div className="mb-8">
+                  <h4 className="text-lg font-semibold text-white mb-4">Resource Analysis</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h5 className="text-sm font-medium text-white mb-3">Resource Summary</h5>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Total Resources:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['resource-summary']?.details?.items?.[0]?.total || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Total Size:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['resource-summary']?.details?.items?.[0]?.totalBytes ? `${(analysisResult.analysis.lighthouseResult.audits['resource-summary'].details.items[0].totalBytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Gzip Savings:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['resource-summary']?.details?.items?.[0]?.wastedBytes ? `${(analysisResult.analysis.lighthouseResult.audits['resource-summary'].details.items[0].wastedBytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h5 className="text-sm font-medium text-white mb-3">Network Analysis</h5>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Requests:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['network-requests']?.details?.items?.length || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Transfer Size:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['network-requests']?.details?.items?.reduce((total: number, item: any) => total + (item.transferSize || 0), 0) ? `${(analysisResult.analysis.lighthouseResult.audits['network-requests'].details.items.reduce((total: number, item: any) => total + (item.transferSize || 0), 0) / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-300">Resource Load Time:</span>
+                          <span className="text-white font-medium">{analysisResult.analysis.lighthouseResult.audits?.['network-requests']?.details?.items?.[0]?.duration ? `${analysisResult.analysis.lighthouseResult.audits['network-requests'].details.items[0].duration.toFixed(2)}ms` : 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
