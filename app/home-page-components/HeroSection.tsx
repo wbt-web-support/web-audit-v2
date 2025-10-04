@@ -11,7 +11,7 @@ export default function HeroSection() {
   });
 
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  // Removed opacity fade-out on scroll
 
   // State for website analysis
   const [url, setUrl] = useState('');
@@ -227,7 +227,7 @@ export default function HeroSection() {
   };
 
   return (
-    <div ref={ref} className="relative h-screen overflow-hidden bg-black">
+    <div ref={ref} className="relative min-h-screen overflow-hidden bg-black">
       {/* Parallax Background */}
       <motion.div
         style={{ y }}
@@ -281,8 +281,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <motion.div
-        style={{ opacity }}
-        className="relative z-10 flex items-center justify-center h-full px-4"
+        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8"
       >
         <div className="text-center max-w-6xl mx-auto px-4">
           {/* Main Title with AI Integration */}
@@ -416,7 +415,7 @@ export default function HeroSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8 max-w-7xl mx-auto px-4"
+          className="mt-8 max-w-7xl mx-auto px-4 pb-8"
         >
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
@@ -645,56 +644,60 @@ export default function HeroSection() {
         </motion.div>
       )}
 
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1 }}
-            className="mt-12 sm:mt-16 flex flex-row justify-center items-center gap-4 sm:gap-8 md:gap-12 max-w-4xl mx-auto px-4"
-          >
-            {[
-              { number: "10K+", label: "Websites Audited" },
-              { number: "99.9%", label: "Accuracy Rate" },
-              { number: "< 2min", label: "Average Scan Time" }
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
-                className="text-center flex-shrink-0"
-              >
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1">
-                  {stat.number}
-                </div>
-                <div className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+          {/* Stats - Only show when no analysis results */}
+          {!analysisResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 1 }}
+              className="mt-12 sm:mt-16 flex flex-row justify-center items-center gap-4 sm:gap-8 md:gap-12 max-w-4xl mx-auto px-4"
+            >
+              {[
+                { number: "10K+", label: "Websites Audited" },
+                { number: "99.9%", label: "Accuracy Rate" },
+                { number: "< 2min", label: "Average Scan Time" }
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
+                  className="text-center flex-shrink-0"
+                >
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1">
+                    {stat.number}
+                  </div>
+                  <div className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                    {stat.label}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       </motion.div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-      >
+      {/* Scroll Indicator - Only show when no analysis results */}
+      {!analysisResult && (
         <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-white rounded-full flex justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.5 }}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
         >
           <motion.div
-            animate={{ y: [0, 12, 0] }}
+            animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-1 h-3 bg-white rounded-full mt-2"
-          />
+            className="w-6 h-10 border-2 border-white rounded-full flex justify-center"
+          >
+            <motion.div
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-1 h-3 bg-white rounded-full mt-2"
+            />
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </div>
   );
 }
