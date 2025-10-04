@@ -9,41 +9,45 @@ export async function POST(request: NextRequest) {
       projectId,
       url
     } = await request.json();
-    if (!projectId || !url) {
+    if (!url) {
       return NextResponse.json({
-        error: 'Project ID and URL are required'
+        error: 'URL is required'
       }, {
         status: 400
       });
     }
-    // Check if PageSpeed analysis already exists for this project
-    const {
-      data: existingProject,
-      error: fetchError
-    } = await supabaseAdmin.from('audit_projects').select('id, pagespeed_insights_data').eq('id', projectId).single();
-    if (fetchError) {
-      console.error('❌ Error fetching project data:', fetchError);
-      return NextResponse.json({
-        error: 'Failed to fetch project data'
-      }, {
-        status: 500
-      });
-    }
-    if (!existingProject) {
-      return NextResponse.json({
-        error: 'Project not found'
-      }, {
-        status: 404
-      });
-    }
 
-    // If analysis already exists, return it
-    if (existingProject.pagespeed_insights_data) {
-      return NextResponse.json({
-        success: true,
-        analysis: existingProject.pagespeed_insights_data,
-        cached: true
-      });
+    // For demo purposes, skip project validation if projectId is 'demo-project'
+    if (projectId !== 'demo-project') {
+      // Check if PageSpeed analysis already exists for this project
+      const {
+        data: existingProject,
+        error: fetchError
+      } = await supabaseAdmin.from('audit_projects').select('id, pagespeed_insights_data').eq('id', projectId).single();
+      if (fetchError) {
+        console.error('❌ Error fetching project data:', fetchError);
+        return NextResponse.json({
+          error: 'Failed to fetch project data'
+        }, {
+          status: 500
+        });
+      }
+      if (!existingProject) {
+        return NextResponse.json({
+          error: 'Project not found'
+        }, {
+          status: 404
+        });
+      }
+
+      // If analysis already exists, return it
+      if (existingProject.pagespeed_insights_data) {
+        return NextResponse.json({
+          success: true,
+          analysis: existingProject.pagespeed_insights_data,
+          cached: true
+        });
+      }
     }
     // Perform PageSpeed analysis
     const {
@@ -65,21 +69,23 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
-    // Save PageSpeed analysis to project
-    const {
-      error: saveError
-    } = await supabaseAdmin.from('audit_projects').update({
-      pagespeed_insights_data: pagespeedData,
-      pagespeed_insights_loading: false,
-      pagespeed_insights_error: null
-    }).eq('id', projectId);
-    if (saveError) {
-      console.error('❌ Error saving PageSpeed analysis:', saveError);
-      return NextResponse.json({
-        error: 'Failed to save PageSpeed analysis'
-      }, {
-        status: 500
-      });
+    // Save PageSpeed analysis to project (only for real projects, not demo)
+    if (projectId !== 'demo-project') {
+      const {
+        error: saveError
+      } = await supabaseAdmin.from('audit_projects').update({
+        pagespeed_insights_data: pagespeedData,
+        pagespeed_insights_loading: false,
+        pagespeed_insights_error: null
+      }).eq('id', projectId);
+      if (saveError) {
+        console.error('❌ Error saving PageSpeed analysis:', saveError);
+        return NextResponse.json({
+          error: 'Failed to save PageSpeed analysis'
+        }, {
+          status: 500
+        });
+      }
     }
     return NextResponse.json({
       success: true,
