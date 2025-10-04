@@ -1,5 +1,12 @@
 'use server';
 
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -14,6 +21,35 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Get user from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({
+        error: 'Authentication required',
+        code: 'MISSING_AUTH'
+      }), { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify user and get user info
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({
+        error: 'Invalid authentication token',
+        code: 'INVALID_AUTH'
+      }), { 
+        status: 401, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // Note: Project limit and feature validation is now handled at the project creation level
+    // in the createAuditProject function in SupabaseContext.tsx
 
     // Get API configuration from environment variables
     let apiBaseUrl = process.env.SCRAPER_API_BASE_URL || 'http://localhost:3001';

@@ -669,6 +669,69 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Check project limit before creating project
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('plan_type')
+        .eq('id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        return { data: null, error: { message: 'Failed to fetch user plan information' } }
+      }
+
+      // Get plan details from plans table
+      const { data: planData, error: planError } = await supabase
+        .from('plans')
+        .select('id, name, plan_type, can_use_features, max_projects')
+        .eq('plan_type', userData.plan_type)
+        .eq('is_active', true)
+        .single()
+
+      if (planError || !planData) {
+        return { data: null, error: { message: 'Failed to fetch plan details' } }
+      }
+
+      // Check current project count
+      const { data: projects, error: projectError } = await supabase
+        .from('audit_projects')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (projectError) {
+        return { data: null, error: { message: 'Failed to check project count' } }
+      }
+
+      const currentProjectCount = projects?.length || 0
+      const maxProjects = planData.max_projects || 1
+
+      // Check project limit
+      if (maxProjects !== -1 && currentProjectCount >= maxProjects) {
+        return { 
+          data: null, 
+          error: { 
+            message: `Project limit reached. You have ${currentProjectCount}/${maxProjects} projects. Please upgrade your plan to create more projects.`,
+            code: 'PROJECT_LIMIT_REACHED',
+            currentProjects: currentProjectCount,
+            maxProjects: maxProjects,
+            planType: planData.plan_type
+          } 
+        }
+      }
+
+      // Check feature access for full site crawl
+      if (projectData.page_type === 'multiple' && !planData.can_use_features?.includes('full_site_crawl')) {
+        return { 
+          data: null, 
+          error: { 
+            message: 'Full site crawling is not available in your current plan. Please upgrade to access this feature.',
+            code: 'FEATURE_NOT_AVAILABLE',
+            requiredFeature: 'full_site_crawl',
+            planType: planData.plan_type
+          } 
+        }
+      }
+
       // Try with minimal required fields first to avoid RLS issues
       const minimalData = {
         user_id: user.id,
@@ -693,7 +756,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
+          keys: Object.keys(error),
+          isEmpty: Object.keys(error).length === 0
         })
         
         // Check for specific error types
@@ -708,10 +773,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
+        // Check for empty error object or permission issues
         if (error.message?.includes('permission denied') || 
             !error.message || 
             error.message === '' ||
-            Object.keys(error).length === 0) {
+            Object.keys(error).length === 0 ||
+            JSON.stringify(error) === '{}') {
           return { 
             data: null, 
             error: { 

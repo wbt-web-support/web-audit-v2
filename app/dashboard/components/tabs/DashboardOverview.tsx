@@ -3,9 +3,11 @@
 // import { motion } from 'framer-motion' // Unused import
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { useUserPlan } from '@/hooks/useUserPlan'
 import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
+import UpgradeModal from '../modals/UpgradeModal'
 
 interface UserProfile {
   id: string
@@ -44,10 +46,23 @@ export default function DashboardOverview({
   onProjectSelect
 }: DashboardOverviewProps) {
   const { createAuditProject } = useSupabase()
+  const { planInfo } = useUserPlan()
   
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  
+  // Upgrade modal states
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeModalConfig, setUpgradeModalConfig] = useState<{
+    title: string
+    description: string
+    featureName: string
+  }>({
+    title: '',
+    description: '',
+    featureName: ''
+  })
 
   // Sample data removed - RecentProjects now fetches real data from database
 
@@ -217,9 +232,42 @@ export default function DashboardOverview({
       const { data: createdProject, error: projectError } = await createAuditProject(projectData)
       
       if (projectError) {
-        console.error('❌ Error creating project:', projectError)
+        // Handle empty error object first - show modal, no error logging
+        if (!projectError.message && !projectError.code && Object.keys(projectError).length === 0) {
+          setUpgradeModalConfig({
+            title: 'Project Limit Reached',
+            description: 'You may have reached your project limit. Please upgrade your plan to create more projects.',
+            featureName: 'project_limit'
+          })
+          setShowUpgradeModal(true)
+          return
+        }
+        
         setSubmitStatus('error')
-        alert('Failed to create project. Please try again.')
+        
+        // Handle specific error codes
+        if (projectError.code === 'PROJECT_LIMIT_REACHED') {
+          setUpgradeModalConfig({
+            title: 'Project Limit Reached',
+            description: projectError.message || 'You have reached your project limit. Upgrade to create more projects.',
+            featureName: 'project_limit'
+          })
+          setShowUpgradeModal(true)
+        } else if (projectError.code === 'FEATURE_NOT_AVAILABLE') {
+          setUpgradeModalConfig({
+            title: 'Feature Not Available',
+            description: projectError.message || 'This feature is not available in your current plan.',
+            featureName: 'full_site_crawl'
+          })
+          setShowUpgradeModal(true)
+        } else if (projectError.code === 'RLS_POLICY_ISSUE') {
+          alert(`Database permission issue: ${projectError.message}. Please contact support.`)
+        } else if (projectError.code === 'TABLE_NOT_EXISTS') {
+          alert(`Database setup issue: ${projectError.message}. Please contact support.`)
+        } else {
+          // For other errors, show a simple alert
+          alert(`Failed to create project: ${projectError.message || 'Please try again.'}`)
+        }
         return
       }
 
@@ -296,6 +344,21 @@ export default function DashboardOverview({
 
       {/* Features Showcase */}
       <FeaturesShowcase features={features} />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title={upgradeModalConfig.title}
+        description={upgradeModalConfig.description}
+        featureName={upgradeModalConfig.featureName}
+        currentPlan={planInfo ? {
+          name: planInfo.plan_name,
+          type: planInfo.plan_type,
+          maxProjects: planInfo.max_projects,
+          currentProjects: planInfo.current_projects
+        } : undefined}
+      />
     </div>
   )
 }

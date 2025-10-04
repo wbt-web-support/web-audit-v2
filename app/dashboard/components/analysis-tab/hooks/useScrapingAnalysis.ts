@@ -13,7 +13,8 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
   const {
     getAuditProject,
     getScrapedPages,
-    updateAuditProject
+    updateAuditProject,
+    session
   } = useSupabase();
   
   const [state, setState] = useState<AnalysisTabState>({
@@ -103,12 +104,18 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     });
 
     try {
+      // Check if user is authenticated
+      if (!session?.access_token) {
+        throw new Error('User not authenticated');
+      }
+
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           url: project.site_url,
@@ -127,6 +134,22 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         if (errorData.code === 'SERVICE_UNAVAILABLE') {
           throw new Error('Scraping service is not running. Please start the scraping service or contact support.');
         }
+        
+        // Handle plan limit errors
+        if (errorData.code === 'PROJECT_LIMIT_REACHED') {
+          throw new Error(`Project limit reached: ${errorData.message}`);
+        }
+        
+        // Handle feature not available errors
+        if (errorData.code === 'FEATURE_NOT_AVAILABLE') {
+          throw new Error(`Feature not available: ${errorData.message}`);
+        }
+        
+        // Handle authentication errors
+        if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH') {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        
         throw new Error(errorData.message || errorData.error || `Scraping failed: ${scrapeResponse.status}`);
       }
 

@@ -253,7 +253,7 @@ export default function DashboardSidebar({
                       ? 'bg-blue-100 text-blue-700' 
                       : 'bg-purple-100 text-purple-700'
                   }`}>
-                    {planInfo.plan_type}
+                    {planInfo.plan_name || 'Unknown Plan'}
                   </span>
                 </div>
                 <div className='text-sm font-medium text-black mb-1'>
@@ -381,7 +381,7 @@ export default function DashboardSidebar({
                       ? 'bg-blue-100 text-blue-700' 
                       : 'bg-purple-100 text-purple-700'
                   }`}>
-                    {planInfo.plan_type}
+                    {planInfo.plan_name || 'Unknown Plan'}
                   </span>
                 </div>
                 <div className='text-sm font-medium text-black mb-1'>
