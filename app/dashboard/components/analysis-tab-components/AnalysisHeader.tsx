@@ -51,23 +51,87 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
         });
 
         if (!response.ok) {
-          throw new Error('Failed to load user plan');
+          const errorText = await response.text();
+          console.error('API Error Response:', response.status, errorText);
+          throw new Error(`Failed to load user plan: ${response.status} ${errorText}`);
         }
 
         const planData = await response.json();
+        console.log('Plan data received:', planData);
         setUserPlan({
           plan_type: planData.userPlan,
           can_use_features: planData.allowedFeatures
         });
       } catch (error) {
         console.error('Error loading user plan:', error)
-        setUserPlan(null)
+        // Set a default plan with basic features if API fails
+        setUserPlan({
+          plan_type: 'free',
+          can_use_features: ['single_page_crawl', 'image_scan', 'link_scanner', 'performance_metrics', 'grammar_content_analysis']
+        })
       } finally {
         setIsLoadingPlan(false)
       }
     }
 
     loadUserPlan()
+  }, [user?.id])
+
+  // Listen for plan updates from admin
+  useEffect(() => {
+    const handlePlanUpdate = () => {
+      console.log('Plan updated event received, refreshing user plan...')
+      // Reload user plan when admin makes changes
+      if (user?.id) {
+        const loadUserPlan = async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session?.access_token) return;
+
+            const response = await fetch('/api/check-feature-access', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+              },
+              body: JSON.stringify({ featureId: 'single_page_crawl' })
+            });
+
+            if (response.ok) {
+              const planData = await response.json();
+              console.log('Plan data refreshed:', planData);
+              setUserPlan({
+                plan_type: planData.userPlan,
+                can_use_features: planData.allowedFeatures
+              });
+            } else {
+              console.error('Failed to refresh plan data:', response.status, await response.text());
+            }
+          } catch (error) {
+            console.error('Error refreshing user plan:', error)
+          }
+        }
+        loadUserPlan()
+      }
+    }
+
+    // Listen for plan update events
+    window.addEventListener('planUpdated', handlePlanUpdate)
+    window.addEventListener('planFeaturesUpdated', handlePlanUpdate)
+    
+    // Also listen for localStorage changes (backup method)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'plan_updated') {
+        handlePlanUpdate()
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('planUpdated', handlePlanUpdate)
+      window.removeEventListener('planFeaturesUpdated', handlePlanUpdate)
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [user?.id])
 
   // Map tab IDs to feature IDs
@@ -77,7 +141,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       'overview': null, // No specific feature required
       'pages': null, // No specific feature required
       
-      // Premium features
+      // Premium features - mapped to actual database features
       'grammar-content': 'grammar_content_analysis',
       'performance': 'performance_metrics',
       'seo-structure': 'seo_structure',
@@ -88,7 +152,18 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       'links': 'link_scanner',
       'technologies': 'technical_fix_recommendations', // Technical analysis
       'cms': 'seo_structure', // CMS detection is part of SEO analysis
-      'seo': 'seo_structure'
+      'seo': 'seo_structure',
+      
+      // Additional features that might be used in other headers
+      'brand-consistency': 'brand_consistency_check',
+      'stripe-keys': 'stripe_key_detection',
+      'google-tags': 'google_tags_audit',
+      'social-preview': 'social_share_preview',
+      'mobile-responsiveness': 'mobile_responsiveness',
+      'page-speed': 'page_speed_analysis',
+      'broken-links': 'broken_links_check',
+      'hidden-urls': 'hidden_urls_detection',
+      'full-site-crawl': 'full_site_crawl'
     }
     return featureMap[tabId] || null
   }
