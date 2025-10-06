@@ -1,7 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 interface AnalysisHeaderProps {
   project: AuditProject
@@ -17,6 +20,79 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentTab = searchParams.get('tab')
+  const { user } = useAuth()
+  const [userPlan, setUserPlan] = useState<{plan_type?: string; can_use_features?: string[]} | null>(null)
+  const [isLoadingPlan, setIsLoadingPlan] = useState(true)
+
+  // Load user plan information (server-side validation)
+  useEffect(() => {
+    const loadUserPlan = async () => {
+      if (!user?.id) {
+        setIsLoadingPlan(false)
+        return
+      }
+
+      try {
+        // Get user session token
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setUserPlan(null);
+          setIsLoadingPlan(false);
+          return;
+        }
+
+        const response = await fetch('/api/check-feature-access', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ featureId: 'single_page_crawl' }) // Use a basic feature to get plan info
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load user plan');
+        }
+
+        const planData = await response.json();
+        setUserPlan({
+          plan_type: planData.userPlan,
+          can_use_features: planData.allowedFeatures
+        });
+      } catch (error) {
+        console.error('Error loading user plan:', error)
+        setUserPlan(null)
+      } finally {
+        setIsLoadingPlan(false)
+      }
+    }
+
+    loadUserPlan()
+  }, [user?.id])
+
+  // Map tab IDs to feature IDs
+  const getFeatureIdForTab = (tabId: string): string | null => {
+    const featureMap: Record<string, string> = {
+      'grammar-content': 'grammar_content_analysis',
+      'performance': 'performance_metrics',
+      'seo-structure': 'seo_structure',
+      'ui-quality': 'ui_ux_quality_check',
+      'technical': 'technical_fix_recommendations',
+      'accessibility': 'accessibility_audit',
+      'images': 'image_scan',
+      'links': 'link_scanner'
+    }
+    return featureMap[tabId] || null
+  }
+
+  // Check if user has access to a specific tab
+  const hasAccessToTab = (tabId: string): boolean => {
+    if (!userPlan) return true // Show all tabs if plan not loaded yet
+    const featureId = getFeatureIdForTab(tabId)
+    if (!featureId) return true // Show tabs that don't require specific features
+    return userPlan.can_use_features?.includes(featureId) || false
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -112,7 +188,19 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
 
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        {isLoadingPlan ? (
+          <div className="py-4">
+            <div className="flex space-x-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <nav className="-mb-px flex space-x-8">
             {(customTabs || [
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'pages', name: 'Pages', icon: '📄' },
@@ -123,21 +211,34 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               { id: 'images', name: 'Images', icon: '🖼️' },
               { id: 'links', name: 'Links', icon: '🔗' },
               
-            ]).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onSectionChange(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeSection === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.name}
-            </button>
-          ))}
-        </nav>
+            ])
+            .map((tab) => {
+              const hasAccess = hasAccessToTab(tab.id)
+              const featureId = getFeatureIdForTab(tab.id)
+              const isPremiumFeature = featureId && !hasAccess
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => onSectionChange(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
+                    activeSection === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } ${isPremiumFeature ? 'opacity-75' : ''}`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.name}
+                  {isPremiumFeature && (
+                    <svg className="w-4 h-4 ml-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { analyzeContentWithGemini, getGeminiAnalysisStatus } from '@/lib/gemini';
 import { supabaseAdmin } from '@/lib/supabase';
+import { checkFeatureAccess } from '@/lib/plan-validation';
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   try {
@@ -8,7 +9,8 @@ export async function POST(request: NextRequest) {
     const {
       pageId,
       content,
-      url
+      url,
+      userId
     } = requestBody;
     if (!pageId || !content || !url) {
       return new Response(JSON.stringify({
@@ -19,6 +21,24 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json'
         }
       });
+    }
+
+    // Server-side plan validation for grammar content analysis
+    if (userId) {
+      const featureAccess = await checkFeatureAccess(userId, 'grammar_content_analysis');
+      if (!featureAccess.hasAccess) {
+        return new Response(JSON.stringify({
+          error: 'Access denied',
+          message: featureAccess.error,
+          userPlan: featureAccess.userPlan,
+          requiredFeature: 'grammar_content_analysis'
+        }), {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }
     }
     // Check if analysis already exists for this page
     const {

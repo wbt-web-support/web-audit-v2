@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchPageSpeedInsights } from '@/lib/pagespeed';
+import { checkFeatureAccess } from '@/lib/plan-validation';
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 export async function POST(request: NextRequest) {
  
   try {
     const {
       projectId,
-      url
+      url,
+      userId
     } = await request.json();
     if (!url) {
       return NextResponse.json({
@@ -15,6 +17,21 @@ export async function POST(request: NextRequest) {
       }, {
         status: 400
       });
+    }
+
+    // Server-side plan validation for performance metrics
+    if (userId) {
+      const featureAccess = await checkFeatureAccess(userId, 'performance_metrics');
+      if (!featureAccess.hasAccess) {
+        return NextResponse.json({
+          error: 'Access denied',
+          message: featureAccess.error,
+          userPlan: featureAccess.userPlan,
+          requiredFeature: 'performance_metrics'
+        }, {
+          status: 403
+        });
+      }
     }
 
     // For demo purposes, skip project validation if projectId is 'demo-project'

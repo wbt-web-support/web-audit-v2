@@ -18,7 +18,7 @@ export function useGeminiStream() {
   })
   const [isStreaming, setIsStreaming] = useState(false)
 
-  const startAnalysis = useCallback(async (pageId: string, content: string, url: string) => {
+  const startAnalysis = useCallback(async (pageId: string, content: string, url: string, userId?: string) => {
     try {
       // Validate required parameters
       if (!pageId || pageId.trim() === '') {
@@ -50,7 +50,8 @@ export function useGeminiStream() {
           body: JSON.stringify({
             pageId,
             content,
-            url
+            url,
+            userId
           })
         })
 
@@ -137,7 +138,8 @@ export function useGeminiStream() {
           body: JSON.stringify({
             pageId,
             content,
-            url
+            url,
+            userId
           })
         })
 

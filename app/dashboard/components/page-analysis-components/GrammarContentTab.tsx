@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { filterHtmlContent } from "@/lib/html-content-filter";
 import { GeminiAnalysisResult } from "@/lib/gemini";
 import { useGeminiStream } from "@/hooks/useGeminiStream";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 // Define proper interfaces for the page data
 interface ScrapedPageData {
@@ -25,6 +27,9 @@ export default function GrammarContentTab({
   const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page?.gemini_analysis || null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('grammar');
+  const [hasFeatureAccess, setHasFeatureAccess] = useState<boolean | null>(null);
+  const [planValidation, setPlanValidation] = useState<{userPlan?: string; error?: string} | null>(null);
+  const { user } = useAuth();
   const {
     streamStatus,
     isStreaming,
@@ -32,7 +37,43 @@ export default function GrammarContentTab({
     reset
   } = useGeminiStream();
 
-  // Debug page data
+  // Check feature access on component mount (server-side validation)
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Get user session token
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setHasFeatureAccess(false);
+          return;
+        }
+
+        const response = await fetch('/api/check-feature-access', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ featureId: 'grammar_content_analysis' })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to check feature access');
+        }
+
+        const validation = await response.json();
+        setHasFeatureAccess(validation.hasAccess);
+        setPlanValidation(validation);
+      } catch (error) {
+        console.error('Error checking feature access:', error);
+        setHasFeatureAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [user?.id]);
 
   // Use filtered content if available, otherwise filter HTML content
   const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '');
@@ -64,7 +105,7 @@ export default function GrammarContentTab({
       if (!textContent || textContent.trim().length === 0) {
         throw new Error('No content available for analysis');
       }
-      const analysis = await startAnalysis(page.id, textContent, page.url);
+      const analysis = await startAnalysis(page.id, textContent, page.url, user?.id);
       if (analysis) {
         setGeminiAnalysis(analysis);
       }
@@ -72,14 +113,47 @@ export default function GrammarContentTab({
       console.error('Error during analysis:', error);
       setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze content. Please try again.');
     }
-  }, [page.id, page.url, textContent, reset, startAnalysis]);
+  }, [page.id, page.url, textContent, reset, startAnalysis, user?.id]);
 
-  // Auto-trigger analysis if no analysis exists
-  useEffect(() => {
-    if (!geminiAnalysis && !isStreaming && textContent && textContent.trim().length > 0 && page?.id && page?.url) {
-      handleReAnalyze();
-    }
-  }, [geminiAnalysis, isStreaming, textContent, page?.id, page?.url, handleReAnalyze]);
+  // Removed auto-trigger analysis for security - user must manually start analysis
+
+  // Show loading state while checking feature access
+  if (hasFeatureAccess === null) {
+    return <div className="p-6 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-500 mt-2">Checking feature access...</p>
+      </div>;
+  }
+
+  // Show upgrade card if user doesn't have access to grammar content analysis
+  if (hasFeatureAccess === false) {
+    return <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center space-x-4">
+          <div className="text-blue-500">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Grammar & Content Analysis</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              This feature is not available in your current plan. Upgrade to access AI-powered grammar and content analysis.
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                Current plan: <span className="font-medium">{planValidation?.userPlan || 'Unknown'}</span>
+              </div>
+              <button 
+                onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Upgrade Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>;
+  }
 
   // Show error if page data is incomplete
   if (!page) {

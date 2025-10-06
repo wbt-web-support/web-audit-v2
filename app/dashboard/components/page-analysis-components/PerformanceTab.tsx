@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { PageSpeedInsightsData } from '@/types/audit'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 interface ImageData {
   size?: number
@@ -28,7 +30,48 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   const [performanceData, setPerformanceData] = useState<PageSpeedInsightsData | null>(cachedAnalysis || null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasFeatureAccess, setHasFeatureAccess] = useState<boolean | null>(null)
+  const [planValidation, setPlanValidation] = useState<{userPlan?: string; error?: string} | null>(null)
+  const { user } = useAuth()
   
+  // Check feature access on component mount (server-side validation)
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Get user session token
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          setHasFeatureAccess(false);
+          return;
+        }
+
+        const response = await fetch('/api/check-feature-access', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ featureId: 'performance_metrics' })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to check feature access');
+        }
+
+        const validation = await response.json();
+        setHasFeatureAccess(validation.hasAccess);
+        setPlanValidation(validation);
+      } catch (error) {
+        console.error('Error checking feature access:', error);
+        setHasFeatureAccess(false);
+      }
+    };
+
+    checkAccess();
+  }, [user?.id]);
+
   const content = page.html_content || ''
   const images = page.images || []
   
@@ -105,6 +148,44 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  // Show loading state while checking feature access
+  if (hasFeatureAccess === null) {
+    return <div className="p-6 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-500 mt-2">Checking feature access...</p>
+      </div>;
+  }
+
+  // Show upgrade card if user doesn't have access to performance metrics
+  if (hasFeatureAccess === false) {
+    return <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center space-x-4">
+          <div className="text-blue-500">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Performance Analysis</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              This feature is not available in your current plan. Upgrade to access detailed performance metrics and PageSpeed Insights data.
+            </p>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                Current plan: <span className="font-medium">{planValidation?.userPlan || 'Unknown'}</span>
+              </div>
+              <button 
+                onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Upgrade Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>;
   }
 
   // Loading state
