@@ -72,7 +72,12 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
 
   // Map tab IDs to feature IDs
   const getFeatureIdForTab = (tabId: string): string | null => {
-    const featureMap: Record<string, string> = {
+    const featureMap: Record<string, string | null> = {
+      // Core features (always available)
+      'overview': null, // No specific feature required
+      'pages': null, // No specific feature required
+      
+      // Premium features
       'grammar-content': 'grammar_content_analysis',
       'performance': 'performance_metrics',
       'seo-structure': 'seo_structure',
@@ -80,7 +85,10 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       'technical': 'technical_fix_recommendations',
       'accessibility': 'accessibility_audit',
       'images': 'image_scan',
-      'links': 'link_scanner'
+      'links': 'link_scanner',
+      'technologies': 'technical_fix_recommendations', // Technical analysis
+      'cms': 'seo_structure', // CMS detection is part of SEO analysis
+      'seo': 'seo_structure'
     }
     return featureMap[tabId] || null
   }
@@ -220,12 +228,22 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               return (
                 <button
                   key={tab.id}
-                  onClick={() => onSectionChange(tab.id)}
+                  onClick={() => {
+                    if (hasAccess) {
+                      onSectionChange(tab.id)
+                    } else {
+                      // Show upgrade modal or redirect to plans
+                      window.location.href = '/dashboard?tab=profile&subtab=plans'
+                    }
+                  }}
                   className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
                     activeSection === tab.id
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      : hasAccess 
+                        ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        : 'border-transparent text-gray-400 cursor-pointer'
                   } ${isPremiumFeature ? 'opacity-75' : ''}`}
+                  title={isPremiumFeature ? 'Premium feature - Upgrade your plan to access' : ''}
                 >
                   <span className="mr-2">{tab.icon}</span>
                   {tab.name}
