@@ -47,7 +47,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
           },
-          body: JSON.stringify({ featureId: 'single_page_crawl' }) // Use a basic feature to get plan info
+          body: JSON.stringify({}) // Get full plan info without specific feature
         });
 
         if (!response.ok) {
@@ -57,7 +57,13 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
         }
 
         const planData = await response.json();
+        console.log('=== PLAN DATA DEBUG ===');
         console.log('Plan data received:', planData);
+        console.log('Plan type:', planData.userPlan);
+        console.log('Allowed features:', planData.allowedFeatures);
+        console.log('Features count:', planData.allowedFeatures?.length);
+        console.log('Features array:', JSON.stringify(planData.allowedFeatures, null, 2));
+        console.log('=== END PLAN DATA DEBUG ===');
         setUserPlan({
           plan_type: planData.userPlan,
           can_use_features: planData.allowedFeatures
@@ -94,7 +100,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session.access_token}`
               },
-              body: JSON.stringify({ featureId: 'single_page_crawl' })
+              body: JSON.stringify({}) // Get full plan info without specific feature
             });
 
             if (response.ok) {
@@ -170,10 +176,25 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
 
   // Check if user has access to a specific tab
   const hasAccessToTab = (tabId: string): boolean => {
-    if (!userPlan) return true // Show all tabs if plan not loaded yet
+    if (!userPlan) {
+      console.log(`Tab ${tabId}: No user plan loaded yet, showing tab`);
+      return true // Show all tabs if plan not loaded yet
+    }
     const featureId = getFeatureIdForTab(tabId)
-    if (!featureId) return true // Show tabs that don't require specific features
-    return userPlan.can_use_features?.includes(featureId) || false
+    if (!featureId) {
+      console.log(`Tab ${tabId}: No feature required, showing tab`);
+      return true // Show tabs that don't require specific features
+    }
+    
+    const hasAccess = userPlan.can_use_features?.includes(featureId) || false
+    console.log(`=== TAB ACCESS DEBUG ===`);
+    console.log(`Tab: ${tabId}`);
+    console.log(`Required feature: ${featureId}`);
+    console.log(`Has access: ${hasAccess}`);
+    console.log(`User plan features:`, userPlan.can_use_features);
+    console.log(`Feature exists in plan:`, userPlan.can_use_features?.includes(featureId));
+    console.log(`=== END TAB ACCESS DEBUG ===`);
+    return hasAccess
   }
 
   const getStatusColor = (status: string) => {

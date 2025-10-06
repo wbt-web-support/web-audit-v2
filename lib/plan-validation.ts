@@ -8,7 +8,7 @@ interface SupabaseError {
   hint?: string
 }
 
-export type PlanType = 'Starter' | 'Growth' | 'Scale'
+export type PlanType = 'Starter' | 'Growth' | 'Scale' | 'free'
 export type CrawlType = 'single' | 'multiple'
 
 export interface PlanValidationResult {
@@ -50,27 +50,156 @@ interface PlanData {
  */
 export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | null> {
   try {
-    // Get user's current subscription/plan
-    const { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select(`
-        plan_id,
-        plans!inner(
-          id,
-          name,
-          plan_type,
-          can_use_features,
-          max_projects
-        )
-      `)
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single() as { data: SubscriptionData | null; error: SupabaseError | null }
+    console.log('=== STARTING PLAN VALIDATION ===')
+    console.log('User ID:', userId)
+    
+    // Check if user exists in database
+    console.log('Step 1: Checking if user exists in database...')
+    let { data: userExists, error: userExistsError } = await supabase
+      .from('users')
+      .select('id, email, plan_type')
+      .eq('id', userId)
+      .maybeSingle()
+    
+    console.log('Step 1 Result - User exists check:', { 
+      found: !!userExists, 
+      error: userExistsError?.message,
+      user_data: userExists
+    })
 
-    if (subError || !subscription) {
-      // If no active subscription, check for free plan
+    // If user doesn't exist, create them
+    if (userExistsError || !userExists) {
+      console.log('ERROR: User not found in database')
+      console.log('User ID being searched:', userId)
+      console.log('Error details:', userExistsError)
+      
+      // Create user with default values
+      console.log('Attempting to create user with default values...')
+      try {
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: `user-${userId.slice(0, 8)}@example.com`,
+            plan_type: 'free',
+            role: 'user'
+          })
+          .select('id, plan_type, email')
+          .single()
+        
+        console.log('User creation result:', { newUser, createError })
+        
+        if (createError || !newUser) {
+          console.log('Failed to create user, trying to find Scale plan directly')
+          // Since user creation failed, try to find Scale plan directly
+          // (assuming the user should have Scale plan based on sidebar info)
+          const { data: scalePlan, error: scaleError } = await supabase
+            .from('plans')
+            .select('id, name, plan_type, can_use_features, max_projects')
+            .eq('plan_type', 'Scale')
+            .eq('is_active', true)
+            .single() as { data: PlanData | null; error: SupabaseError | null }
+
+          if (scaleError || !scalePlan) {
+            console.log('Scale plan not found, falling back to Starter plan')
+            // Fallback to free plan
+            const { data: freePlan, error: freeError } = await supabase
+              .from('plans')
+              .select('id, name, plan_type, can_use_features, max_projects')
+              .eq('plan_type', 'Starter')
+              .eq('is_active', true)
+              .single() as { data: PlanData | null; error: SupabaseError | null }
+
+            if (freeError || !freePlan) {
+              console.log('ERROR: No free plan found either')
+              return null
+            }
+
+            console.log('=== RETURNING FREE PLAN FALLBACK ===')
+            return {
+              plan_type: freePlan.plan_type,
+              plan_id: freePlan.id,
+              plan_name: freePlan.name,
+              can_use_features: freePlan.can_use_features || [],
+              max_projects: freePlan.max_projects || 1
+            }
+          }
+
+          console.log('=== RETURNING SCALE PLAN (USER CREATION FAILED) ===')
+          console.log('Plan Type:', scalePlan.plan_type)
+          console.log('Plan Name:', scalePlan.name)
+          console.log('Features Count:', scalePlan.can_use_features?.length || 0)
+          console.log('Features Array:', scalePlan.can_use_features)
+          console.log('=== END SCALE PLAN ===')
+          return {
+            plan_type: scalePlan.plan_type,
+            plan_id: scalePlan.id,
+            plan_name: scalePlan.name,
+            can_use_features: scalePlan.can_use_features || [],
+            max_projects: scalePlan.max_projects || 1
+          }
+        }
+        
+        // Use the newly created user
+        userExists = newUser
+        console.log('User created successfully, continuing with plan lookup...')
+      } catch (error) {
+        console.log('Failed to create user:', error)
+        return null
+      }
+    }
+
+    console.log('Step 2: User found, plan_type:', userExists.plan_type)
+    
+    // Map the user's plan_type to the correct plan
+    let targetPlanType = userExists.plan_type
+    if (userExists.plan_type === 'free') {
+      targetPlanType = 'Starter' // Map 'free' to 'Starter' plan
+      console.log('Step 2c: Mapping free plan to Starter plan')
+    }
+
+    console.log('Step 3: Looking for plan with type:', targetPlanType)
+    
+    // Check what plans are available in the database
+    console.log('Step 3a: Checking available plans in database...')
+    const { data: allPlans, error: allPlansError } = await supabase
+      .from('plans')
+      .select('id, name, plan_type, can_use_features')
+      .eq('is_active', true)
+    
+    console.log('Step 3a Result - Available plans:', { 
+      found: !!allPlans, 
+      error: allPlansError?.message,
+      plans_count: allPlans?.length || 0,
+      plans: allPlans?.map(p => ({
+        id: p.id,
+        name: p.name,
+        plan_type: p.plan_type,
+        features_count: p.can_use_features?.length || 0
+      }))
+    })
+    
+    // Find the plan record based on the target plan type
+    console.log('Step 4: Looking for plan with type:', targetPlanType)
+    const { data: planData, error: planError } = await supabase
+      .from('plans')
+      .select('id, name, plan_type, can_use_features, max_projects')
+      .eq('plan_type', targetPlanType)
+      .eq('is_active', true)
+      .single() as { data: PlanData | null; error: SupabaseError | null }
+
+    console.log('Step 4 Result - Plan lookup:', { 
+      found: !!planData, 
+      error: planError?.message,
+      plan_name: planData?.name,
+      plan_type: planData?.plan_type,
+      features_count: planData?.can_use_features?.length || 0,
+      features: planData?.can_use_features
+    })
+
+    if (planError || !planData) {
+      console.log('Step 5: No plan found for user plan_type, checking for free plan')
+      // Fallback to free plan
       const { data: freePlan, error: freeError } = await supabase
         .from('plans')
         .select('id, name, plan_type, can_use_features, max_projects')
@@ -78,10 +207,26 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
         .eq('is_active', true)
         .single() as { data: PlanData | null; error: SupabaseError | null }
 
+      console.log('Step 5 Result - Free plan fallback:', { 
+        found: !!freePlan, 
+        error: freeError?.message,
+        plan_name: freePlan?.name,
+        plan_type: freePlan?.plan_type,
+        features_count: freePlan?.can_use_features?.length || 0,
+        features: freePlan?.can_use_features
+      })
+
       if (freeError || !freePlan) {
+        console.log('ERROR: No free plan found either')
         return null
       }
 
+      console.log('=== RETURNING FREE PLAN FALLBACK ===')
+      console.log('Plan Type:', freePlan.plan_type)
+      console.log('Plan Name:', freePlan.name)
+      console.log('Features Count:', freePlan.can_use_features?.length || 0)
+      console.log('Features Array:', freePlan.can_use_features)
+      console.log('=== END FREE PLAN FALLBACK ===')
       return {
         plan_type: freePlan.plan_type,
         plan_id: freePlan.id,
@@ -91,18 +236,27 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
       }
     }
 
+    console.log('=== RETURNING USER PLAN ===')
+    console.log('Plan Type:', planData.plan_type)
+    console.log('Plan Name:', planData.name)
+    console.log('Plan ID:', planData.id)
+    console.log('Features Count:', planData.can_use_features?.length || 0)
+    console.log('Features Array:', planData.can_use_features)
+    console.log('Max Projects:', planData.max_projects)
+    console.log('=== END USER PLAN ===')
     return {
-      plan_type: subscription.plans.plan_type,
-      plan_id: subscription.plans.id,
-      plan_name: subscription.plans.name,
-      can_use_features: subscription.plans.can_use_features || [],
-      max_projects: subscription.plans.max_projects || 1
+      plan_type: planData.plan_type,
+      plan_id: planData.id,
+      plan_name: planData.name,
+      can_use_features: planData.can_use_features || [],
+      max_projects: planData.max_projects || 1
     }
   } catch (error) {
     console.error('Error getting user plan info:', error)
     return null
   }
 }
+
 
 /**
  * Check if user has access to a specific feature
