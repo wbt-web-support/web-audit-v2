@@ -131,6 +131,14 @@ export const FEATURES: Feature[] = [
     icon: '🔧',
     isCore: false
   },
+  {
+    id: 'technical_analysis',
+    name: 'Technical Analysis',
+    description: 'Comprehensive technical audit including code quality, structure, and best practices',
+    category: 'technical',
+    icon: '⚙️',
+    isCore: false
+  },
 
   // Additional features to reach 17
   {

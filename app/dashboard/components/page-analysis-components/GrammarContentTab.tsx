@@ -5,7 +5,7 @@ import { filterHtmlContent } from "@/lib/html-content-filter";
 import { GeminiAnalysisResult } from "@/lib/gemini";
 import { useGeminiStream } from "@/hooks/useGeminiStream";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { useUserPlan } from "@/hooks/useUserPlan";
 
 // Define proper interfaces for the page data
 interface ScrapedPageData {
@@ -27,9 +27,8 @@ export default function GrammarContentTab({
   const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page?.gemini_analysis || null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('grammar');
-  const [hasFeatureAccess, setHasFeatureAccess] = useState<boolean | null>(null);
-  const [planValidation, setPlanValidation] = useState<{userPlan?: string; error?: string} | null>(null);
   const { user } = useAuth();
+  const { hasFeature, loading: planLoading } = useUserPlan();
   const {
     streamStatus,
     isStreaming,
@@ -37,43 +36,8 @@ export default function GrammarContentTab({
     reset
   } = useGeminiStream();
 
-  // Check feature access on component mount (server-side validation)
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!user?.id) return;
-      
-      try {
-        // Get user session token
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.access_token) {
-          setHasFeatureAccess(false);
-          return;
-        }
-
-        const response = await fetch('/api/check-feature-access', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({ featureId: 'grammar_content_analysis' })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to check feature access');
-        }
-
-        const validation = await response.json();
-        setHasFeatureAccess(validation.hasAccess);
-        setPlanValidation(validation);
-      } catch (error) {
-        console.error('Error checking feature access:', error);
-        setHasFeatureAccess(false);
-      }
-    };
-
-    checkAccess();
-  }, [user?.id]);
+  // Check if user has access to grammar content analysis
+  const hasFeatureAccess = hasFeature('grammar_content_analysis');
 
   // Use filtered content if available, otherwise filter HTML content
   const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '');
@@ -141,7 +105,7 @@ export default function GrammarContentTab({
             </p>
             <div className="flex items-center justify-between">
               <div className="text-xs text-gray-500">
-                Current plan: <span className="font-medium">{planValidation?.userPlan || 'Unknown'}</span>
+                Current plan: <span className="font-medium">Check your plan settings</span>
               </div>
               <button 
                 onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}

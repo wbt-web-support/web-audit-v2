@@ -8,6 +8,8 @@ import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
 import ErrorState from './components/ErrorState'
 import SectionSkeleton from './components/SectionSkeleton'
+import { useUserPlan } from '@/hooks/useUserPlan'
+import FeatureUnavailableCard from '../FeatureUnavailableCard'
 
 // Lazy load heavy components
 const PagesSection = lazy(() => import('../analysis-tab-components/PagesSection'))
@@ -25,6 +27,67 @@ export default function AnalysisTabContent({
   onPageSelect 
 }: AnalysisTabProps) {
   const { state, updateState, refreshData, handleSectionChange, startScraping, loadScrapedPages } = useScrapingAnalysis(projectId, cachedData)
+  const { hasFeature } = useUserPlan()
+
+  // Check if user has access to a specific section
+  const hasAccessToSection = (sectionId: string): boolean => {
+    const featureMap: Record<string, string> = {
+      'overview': 'single_page_crawl', // Basic overview is available to all
+      'pages': 'full_site_crawl',
+      'technologies': 'technical_analysis',
+      'cms': 'brand_consistency_check',
+      'performance': 'performance_metrics',
+      'seo': 'seo_structure',
+      'images': 'image_scan',
+      'links': 'link_scanner'
+    }
+    
+    const featureId = featureMap[sectionId]
+    if (!featureId) return true // Show sections that don't require specific features
+    return hasFeature(featureId)
+  }
+
+  // Get section information for unavailable cards
+  const getSectionInfo = (sectionId: string) => {
+    const sectionInfoMap: Record<string, { title: string; description: string }> = {
+      'overview': {
+        title: 'Overview Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive website overview and insights.'
+      },
+      'pages': {
+        title: 'Full Site Crawl',
+        description: 'This feature is not available in your current plan. Upgrade to access full website crawling and analysis.'
+      },
+      'technologies': {
+        title: 'Technical Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access detailed technical analysis and recommendations.'
+      },
+      'cms': {
+        title: 'CMS Detection',
+        description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
+      },
+      'performance': {
+        title: 'Performance Metrics',
+        description: 'This feature is not available in your current plan. Upgrade to access detailed performance analysis and PageSpeed Insights.'
+      },
+      'seo': {
+        title: 'SEO & Structure Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive SEO analysis and structure validation.'
+      },
+      'images': {
+        title: 'Image Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access image optimization analysis and recommendations.'
+      },
+      'links': {
+        title: 'Link Scanner',
+        description: 'This feature is not available in your current plan. Upgrade to access link validation and broken link detection.'
+      }
+    }
+    return sectionInfoMap[sectionId] || {
+      title: 'Feature Unavailable',
+      description: 'This feature is not available in your current plan. Upgrade to access this functionality.'
+    }
+  }
 
   // Ensure data is loaded when component mounts
   useEffect(() => {
@@ -111,6 +174,7 @@ export default function AnalysisTabContent({
         onSectionChange={handleSectionChange}
         onRefresh={() => refreshData(true)}
         isRefreshing={state.isRefreshing}
+        showUnavailableContent={false}
       />
 
       {/* Content Sections */}
@@ -120,86 +184,96 @@ export default function AnalysisTabContent({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        {state.activeSection === 'overview' && (
-          <OverviewSection project={state.project} scrapedPages={state.scrapedPages} />
-        )}
-        
-        {state.activeSection === 'pages' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <PagesSection 
-              key={`pages-${projectId}-${state.scrapedPages?.length || 0}`}
-              scrapedPages={state.scrapedPages} 
-              projectId={projectId} 
-              onPageSelect={onPageSelect}
-              onPagesUpdate={(pages) => {
-                updateState({ scrapedPages: pages })
-                if (onDataUpdate) {
-                  onDataUpdate(state.project, pages)
-                }
-              }}
-            />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'technologies' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <TechnologiesSection 
-              key={`technologies-${projectId}-${state.project?.detected_keys ? 'has-data' : 'no-data'}`}
-              project={state.project} 
-              scrapedPages={state.scrapedPages} 
-            />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'cms' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <CmsSection project={state.project} />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'performance' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <PerformanceSection 
-              key={`performance-${projectId}-${state.project?.pagespeed_insights_data ? 'has-data' : 'no-data'}`}
-              project={state.project} 
-              onDataUpdate={(updatedProject) => {
-                updateState({ project: updatedProject })
-                if (onDataUpdate) {
-                  onDataUpdate(updatedProject, state.scrapedPages)
-                }
-              }} 
-            />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'images' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <ImagesSection 
-              project={state.project} 
-              scrapedPages={state.scrapedPages} 
-              originalScrapingData={state.project.scraping_data} 
-            />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'links' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <LinksSection 
-              project={state.project} 
-              scrapedPages={state.scrapedPages} 
-              originalScrapingData={state.project.scraping_data} 
-            />
-          </Suspense>
-        )}
-        
-        {state.activeSection === 'seo' && (
-          <Suspense fallback={<SectionSkeleton />}>
-            <SEOAnalysisSection 
-              project={state.project} 
-              scrapedPages={state.scrapedPages} 
-              dataVersion={state.dataVersion} 
-            />
-          </Suspense>
+        {/* Check access and show unavailable card if needed */}
+        {!hasAccessToSection(state.activeSection) ? (
+          <FeatureUnavailableCard 
+            title={getSectionInfo(state.activeSection).title}
+            description={getSectionInfo(state.activeSection).description}
+          />
+        ) : (
+          <>
+            {state.activeSection === 'overview' && (
+              <OverviewSection project={state.project} scrapedPages={state.scrapedPages} />
+            )}
+            
+            {state.activeSection === 'pages' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <PagesSection 
+                  key={`pages-${projectId}-${state.scrapedPages?.length || 0}`}
+                  scrapedPages={state.scrapedPages} 
+                  projectId={projectId} 
+                  onPageSelect={onPageSelect}
+                  onPagesUpdate={(pages) => {
+                    updateState({ scrapedPages: pages })
+                    if (onDataUpdate) {
+                      onDataUpdate(state.project, pages)
+                    }
+                  }}
+                />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'technologies' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <TechnologiesSection 
+                  key={`technologies-${projectId}-${state.project?.detected_keys ? 'has-data' : 'no-data'}`}
+                  project={state.project} 
+                  scrapedPages={state.scrapedPages} 
+                />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'cms' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <CmsSection project={state.project} />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'performance' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <PerformanceSection 
+                  key={`performance-${projectId}-${state.project?.pagespeed_insights_data ? 'has-data' : 'no-data'}`}
+                  project={state.project} 
+                  onDataUpdate={(updatedProject) => {
+                    updateState({ project: updatedProject })
+                    if (onDataUpdate) {
+                      onDataUpdate(updatedProject, state.scrapedPages)
+                    }
+                  }} 
+                />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'images' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <ImagesSection 
+                  project={state.project} 
+                  scrapedPages={state.scrapedPages} 
+                  originalScrapingData={state.project.scraping_data} 
+                />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'links' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <LinksSection 
+                  project={state.project} 
+                  scrapedPages={state.scrapedPages} 
+                  originalScrapingData={state.project.scraping_data} 
+                />
+              </Suspense>
+            )}
+            
+            {state.activeSection === 'seo' && (
+              <Suspense fallback={<SectionSkeleton />}>
+                <SEOAnalysisSection 
+                  project={state.project} 
+                  scrapedPages={state.scrapedPages} 
+                  dataVersion={state.dataVersion} 
+                />
+              </Suspense>
+            )}
+          </>
         )}
       </motion.div>
     </div>

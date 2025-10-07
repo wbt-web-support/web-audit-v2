@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
+import { useUserPlan } from '@/hooks/useUserPlan'
+import FeatureUnavailableCard from '../FeatureUnavailableCard'
 
 interface AnalysisHeaderProps {
   project: AuditProject
@@ -14,83 +15,108 @@ interface AnalysisHeaderProps {
   isRefreshing?: boolean
   customTabs?: Array<{ id: string; name: string; icon: string }>
   pageTitle?: string
+  showUnavailableContent?: boolean // New prop to control showing unavailable content
 }
 
-export default function AnalysisHeader({ project, activeSection, onSectionChange, onRefresh, isRefreshing, customTabs, pageTitle }: AnalysisHeaderProps) {
+export default function AnalysisHeader({ project, activeSection, onSectionChange, onRefresh, isRefreshing, customTabs, pageTitle, showUnavailableContent = false }: AnalysisHeaderProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentTab = searchParams.get('tab')
   const { user } = useAuth()
-  const [userPlan, setUserPlan] = useState<{plan_type?: string; can_use_features?: string[]} | null>(null)
-  const [isLoadingPlan, setIsLoadingPlan] = useState(true)
+  const { planInfo, loading: isLoadingPlan, hasFeature } = useUserPlan()
 
-  // Load user plan information (server-side validation)
-  useEffect(() => {
-    const loadUserPlan = async () => {
-      if (!user?.id) {
-        setIsLoadingPlan(false)
-        return
-      }
-
-      try {
-        // Get user session token
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.access_token) {
-          setUserPlan(null);
-          setIsLoadingPlan(false);
-          return;
-        }
-
-        const response = await fetch('/api/check-feature-access', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({ featureId: 'single_page_crawl' }) // Use a basic feature to get plan info
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to load user plan');
-        }
-
-        const planData = await response.json();
-        setUserPlan({
-          plan_type: planData.userPlan,
-          can_use_features: planData.allowedFeatures
-        });
-      } catch (error) {
-        console.error('Error loading user plan:', error)
-        setUserPlan(null)
-      } finally {
-        setIsLoadingPlan(false)
-      }
-    }
-
-    loadUserPlan()
-  }, [user?.id])
 
   // Map tab IDs to feature IDs
   const getFeatureIdForTab = (tabId: string): string | null => {
     const featureMap: Record<string, string> = {
-      'grammar-content': 'grammar_content_analysis',
+      // Main analysis page tabs
+      'overview': 'single_page_crawl', // Basic overview is available to all
+      'pages': 'full_site_crawl',
+      'technologies': 'technical_analysis', // Updated to use technical_analysis
+      'cms': 'brand_consistency_check',
       'performance': 'performance_metrics',
+      'seo': 'seo_structure',
+      'images': 'image_scan',
+      'links': 'link_scanner',
+      
+      // Page analysis tabs
+      'grammar-content': 'grammar_content_analysis',
       'seo-structure': 'seo_structure',
       'ui-quality': 'ui_ux_quality_check',
-      'technical': 'technical_fix_recommendations',
-      'accessibility': 'accessibility_audit',
-      'images': 'image_scan',
-      'links': 'link_scanner'
+      'technical': 'technical_analysis',
+      'accessibility': 'accessibility_audit'
     }
     return featureMap[tabId] || null
   }
 
   // Check if user has access to a specific tab
   const hasAccessToTab = (tabId: string): boolean => {
-    if (!userPlan) return true // Show all tabs if plan not loaded yet
+    if (!planInfo) return true // Show all tabs if plan not loaded yet
     const featureId = getFeatureIdForTab(tabId)
     if (!featureId) return true // Show tabs that don't require specific features
-    return userPlan.can_use_features?.includes(featureId) || false
+    return hasFeature(featureId)
+  }
+
+  // Get tab information for unavailable cards
+  const getTabInfo = (tabId: string) => {
+    const tabInfoMap: Record<string, { title: string; description: string }> = {
+      'overview': {
+        title: 'Overview Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive website overview and insights.'
+      },
+      'pages': {
+        title: 'Full Site Crawl',
+        description: 'This feature is not available in your current plan. Upgrade to access full website crawling and analysis.'
+      },
+      'technologies': {
+        title: 'Technical Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access detailed technical analysis and recommendations.'
+      },
+      'cms': {
+        title: 'CMS Detection',
+        description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
+      },
+      'performance': {
+        title: 'Performance Metrics',
+        description: 'This feature is not available in your current plan. Upgrade to access detailed performance analysis and PageSpeed Insights.'
+      },
+      'seo': {
+        title: 'SEO & Structure Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive SEO analysis and structure validation.'
+      },
+      'images': {
+        title: 'Image Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access image optimization analysis and recommendations.'
+      },
+      'links': {
+        title: 'Link Scanner',
+        description: 'This feature is not available in your current plan. Upgrade to access link validation and broken link detection.'
+      },
+      'grammar-content': {
+        title: 'Grammar & Content Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access AI-powered grammar and content analysis.'
+      },
+      'seo-structure': {
+        title: 'SEO & Structure Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive SEO structure analysis.'
+      },
+      'ui-quality': {
+        title: 'UI/UX Quality Check',
+        description: 'This feature is not available in your current plan. Upgrade to access UI/UX quality analysis and recommendations.'
+      },
+      'technical': {
+        title: 'Technical Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive technical audit and recommendations.'
+      },
+      'accessibility': {
+        title: 'Accessibility Audit',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive accessibility compliance checking.'
+      }
+    }
+    return tabInfoMap[tabId] || {
+      title: 'Feature Unavailable',
+      description: 'This feature is not available in your current plan. Upgrade to access this functionality.'
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -209,8 +235,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               { id: 'performance', name: 'Performance', icon: '⚡' },
               { id: 'seo', name: 'SEO', icon: '🔍' },
               { id: 'images', name: 'Images', icon: '🖼️' },
-              { id: 'links', name: 'Links', icon: '🔗' },
-              
+              { id: 'links', name: 'Links', icon: '🔗' }
             ])
             .map((tab) => {
               const hasAccess = hasAccessToTab(tab.id)
@@ -240,6 +265,16 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
           </nav>
         )}
       </div>
+
+      {/* Show unavailable content if user doesn't have access to current tab */}
+      {showUnavailableContent && !hasAccessToTab(activeSection) && (
+        <div className="mt-6">
+          <FeatureUnavailableCard 
+            title={getTabInfo(activeSection).title}
+            description={getTabInfo(activeSection).description}
+          />
+        </div>
+      )}
     </div>
   )
 }

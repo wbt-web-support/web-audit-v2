@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import AnalysisHeader from '../analysis-tab-components/AnalysisHeader'
+import { useUserPlan } from '@/hooks/useUserPlan'
+import FeatureUnavailableCard from '../FeatureUnavailableCard'
 import {
   OverviewTab,
   GrammarContentTab,
@@ -53,6 +55,7 @@ interface PageData {
 
 export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const { getScrapedPage, getAuditProject } = useSupabase()
+  const { hasFeature } = useUserPlan()
   const [activeTab, setActiveTab] = useState('overview')
   const [page, setPage] = useState<PageData | null>(null)
   const [project, setProject] = useState<AuditProject | null>(null)
@@ -91,6 +94,72 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       loadData()
     }
   }, [pageId, getScrapedPage, getAuditProject])
+
+  // Check if user has access to a specific tab
+  const hasAccessToTab = (tabId: string): boolean => {
+    const featureMap: Record<string, string> = {
+      'overview': 'single_page_crawl', // Basic overview is available to all
+      'links': 'link_scanner',
+      'images': 'image_scan',
+      'grammar-content': 'grammar_content_analysis',
+      'seo-structure': 'seo_structure',
+      'ui-quality': 'ui_ux_quality_check',
+      'technical': 'technical_analysis',
+      'performance': 'performance_metrics',
+      'accessibility': 'accessibility_audit'
+    }
+    
+    const featureId = featureMap[tabId]
+    if (!featureId) return true // Show tabs that don't require specific features
+    return hasFeature(featureId)
+  }
+
+  // Get tab information for unavailable cards
+  const getTabInfo = (tabId: string) => {
+    const tabInfoMap: Record<string, { title: string; description: string }> = {
+      'overview': {
+        title: 'Overview Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive page overview and insights.'
+      },
+      'links': {
+        title: 'Link Scanner',
+        description: 'This feature is not available in your current plan. Upgrade to access link validation and broken link detection.'
+      },
+      'images': {
+        title: 'Image Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access image optimization analysis and recommendations.'
+      },
+      'grammar-content': {
+        title: 'Grammar & Content Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access AI-powered grammar and content analysis.'
+      },
+      'seo-structure': {
+        title: 'SEO & Structure Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive SEO structure analysis.'
+      },
+      'ui-quality': {
+        title: 'UI/UX Quality Check',
+        description: 'This feature is not available in your current plan. Upgrade to access UI/UX quality analysis and recommendations.'
+      },
+      'technical': {
+        title: 'Technical Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive technical audit and recommendations.'
+      },
+      'performance': {
+        title: 'Performance Metrics',
+        description: 'This feature is not available in your current plan. Upgrade to access detailed performance analysis and PageSpeed Insights.'
+      },
+      'accessibility': {
+        title: 'Accessibility Audit',
+        description: 'This feature is not available in your current plan. Upgrade to access comprehensive accessibility compliance checking.'
+      }
+    }
+    return tabInfoMap[tabId] || {
+      title: 'Feature Unavailable',
+      description: 'This feature is not available in your current plan. Upgrade to access this functionality.'
+    }
+  }
+
 
   if (loading) {
     return (
@@ -160,6 +229,17 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   }
 
   const renderActiveTab = () => {
+    // Check if user has access to the current tab
+    if (!hasAccessToTab(activeTab)) {
+      const tabInfo = getTabInfo(activeTab)
+      return (
+        <FeatureUnavailableCard 
+          title={tabInfo.title}
+          description={tabInfo.description}
+        />
+      )
+    }
+
     // Create a mock scrapedPages array with the current page for the sections
     const scrapedPages = page ? [page] : []
     
@@ -209,6 +289,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         onSectionChange={setActiveTab}
         customTabs={pageAnalysisTabs}
         pageTitle={page?.title || 'Untitled Page'}
+        showUnavailableContent={false}
       />
 
       {/* Tab Content */}
