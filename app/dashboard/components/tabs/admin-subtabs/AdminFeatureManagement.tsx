@@ -168,9 +168,18 @@ export default function AdminFeatureManagement({ userProfile: _ }: AdminFeatureM
         setSelectedPlan(data)
         
         // Trigger plan refresh across the application
+        console.log('Dispatching planUpdated event...')
         window.dispatchEvent(new CustomEvent('planUpdated'))
         localStorage.setItem('plan_updated', Date.now().toString())
         setTimeout(() => localStorage.removeItem('plan_updated'), 100)
+        
+        // Also trigger a custom event for same-tab updates
+        window.dispatchEvent(new CustomEvent('planFeaturesUpdated', { 
+          detail: { 
+            planId: selectedPlan.id, 
+            features: selectedFeatures 
+          } 
+        }))
       }
     } catch (error) {
       console.error('Unexpected error updating features:', error)

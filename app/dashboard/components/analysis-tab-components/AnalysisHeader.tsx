@@ -25,7 +25,6 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
   const { user } = useAuth()
   const { planInfo, loading: isLoadingPlan, hasFeature } = useUserPlan()
 
-
   // Map tab IDs to feature IDs
   const getFeatureIdForTab = (tabId: string): string | null => {
     const featureMap: Record<string, string> = {
