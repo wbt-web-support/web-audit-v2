@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       receipt: receipt || `receipt_${Date.now()}`,
       notes: {
         source: 'web_audit_pricing',
-        plan: 'pro_monthly'
+        plan: 'one_time_payment'
       }
     };
 

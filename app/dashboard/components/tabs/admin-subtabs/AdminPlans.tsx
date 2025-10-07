@@ -40,6 +40,7 @@ interface Plan {
   razorpay_plan_id?: string
   price: number
   currency: string
+  billing_cycle: string
   interval_type: string
   interval_count: number
   features: Array<{
@@ -54,6 +55,8 @@ interface Plan {
   is_popular: boolean
   color: string
   sort_order: number
+  start_date?: string
+  end_date?: string
   created_at: string
   updated_at: string
 }
@@ -64,8 +67,7 @@ interface PlanFormData {
   plan_type: 'Starter' | 'Growth' | 'Scale'
   price: number
   currency: string
-  interval_type: string
-  interval_count: number
+  billing_cycle: string
   features: Array<{
     name: string
     description: string
@@ -97,8 +99,7 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
     plan_type: 'Starter',
     price: 0,
     currency: 'INR',
-    interval_type: 'monthly',
-    interval_count: 1,
+    billing_cycle: 'monthly',
     features: [],
     can_use_features: [],
     max_projects: 1,
@@ -328,8 +329,7 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
       plan_type: 'Starter',
       price: 0,
       currency: 'INR',
-      interval_type: 'monthly',
-      interval_count: 1,
+      billing_cycle: 'monthly',
       features: [],
       can_use_features: [],
       max_projects: 1,
@@ -354,8 +354,7 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
       plan_type: plan.plan_type,
       price: plan.price || 0,
       currency: plan.currency,
-      interval_type: plan.interval_type,
-      interval_count: plan.interval_count,
+      billing_cycle: plan.billing_cycle || 'monthly',
       features: plan.features || [],
       can_use_features: plan.can_use_features || [],
       max_projects: plan.max_projects || 1,
@@ -544,6 +543,12 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                     Price
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Billing
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Features
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -590,6 +595,25 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                       </div>
                       <div className="text-sm text-gray-500">
                         {plan.interval_type}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        plan.billing_cycle === 'monthly' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : plan.billing_cycle === 'yearly'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {plan.billing_cycle || 'monthly'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {plan.start_date ? new Date(plan.start_date).toLocaleDateString() : 'No start'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {plan.end_date ? new Date(plan.end_date).toLocaleDateString() : 'No end'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -812,38 +836,26 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Interval Type</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Billing Cycle</label>
                         <select
-                          value={formData.interval_type}
-                          onChange={(e) => setFormData(prev => ({ ...prev, interval_type: e.target.value }))}
+                          value={formData.billing_cycle}
+                          onChange={(e) => setFormData(prev => ({ ...prev, billing_cycle: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="monthly">Monthly</option>
                           <option value="yearly">Yearly</option>
-                          <option value="weekly">Weekly</option>
-                          <option value="daily">Daily</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Interval Count</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Plan ID</label>
                         <input
-                          type="number"
-                          value={formData.interval_count}
-                          onChange={(e) => setFormData(prev => ({ ...prev, interval_count: parseInt(e.target.value) || 1 }))}
+                          type="text"
+                          value={formData.razorpay_plan_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, razorpay_plan_id: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          min="1"
+                          placeholder="Optional Razorpay plan ID"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Plan ID</label>
-                      <input
-                        type="text"
-                        value={formData.razorpay_plan_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, razorpay_plan_id: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Optional Razorpay plan ID"
-                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Max Projects</label>

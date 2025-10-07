@@ -11,12 +11,12 @@ declare global {
   }
 }
 
-// Default fallback plans
+// Default fallback plans (minimal fallback)
 const defaultPlans = [
   {
-    id: 'Starter',
+    id: 'starter-free',
     name: 'Starter',
-    price: '$0',
+    price: 'Free',
     period: 'forever',
     description: 'Perfect for personal projects and small websites',
     features: [
@@ -31,8 +31,12 @@ const defaultPlans = [
     popular: false,
     color: 'gray',
     amount: 0,
-    currency: 'USD',
-    plan_type: 'Starter'
+    currency: 'INR',
+    plan_type: 'Starter',
+    billing_cycle: 'monthly',
+    max_projects: 5,
+    can_use_features: ['basic_seo', 'performance', 'security', 'mobile_check'],
+    razorpay_plan_id: null
   }
 ];
 
@@ -43,111 +47,80 @@ export default function PricingSection() {
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
   const [plans, setPlans] = useState(defaultPlans);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Fetch plans from database on component mount
+  const extractFeatureText = (feature: unknown): string => {
+    if (typeof feature === 'string') {
+      const trimmed = feature.trim();
+      const looksLikeJson = (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+      if (looksLikeJson) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed && typeof parsed === 'object' && 'name' in parsed) {
+            return String((parsed as { name?: string }).name ?? '');
+          }
+        } catch {
+          // Fall through to return original string
+        }
+      }
+      return feature;
+    }
+    if (typeof feature === 'object' && feature !== null && 'name' in feature) {
+      return String((feature as { name?: string }).name ?? '');
+    }
+    return '';
+  };
+
+  // Fetch plans from database
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        // First try to fetch from database
+        setLoadingPlans(true);
         const response = await fetch('/api/plans');
+        
         if (response.ok) {
           const data = await response.json();
           console.log('Database plans loaded:', data.plans?.length || 0, 'plans');
           
-          // Transform database plans to match component format
-          const transformedPlans = data.plans.map((plan: { id: string; name: string; plan_type: string; price: number; interval_type: string; description: string; features: Array<{ name: string }>; currency?: string; amount?: number; is_popular?: boolean; color?: string; razorpay_plan_id?: string }) => ({
-            id: plan.id,
-            name: plan.name,
-            price: (plan.amount || plan.price) === 0 ? 'Free' : 
-                   plan.currency === 'INR' ? 
-                   `₹${Math.round((plan.amount || plan.price) / 100).toLocaleString()}` : 
-                   `$${Math.round((plan.amount || plan.price) / 100).toLocaleString()}`,
-            period: plan.interval_type === 'monthly' ? 'per month' : 
-                    plan.interval_type === 'yearly' ? 'per year' : 
-                    plan.interval_type === 'weekly' ? 'per week' : 
-                    plan.interval_type === 'daily' ? 'per day' : 'per ' + plan.interval_type,
-            description: plan.description,
-            features: plan.features.map((f: { name: string }) => f.name),
-            cta: plan.plan_type === 'Starter' ? 'Get Started Free' :
-                 plan.plan_type === 'Scale' ? 'Contact Sales' : 'Start Growth Trial',
-            popular: plan.is_popular,
-            color: plan.color,
-            amount: plan.amount,
-            currency: plan.currency,
-            plan_type: plan.plan_type,
-            razorpay_plan_id: plan.razorpay_plan_id
-          }));
-          
-          setPlans(transformedPlans);
-        } else {
-          console.error('Failed to fetch database plans, trying Razorpay fallback');
-          // Fallback to Razorpay plans
-          const razorpayResponse = await fetch('/api/razorpay-plans');
-          if (razorpayResponse.ok) {
-            const razorpayData = await razorpayResponse.json();
-            const allPlans = [...defaultPlans, ...razorpayData.plans];
-            const uniquePlans = allPlans.filter((plan, index, self) => 
-              index === self.findIndex(p => p.id === plan.id)
-            );
-            console.log('Razorpay plans loaded:', uniquePlans.map(p => ({ id: p.id, name: p.name, price: p.price })));
-            setPlans(uniquePlans);
+          if (data.plans && data.plans.length > 0) {
+            // Transform database plans to match component format
+            const transformedPlans = data.plans.map((plan: any) => ({
+              id: plan.id,
+              name: plan.name,
+              price: plan.price === 0 ? 'Free' : 
+                     plan.currency === 'INR' ? 
+                     `₹${plan.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 
+                     `$${plan.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              period: plan.billing_cycle === 'monthly' ? 'per month' : 
+                      plan.billing_cycle === 'yearly' ? 'per year' : 
+                      'per ' + plan.billing_cycle,
+              description: plan.description || '',
+              features: plan.features ? plan.features.map((feature: unknown) => extractFeatureText(feature)) : [],
+              cta: plan.plan_type === 'Starter' ? 'Get Started Free' :
+                   plan.plan_type === 'Scale' ? 'Start Scale Trial' : 'Start Growth Trial',
+              popular: plan.is_popular || false, // Use database popular flag
+              color: plan.color || 'gray',
+              amount: plan.price, // Keep original price for calculations
+              currency: plan.currency,
+              plan_type: plan.plan_type,
+              billing_cycle: plan.billing_cycle,
+              max_projects: plan.max_projects,
+              can_use_features: plan.can_use_features || [],
+              razorpay_plan_id: plan.razorpay_plan_id
+            }));
+            
+            setPlans(transformedPlans);
           } else {
-            throw new Error('Both database and Razorpay plans failed');
+            console.log('No plans found in database, using fallback');
+            setPlans(defaultPlans);
           }
+        } else {
+          console.error('Failed to fetch database plans, using fallback');
+          setPlans(defaultPlans);
         }
       } catch (error) {
         console.error('Error fetching plans:', error);
-        // Set fallback plans on error
-        const fallbackPlans = [
-          ...defaultPlans,
-          {
-            id: 'pro_monthly',
-            name: 'Pro',
-            price: '₹2,900',
-            period: 'per month',
-            description: 'Ideal for growing businesses and agencies',
-            features: [
-              'Unlimited audits',
-              'Advanced SEO analysis',
-              'Core Web Vitals tracking',
-              'Brand consistency check',
-              'Custom audit rules',
-              'Priority support',
-              'API access',
-              'White-label reports'
-            ],
-            cta: 'Start Pro Trial',
-            popular: true,
-            color: 'black',
-            amount: 290000,
-            currency: 'INR',
-            plan_type: 'Growth'
-          },
-          {
-            id: 'Scale',
-            name: 'Scale',
-            price: 'Custom',
-            period: 'contact us',
-            description: 'For large organizations with specific needs',
-            features: [
-              'Everything in Pro',
-              'Dedicated account manager',
-              'Custom integrations',
-              'Advanced security scanning',
-              'Team collaboration tools',
-              'Custom reporting',
-              'SLA guarantee',
-              '24/7 phone support'
-            ],
-            cta: 'Contact Sales',
-            popular: false,
-            color: 'gray',
-            amount: 0,
-            currency: 'USD',
-            plan_type: 'Scale'
-          }
-        ];
-        setPlans(fallbackPlans);
+        setPlans(defaultPlans);
       } finally {
         setLoadingPlans(false);
       }
@@ -156,8 +129,24 @@ export default function PricingSection() {
     fetchPlans();
   }, []);
 
-  const handlePayment = async (plan: { id: string; name: string; amount: number; currency: string; plan_type: string; description?: string; price?: string; period?: string; features?: string[]; cta?: string; popular?: boolean; color?: string; razorpay_plan_id?: string }) => {
-    if (plan.id === 'Starter') {
+  // Filter plans based on billing cycle and sort to keep free plan first
+  const filteredPlans = plans
+    .filter(plan => {
+      if (plan.plan_type === 'Starter') return true; // Always show free plan
+      return plan.billing_cycle === billingCycle;
+    })
+    .sort((a, b) => {
+      // Always put Starter plan first
+      if (a.plan_type === 'Starter') return -1;
+      if (b.plan_type === 'Starter') return 1;
+      
+      // Then sort by price (ascending)
+      return a.amount - b.amount;
+    });
+
+  const handlePayment = async (plan: any) => {
+    // Handle free plan
+    if (plan.plan_type === 'Starter' || plan.amount === 0) {
       alert('Free plan selected! No payment required.');
       return;
     }
@@ -166,110 +155,14 @@ export default function PricingSection() {
     setPaymentSuccess(null);
     
     try {
-      // Try subscription first, fallback to regular payment
-      let paymentData;
+      // Simple payment handling - redirect to payment page or show contact info
+      if (plan.plan_type === 'Scale') {
+        alert('Please contact our sales team for custom pricing.');
+        return;
+      }
       
-      try {
-        // Create subscription for Razorpay plan
-        const subscriptionResponse = await fetch('/api/create-subscription', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            plan_id: plan.id,
-            customer_details: {
-              name: 'Test User',
-              email: 'test@example.com',
-              contact: '9999999999'
-            }
-          })
-        });
-
-        if (subscriptionResponse.ok) {
-          paymentData = await subscriptionResponse.json();
-        } else {
-          throw new Error('Subscription failed, trying regular payment');
-        }
-      } catch (subscriptionError) {
-        console.log('Subscription failed, using regular payment:', subscriptionError);
-        
-        // Fallback to regular payment
-        const orderResponse = await fetch('/api/create-order', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            amount: plan.amount,
-            currency: plan.currency,
-            receipt: `plan_${plan.id}_${Date.now()}`
-          })
-        });
-
-        if (!orderResponse.ok) {
-          throw new Error('Failed to create order');
-        }
-
-        paymentData = await orderResponse.json();
-      }
-
-      // Create options based on payment type
-      const options: Record<string, unknown> = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXXXXXX',
-        name: plan.name,
-        description: plan.description || plan.name,
-        prefill: {
-          name: 'Test User',
-          email: 'test@example.com',
-          contact: '9999999999'
-        },
-        notes: {
-          plan_id: plan.id,
-          plan_name: plan.name,
-          source: 'pricing_section'
-        },
-        theme: {
-          color: '#000000'
-        },
-        // Enable all payment methods
-        method: {
-          netbanking: true,
-          wallet: true,
-          emi: true,
-          upi: true,
-          card: true
-        },
-        // Enable UPI
-        upi: {
-          flow: 'collect'
-        },
-        // Enable wallet options
-        wallet: {
-          paytm: true,
-          phonepe: true,
-          gpay: true
-        },
-        handler: function (response: { razorpay_payment_id: string }) {
-          console.log('Payment successful:', response);
-          setPaymentSuccess(response.razorpay_payment_id);
-          alert(`Payment successful! You now have ${plan.name} access. Payment ID: ${response.razorpay_payment_id}`);
-        }
-      };
-
-      // Add subscription_id or order_id based on payment type
-      if (paymentData.id && paymentData.plan_id) {
-        // Subscription payment
-        options.subscription_id = paymentData.id;
-      } else if (paymentData.id && paymentData.amount) {
-        // Regular order payment
-        options.order_id = paymentData.id;
-        options.amount = paymentData.amount;
-        options.currency = paymentData.currency;
-      }
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      // For Growth plans, show contact information or redirect to payment
+      alert(`Selected ${plan.name} plan. Please contact us to complete your subscription.`);
       
     } catch (error) {
       console.error('Payment error:', error);
@@ -292,16 +185,57 @@ export default function PricingSection() {
           <h2 className="text-4xl md:text-6xl font-bold text-black mb-6">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
             Choose the plan that fits your needs. No hidden fees, no surprises.
           </p>
+          
+          {/* Billing Cycle Toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex items-center justify-center space-x-4 mb-8"
+          >
+            <span className={`text-lg font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+              className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 ${
+                billingCycle === 'yearly' ? 'bg-black' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+                  billingCycle === 'yearly' ? 'translate-x-9' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-lg font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-500'}`}>
+              Yearly
+            </span>
+            {billingCycle === 'yearly' && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full"
+              >
+                Save 17%
+              </motion.span>
+            )}
+          </motion.div>
         </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className={`grid grid-cols-1 gap-6 max-w-6xl mx-auto ${
+          filteredPlans.length === 1 ? 'md:grid-cols-1 max-w-md' :
+          filteredPlans.length === 2 ? 'md:grid-cols-2' :
+          filteredPlans.length === 3 ? 'md:grid-cols-3' :
+          'md:grid-cols-2 lg:grid-cols-3'
+        }`}>
           {loadingPlans ? (
             // Loading skeleton
-            Array.from({ length: 3 }).map((_, index) => (
+            Array.from({ length: filteredPlans.length || 3 }).map((_, index) => (
               <div key={index} className="bg-white rounded-3xl p-8 shadow-lg animate-pulse">
                 <div className="h-8 bg-gray-200 rounded mb-4"></div>
                 <div className="h-12 bg-gray-200 rounded mb-4"></div>
@@ -311,23 +245,25 @@ export default function PricingSection() {
               </div>
             ))
           ) : (
-            plans.map((plan, index) => (
+            filteredPlans.map((plan, index) => (
             <motion.div
-              key={plan.id || `${plan.name}_${index}`}
+              key={plan.id || `${plan.name}_${plan.billing_cycle}_${index}`}
               initial={{ opacity: 0, y: 50 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
               whileHover={{ y: -10 }}
               className={`relative rounded-3xl p-8 ${
-                plan.popular 
+                (plan.popular && plan.billing_cycle === billingCycle)
                   ? 'bg-black text-white shadow-2xl scale-105' 
                   : 'bg-white text-black shadow-lg'
               } border-2 ${
-                plan.popular ? 'border-black' : 'border-gray-200'
+                (plan.popular && plan.billing_cycle === billingCycle) 
+                  ? 'border-black' 
+                  : 'border-gray-200'
               }`}
             >
               {/* Popular Badge */}
-              {plan.popular && (
+              {plan.popular && plan.billing_cycle === billingCycle && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={isInView ? { scale: 1 } : { scale: 0 }}
@@ -345,14 +281,16 @@ export default function PricingSection() {
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                 <div className="mb-4">
                   <span className="text-5xl font-bold">{plan.price}</span>
-                  <span className={`text-lg ml-2 ${
-                    plan.popular ? 'text-gray-300' : 'text-gray-500'
-                  }`}>
-                    {plan.period}
-                  </span>
+                  {plan.plan_type !== 'Starter' && (
+                    <span className={`text-lg ml-2 ${
+                      (plan.popular && plan.billing_cycle === billingCycle) ? 'text-gray-300' : 'text-gray-500'
+                    }`}>
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
                 <p className={`text-sm ${
-                  plan.popular ? 'text-gray-300' : 'text-gray-600'
+                  (plan.popular && plan.billing_cycle === billingCycle) ? 'text-gray-300' : 'text-gray-600'
                 }`}>
                   {plan.description}
                 </p>
@@ -360,24 +298,28 @@ export default function PricingSection() {
 
               {/* Features List */}
               <ul className="space-y-4 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <motion.li
-                    key={featureIndex}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                    transition={{ duration: 0.4, delay: index * 0.2 + featureIndex * 0.1 + 0.5 }}
-                    className="flex items-start"
-                  >
-                    <span className={`text-lg mr-3 ${
-                      plan.popular ? 'text-white' : 'text-black'
-                    }`}>✓</span>
-                    <span className={`text-sm ${
-                      plan.popular ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      {feature}
-                    </span>
-                  </motion.li>
-                ))}
+                {plan.features.map((feature: unknown, featureIndex: number) => {
+                  const featureText = extractFeatureText(feature);
+
+                  return (
+                    <motion.li
+                      key={featureIndex}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                      transition={{ duration: 0.4, delay: index * 0.2 + featureIndex * 0.1 + 0.5 }}
+                      className="flex items-start"
+                    >
+                      <span className={`text-lg mr-3 ${
+                        (plan.popular && plan.billing_cycle === billingCycle) ? 'text-white' : 'text-black'
+                      }`}>✓</span>
+                      <span className={`text-sm ${
+                        (plan.popular && plan.billing_cycle === billingCycle) ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
+                        {featureText}
+                      </span>
+                    </motion.li>
+                  );
+                })}
               </ul>
 
               {/* CTA Button */}
@@ -390,7 +332,7 @@ export default function PricingSection() {
                 onClick={() => handlePayment(plan)}
                 disabled={loading === plan.id}
                 className={`w-full py-4 rounded-lg font-semibold transition-all duration-300 ${
-                  plan.popular
+                  (plan.popular && plan.billing_cycle === billingCycle)
                     ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-300'
                     : 'bg-black text-white hover:bg-gray-800 disabled:bg-gray-500'
                 }`}
@@ -399,7 +341,7 @@ export default function PricingSection() {
               </motion.button>
 
               {/* Payment Success Message */}
-              {paymentSuccess && plan.id !== 'Starter' && (
+              {paymentSuccess && plan.plan_type !== 'Starter' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
