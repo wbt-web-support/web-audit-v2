@@ -39,54 +39,6 @@ export default function GrammarContentTab({
   // Check if user has access to grammar content analysis
   const hasFeatureAccess = hasFeature('grammar_content_analysis');
 
-  // Listen for plan updates from admin
-  useEffect(() => {
-    const handlePlanUpdate = () => {
-      console.log('Plan updated event received, refreshing grammar feature access...')
-      if (user?.id) {
-        const checkAccess = async () => {
-          try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session?.access_token) return;
-
-            const response = await fetch('/api/check-feature-access', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-              },
-              body: JSON.stringify({ featureId: 'grammar_content_analysis' })
-            });
-
-            if (response.ok) {
-              const validation = await response.json();
-              setHasFeatureAccess(validation.hasAccess);
-              setPlanValidation(validation);
-            }
-          } catch (error) {
-            console.error('Error refreshing grammar feature access:', error);
-          }
-        }
-        checkAccess()
-      }
-    }
-
-    window.addEventListener('planUpdated', handlePlanUpdate)
-    window.addEventListener('planFeaturesUpdated', handlePlanUpdate)
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'plan_updated') {
-        handlePlanUpdate()
-      }
-    }
-    window.addEventListener('storage', handleStorageChange)
-
-    return () => {
-      window.removeEventListener('planUpdated', handlePlanUpdate)
-      window.removeEventListener('planFeaturesUpdated', handlePlanUpdate)
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [user?.id]);
 
   // Use filtered content if available, otherwise filter HTML content
   const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '');
