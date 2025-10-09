@@ -200,7 +200,11 @@ export default function DashboardSidebar({
               </div>
               <div>
                 <p className="text-sm font-medium text-black">
-                  {userProfile?.first_name && userProfile?.last_name ? `${userProfile.first_name} ${userProfile.last_name}` : userProfile?.email || 'User'}
+                  {userProfile?.first_name && userProfile?.last_name 
+                    ? `${userProfile.first_name} ${userProfile.last_name}` 
+                    : userProfile?.email 
+                      ? userProfile.email.split('@')[0] 
+                      : 'User'}
                 </p>
                 <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
@@ -331,7 +335,11 @@ export default function DashboardSidebar({
               </div>
               <div>
                 <p className="text-sm font-medium text-black">
-                  {userProfile?.first_name && userProfile?.last_name ? `${userProfile.first_name} ${userProfile.last_name}` : userProfile?.email || 'User'}
+                  {userProfile?.first_name && userProfile?.last_name 
+                    ? `${userProfile.first_name} ${userProfile.last_name}` 
+                    : userProfile?.email 
+                      ? userProfile.email.split('@')[0] 
+                      : 'User'}
                 </p>
                 <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
