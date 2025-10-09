@@ -26,16 +26,6 @@ export interface UserPlanInfo {
   max_projects: number
 }
 
-interface SubscriptionData {
-  plan_id: string
-  plans: {
-    id: string
-    name: string
-    plan_type: PlanType
-    can_use_features: string[]
-    max_projects: number
-  }
-}
 
 interface PlanData {
   id: string
@@ -55,11 +45,14 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
     
     // Check if user exists in database
     console.log('Step 1: Checking if user exists in database...')
-    let { data: userExists, error: userExistsError } = await supabase
+    const userQueryResult = await supabase
       .from('users')
       .select('id, email, plan_type')
       .eq('id', userId)
       .maybeSingle()
+    
+    let userExists = userQueryResult.data
+    const userExistsError = userQueryResult.error
     
     console.log('Step 1 Result - User exists check:', { 
       found: !!userExists, 
