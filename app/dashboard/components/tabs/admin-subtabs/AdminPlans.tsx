@@ -38,6 +38,7 @@ interface Plan {
   description: string
   plan_type: 'Starter' | 'Growth' | 'Scale'
   razorpay_plan_id?: string
+  subscription_id?: string
   price: number
   currency: string
   billing_cycle: string
@@ -81,6 +82,7 @@ interface PlanFormData {
   color: string
   sort_order: number
   razorpay_plan_id?: string
+  subscription_id?: string
 }
 
 export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProps) {
@@ -108,7 +110,8 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
     is_popular: false,
     color: 'gray',
     sort_order: 0,
-    razorpay_plan_id: ''
+    razorpay_plan_id: '',
+    subscription_id: ''
   })
 
   const [newFeature, setNewFeature] = useState({
@@ -542,21 +545,24 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Billing
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Features
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Billing
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Razorpay ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Features
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -607,6 +613,17 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                       }`}>
                         {plan.billing_cycle || 'monthly'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 font-mono">
+                        {plan.razorpay_plan_id ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                            {plan.razorpay_plan_id}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">Not configured</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
@@ -855,6 +872,19 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Optional Razorpay plan ID"
                         />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Subscription ID</label>
+                        <input
+                          type="text"
+                          value={formData.subscription_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, subscription_id: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Pre-created Razorpay subscription ID"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Required for subscription payments. Create this in your Razorpay dashboard first.
+                        </p>
                       </div>
                     </div>
                     <div>

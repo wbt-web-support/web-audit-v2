@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 
 declare global {
   interface Window {
@@ -49,7 +49,47 @@ export default function PricingSection() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-  const extractFeatureText = (feature: unknown): string => {
+  // Lazy load Razorpay script only when needed
+  const loadRazorpayScript = async (): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+    if (window.Razorpay) return true;
+    
+    // Check if script is already being loaded
+    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      return new Promise((resolve) => {
+        existingScript.addEventListener('load', () => resolve(true));
+        existingScript.addEventListener('error', () => resolve(false));
+      });
+    }
+    
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('Razorpay script loaded successfully');
+        resolve(true);
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Razorpay script:', error);
+        resolve(false);
+      };
+      
+      // Reduced timeout for faster failure detection
+      setTimeout(() => {
+        if (!window.Razorpay) {
+          console.error('Razorpay script loading timeout');
+          resolve(false);
+        }
+      }, 5000); // 5 second timeout
+      
+      document.body.appendChild(script);
+    });
+  };
+
+  // Memoized feature extraction for better performance
+  const extractFeatureText = useCallback((feature: unknown): string => {
     if (typeof feature === 'string') {
       const trimmed = feature.trim();
       const looksLikeJson = (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
@@ -69,13 +109,17 @@ export default function PricingSection() {
       return String((feature as { name?: string }).name ?? '');
     }
     return '';
-  };
+  }, []);
 
-  // Fetch plans from database
+  // Fetch plans from database with optimized loading
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         setLoadingPlans(true);
+        
+        // First, set default plans immediately for faster initial render
+        setPlans(defaultPlans);
+        
         const response = await fetch('/api/plans');
         
         if (response.ok) {
@@ -96,20 +140,23 @@ export default function PricingSection() {
                       'per ' + plan.billing_cycle,
               description: plan.description || '',
               features: plan.features ? plan.features.map((feature: unknown) => extractFeatureText(feature)) : [],
-              cta: plan.plan_type === 'Starter' ? 'Get Started Free' :
-                   plan.plan_type === 'Scale' ? 'Start Scale Trial' : 'Start Growth Trial',
-              popular: plan.is_popular || false, // Use database popular flag
+              cta: plan.plan_type === 'Starter' ? 'Get Started Free' : 'Get Plan',
+              popular: plan.is_popular || false,
               color: plan.color || 'gray',
-              amount: plan.price, // Keep original price for calculations
+              amount: plan.price,
               currency: plan.currency,
               plan_type: plan.plan_type,
               billing_cycle: plan.billing_cycle,
               max_projects: plan.max_projects,
               can_use_features: plan.can_use_features || [],
-              razorpay_plan_id: plan.razorpay_plan_id
+              razorpay_plan_id: plan.razorpay_plan_id,
+              subscription_id: plan.subscription_id
             }));
-            
+
+            // Update plans with database data (no need for Razorpay plans API)
             setPlans(transformedPlans);
+            console.log('Plans loaded from database with plan IDs and subscription IDs');
+            
           } else {
             console.log('No plans found in database, using fallback');
             setPlans(defaultPlans);
@@ -129,20 +176,22 @@ export default function PricingSection() {
     fetchPlans();
   }, []);
 
-  // Filter plans based on billing cycle and sort to keep free plan first
-  const filteredPlans = plans
-    .filter(plan => {
-      if (plan.plan_type === 'Starter') return true; // Always show free plan
-      return plan.billing_cycle === billingCycle;
-    })
-    .sort((a, b) => {
-      // Always put Starter plan first
-      if (a.plan_type === 'Starter') return -1;
-      if (b.plan_type === 'Starter') return 1;
-      
-      // Then sort by price (ascending)
-      return a.amount - b.amount;
-    });
+  // Memoized filtered plans for better performance
+  const filteredPlans = useMemo(() => {
+    return plans
+      .filter(plan => {
+        if (plan.plan_type === 'Starter') return true; // Always show free plan
+        return plan.billing_cycle === billingCycle;
+      })
+      .sort((a, b) => {
+        // Always put Starter plan first
+        if (a.plan_type === 'Starter') return -1;
+        if (b.plan_type === 'Starter') return 1;
+        
+        // Then sort by price (ascending)
+        return a.amount - b.amount;
+      });
+  }, [plans, billingCycle]);
 
   const handlePayment = async (plan: any) => {
     // Handle free plan
@@ -155,14 +204,61 @@ export default function PricingSection() {
     setPaymentSuccess(null);
     
     try {
-      // Simple payment handling - redirect to payment page or show contact info
-      if (plan.plan_type === 'Scale') {
-        alert('Please contact our sales team for custom pricing.');
+      // Ensure Razorpay checkout is available
+      const isRazorpayReady = await loadRazorpayScript();
+      if (!isRazorpayReady) {
+        alert('Payment system not available. Please try again later.');
         return;
       }
+
+      // Check if plan has subscription_id configured
+      if (!plan.subscription_id || plan.subscription_id.trim() === '') {
+        throw new Error('Subscription ID not configured for this plan. Please contact support.');
+      }
+
+      console.log('Using pre-configured subscription for plan:', plan.name, 'with subscription_id:', plan.subscription_id);
       
-      // For Growth plans, show contact information or redirect to payment
-      alert(`Selected ${plan.name} plan. Please contact us to complete your subscription.`);
+      // Initialize Razorpay with subscription data (supports all payment methods)
+      const razorpay = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: plan.subscription_id,
+        name: 'Web Audit Pro',
+        description: `${plan.name} Plan Subscription`,
+        image: '/logo.png', // Add your logo path
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+          emi: true
+        },
+        prefill: {
+          name: 'Customer',
+          email: 'customer@example.com',
+          contact: '9999999999'
+        },
+        notes: {
+          plan_name: plan.name,
+          plan_type: plan.plan_type,
+          billing_cycle: plan.billing_cycle
+        },
+        theme: {
+          color: '#000000'
+        },
+        handler: function (response: any) {
+          console.log('Payment successful:', response);
+          setPaymentSuccess(response.razorpay_payment_id);
+          alert('Payment successful! Your subscription is now active.');
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment modal dismissed');
+            setLoading(null);
+          }
+        }
+      });
+
+      razorpay.open();
       
     } catch (error) {
       console.error('Payment error:', error);

@@ -37,6 +37,7 @@ export async function GET(_request: NextRequest) {
       features: plan.features,
       is_active: plan.is_active,
       razorpay_plan_id: plan.razorpay_plan_id,
+      subscription_id: plan.subscription_id,
       color: plan.color,
       is_popular: plan.is_popular,
       limits: plan.limits,
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
       is_popular,
       limits,
       sort_order,
-      razorpay_plan_id
+      razorpay_plan_id,
+      subscription_id
     } = body;
     
     if (!name || !plan_type) {
@@ -117,6 +119,7 @@ export async function POST(request: NextRequest) {
       is_active: body.is_active !== undefined ? body.is_active : true,
       sort_order: sort_order || 0,
       razorpay_plan_id: razorpay_plan_id && razorpay_plan_id.trim() !== '' ? razorpay_plan_id : null,
+      subscription_id: subscription_id && subscription_id.trim() !== '' ? subscription_id : null,
       color: color || 'gray',
       is_popular: is_popular || false,
       limits: limits || {}
