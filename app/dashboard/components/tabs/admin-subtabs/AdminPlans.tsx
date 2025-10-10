@@ -37,8 +37,8 @@ interface Plan {
   name: string
   description: string
   plan_type: 'Starter' | 'Growth' | 'Scale'
-  razorpay_plan_id?: string
-  subscription_id?: string
+  razorpay_plan_id: string
+  subscription_id: string
   price: number
   currency: string
   billing_cycle: string
@@ -81,8 +81,8 @@ interface PlanFormData {
   is_popular: boolean
   color: string
   sort_order: number
-  razorpay_plan_id?: string
-  subscription_id?: string
+  razorpay_plan_id: string
+  subscription_id: string
 }
 
 export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProps) {
@@ -309,8 +309,8 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
         
         // Trigger plan refresh across the application
         window.dispatchEvent(new CustomEvent('planUpdated'))
-        localStorage.setItem('plan_updated', Date.now().toString())
-        setTimeout(() => localStorage.removeItem('plan_updated'), 100)
+        // Also trigger a custom event for billing section refresh
+        window.dispatchEvent(new CustomEvent('billingRefresh'))
         
         if (action === 'create' || action === 'update') {
           setShowPlanForm(false)
@@ -341,7 +341,8 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
       is_popular: false,
       color: 'gray',
       sort_order: 0,
-      razorpay_plan_id: ''
+      razorpay_plan_id: '',
+      subscription_id: ''
     })
     setNewFeature({ name: '', description: '', icon: '' })
     setIsEditing(false)
@@ -352,21 +353,22 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
     console.log('Plan type from plan:', plan.plan_type)
     
     setFormData({
-      name: plan.name,
-      description: plan.description,
-      plan_type: plan.plan_type,
+      name: plan.name || '',
+      description: plan.description || '',
+      plan_type: plan.plan_type || 'Starter',
       price: plan.price || 0,
-      currency: plan.currency,
+      currency: plan.currency || 'INR',
       billing_cycle: plan.billing_cycle || 'monthly',
       features: plan.features || [],
       can_use_features: plan.can_use_features || [],
       max_projects: plan.max_projects || 1,
-      limits: plan.limits,
-      is_active: plan.is_active,
-      is_popular: plan.is_popular,
-      color: plan.color,
-      sort_order: plan.sort_order,
-      razorpay_plan_id: plan.razorpay_plan_id || ''
+      limits: plan.limits || {},
+      is_active: plan.is_active ?? true,
+      is_popular: plan.is_popular ?? false,
+      color: plan.color || 'gray',
+      sort_order: plan.sort_order || 0,
+      razorpay_plan_id: plan.razorpay_plan_id || '',
+      subscription_id: plan.subscription_id || ''
     })
     setSelectedPlan(plan)
     setIsEditing(true)
@@ -396,6 +398,22 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
     const validPlanTypes = ['Starter', 'Growth', 'Scale']
     if (!validPlanTypes.includes(formData.plan_type)) {
       alert(`Invalid plan type: ${formData.plan_type}. Must be one of: ${validPlanTypes.join(', ')}`)
+      return
+    }
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      alert('Plan name is required')
+      return
+    }
+    
+    if (!formData.razorpay_plan_id.trim()) {
+      alert('Razorpay Plan ID is required')
+      return
+    }
+    
+    if (!formData.subscription_id.trim()) {
+      alert('Subscription ID is required')
       return
     }
     
@@ -796,13 +814,16 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                   <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Plan Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter plan name"
+                        required
                       />
                     </div>
                     <div>
@@ -864,23 +885,32 @@ export default function AdminPlans({ userProfile: _userProfile }: AdminPlansProp
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Plan ID</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Razorpay Plan ID <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="text"
                           value={formData.razorpay_plan_id}
                           onChange={(e) => setFormData(prev => ({ ...prev, razorpay_plan_id: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Optional Razorpay plan ID"
+                          placeholder="Required Razorpay plan ID"
+                          required
                         />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Required. Create this in your Razorpay dashboard first.
+                        </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Subscription ID</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Subscription ID <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="text"
                           value={formData.subscription_id}
                           onChange={(e) => setFormData(prev => ({ ...prev, subscription_id: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Pre-created Razorpay subscription ID"
+                          placeholder="Required Razorpay subscription ID"
+                          required
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Required for subscription payments. Create this in your Razorpay dashboard first.

@@ -1,9 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import PricingSection from '@/app/home-page-components/PricingSection'
 import { useUserPlan } from '@/hooks/useUserPlan'
+
+interface PaymentHistory {
+  id: string
+  razorpay_payment_id: string
+  amount: number
+  currency: string
+  plan_name: string
+  plan_type: string
+  payment_status: string
+  payment_date: string
+  created_at: string
+}
 
 interface BillingProps {
   userProfile: {
@@ -23,6 +35,73 @@ interface BillingProps {
 export default function Billing({ userProfile }: BillingProps) {
   const { planInfo, loading: planLoading } = useUserPlan()
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+
+  // Fetch payment history function
+  const fetchPaymentHistory = async () => {
+    try {
+      setLoadingHistory(true)
+      const response = await fetch('/api/payment-history')
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPaymentHistory(data.payments || [])
+      } else if (response.status === 401) {
+        console.warn('User not authenticated, skipping payment history fetch')
+        setPaymentHistory([])
+      } else {
+        console.error('Failed to fetch payment history:', response.status, response.statusText)
+        // Set empty array as fallback
+        setPaymentHistory([])
+      }
+    } catch (error) {
+      console.error('Error fetching payment history:', error)
+      // Set empty array as fallback
+      setPaymentHistory([])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  // Fetch payment history on mount
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    if (userProfile?.id) {
+      fetchPaymentHistory()
+    } else {
+      setLoadingHistory(false)
+    }
+  }, [userProfile?.id])
+
+  // Listen for plan updates and billing refresh events
+  useEffect(() => {
+    const handlePlanUpdate = () => {
+      console.log('Plan updated, refreshing billing section...')
+      // Refresh payment history when plans are updated
+      if (userProfile?.id) {
+        fetchPaymentHistory()
+      }
+    }
+
+    const handleBillingRefresh = () => {
+      console.log('Billing refresh triggered...')
+      // Refresh payment history
+      if (userProfile?.id) {
+        fetchPaymentHistory()
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('planUpdated', handlePlanUpdate)
+    window.addEventListener('billingRefresh', handleBillingRefresh)
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('planUpdated', handlePlanUpdate)
+      window.removeEventListener('billingRefresh', handleBillingRefresh)
+    }
+  }, [userProfile?.id])
 
   // Mock subscription data for usage display
   const subscription = {
@@ -133,28 +212,105 @@ export default function Billing({ userProfile }: BillingProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <h2 className="text-lg font-semibold text-black mb-4">Billing History</h2>
-        <motion.div 
-          className="text-center py-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <motion.svg 
-            className="mx-auto h-12 w-12 text-gray-400" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+        <h2 className="text-lg font-semibold text-black mb-4">Payment History</h2>
+        
+        {loadingHistory ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading payment history...</p>
+          </div>
+        ) : !userProfile?.id ? (
+          <motion.div 
+            className="text-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </motion.svg>
-          <h3 className="mt-2 text-sm font-medium text-black">No billing history</h3>
-          <p className="mt-1 text-sm text-gray-500">You&apos;re currently on the free plan.</p>
-        </motion.div>
+            <motion.svg 
+              className="mx-auto h-12 w-12 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </motion.svg>
+            <h3 className="mt-2 text-sm font-medium text-black">Authentication Required</h3>
+            <p className="mt-1 text-sm text-gray-500">Please log in to view payment history.</p>
+          </motion.div>
+        ) : paymentHistory.length === 0 ? (
+          <motion.div 
+            className="text-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <motion.svg 
+              className="mx-auto h-12 w-12 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </motion.svg>
+            <h3 className="mt-2 text-sm font-medium text-black">No payment history</h3>
+            <p className="mt-1 text-sm text-gray-500">You&apos;re currently on the free plan.</p>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {paymentHistory.map((payment, index) => (
+              <motion.div
+                key={payment.id}
+                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="font-medium text-black">{payment.plan_name}</h3>
+                    <p className="text-sm text-gray-600">
+                      {payment.plan_type}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-black">
+                      {payment.currency === 'INR' ? '₹' : '$'}{payment.amount}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(payment.payment_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-4">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      payment.payment_status === 'completed' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {payment.payment_status}
+                    </span>
+                    <span className="text-gray-500">
+                      Payment ID: {payment.razorpay_payment_id}
+                    </span>
+                  </div>
+                  <div className="text-gray-500">
+                    {new Date(payment.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )
 }
+
