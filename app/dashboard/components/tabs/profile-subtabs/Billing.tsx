@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import PricingSection from '@/app/home-page-components/PricingSection'
+import { useUserPlan } from '@/hooks/useUserPlan'
 
 interface BillingProps {
   userProfile: {
@@ -19,49 +21,20 @@ interface BillingProps {
 }
 
 export default function Billing({ userProfile }: BillingProps) {
+  const { planInfo, loading: planLoading } = useUserPlan()
   const [isUpgrading, setIsUpgrading] = useState(false)
 
-  // Mock subscription data
+  // Mock subscription data for usage display
   const subscription = {
-    plan: 'Free',
+    plan: planInfo?.plan_name || 'Free',
     status: 'active',
     nextBilling: null,
     usage: {
-      projects: 12,
-      maxProjects: 50,
+      projects: planInfo?.current_projects || 0,
+      maxProjects: planInfo?.max_projects || 1,
       audits: 8,
       maxAudits: 100
     }
-  }
-
-  const plans = [
-    {
-      name: 'Free',
-      price: 0,
-      features: ['Up to 5 projects', 'Basic audits', 'Email support'],
-      current: true
-    },
-    {
-      name: 'Pro',
-      price: 29,
-      features: ['Unlimited projects', 'Advanced audits', 'Priority support', 'API access'],
-      current: false
-    },
-    {
-      name: 'Enterprise',
-      price: 99,
-      features: ['Everything in Pro', 'Custom integrations', 'Dedicated support', 'SLA guarantee'],
-      current: false
-    }
-  ]
-
-  const handleUpgrade = (planName: string) => {
-    setIsUpgrading(true)
-    // Simulate upgrade process
-    setTimeout(() => {
-      setIsUpgrading(false)
-      alert(`Upgrading to ${planName} plan...`)
-    }, 1000)
   }
 
   return (
@@ -71,7 +44,7 @@ export default function Billing({ userProfile }: BillingProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Current Plan */}
+      {/* Current Plan Usage */}
       <motion.div 
         className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
@@ -90,8 +63,10 @@ export default function Billing({ userProfile }: BillingProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h3 className="text-2xl font-bold text-black">{subscription.plan} Plan</h3>
-            <p className="text-gray-600">${subscription.plan === 'Free' ? '0' : '29'}/month</p>
+            <h3 className="text-2xl font-bold text-black">{subscription.plan}</h3>
+            <p className="text-gray-600">
+              {planInfo?.plan_type === 'Starter' ? 'Free' : 'Paid Plan'}
+            </p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -101,12 +76,12 @@ export default function Billing({ userProfile }: BillingProps) {
             <h4 className="font-medium text-black mb-2">Usage</h4>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Projects: {subscription.usage.projects}/{subscription.usage.maxProjects}</span>
+                <span>Projects: {subscription.usage.projects}/{subscription.usage.maxProjects === -1 ? '∞' : subscription.usage.maxProjects}</span>
                 <div className="w-20 bg-gray-200 rounded h-2">
                   <motion.div 
                     className="bg-blue-600 h-2 rounded" 
                     initial={{ width: 0 }}
-                    animate={{ width: `${(subscription.usage.projects / subscription.usage.maxProjects) * 100}%` }}
+                    animate={{ width: subscription.usage.maxProjects === -1 ? '100%' : `${Math.min((subscription.usage.projects / subscription.usage.maxProjects) * 100, 100)}%` }}
                     transition={{ duration: 1, delay: 0.5 }}
                   ></motion.div>
                 </div>
@@ -137,83 +112,18 @@ export default function Billing({ userProfile }: BillingProps) {
         </div>
       </motion.div>
 
-      {/* Available Plans */}
-      <motion.div 
-        className="bg-white rounded-lg border border-gray-200 p-6"
+      {/* Pricing Plans */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <h2 className="text-lg font-semibold text-black mb-6">Available Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              className={`relative rounded border-2 p-6 ${
-                plan.current
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-            >
-              {plan.current && (
-                <motion.div 
-                  className="absolute -top-3 left-6"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
-                >
-                  <span className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium">
-                    Current Plan
-                  </span>
-                </motion.div>
-              )}
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-black">{plan.name}</h3>
-                <div className="mt-2">
-                  <span className="text-3xl font-bold text-black">${plan.price}</span>
-                  <span className="text-gray-600">/month</span>
-                </div>
-              </div>
-              <ul className="mt-6 space-y-3">
-                {plan.features.map((feature, featureIndex) => (
-                  <motion.li 
-                    key={featureIndex} 
-                    className="flex items-center"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 + featureIndex * 0.1 }}
-                  >
-                    <svg className="w-5 h-5 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-gray-700">{feature}</span>
-                  </motion.li>
-                ))}
-              </ul>
-              <div className="mt-6">
-                {plan.current ? (
-                  <button
-                    disabled
-                    className="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded cursor-not-allowed"
-                  >
-                    Current Plan
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleUpgrade(plan.name)}
-                    disabled={isUpgrading}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUpgrading ? 'Processing...' : 'Upgrade'}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <PricingSection 
+          currentPlanType={planInfo?.plan_type}
+          showBillingToggle={true}
+          showCurrentPlanHighlight={true}
+          className="py-8"
+        />
       </motion.div>
 
       {/* Billing History */}

@@ -10,6 +10,13 @@ const razorpay = new Razorpay({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== CREATE ORDER API CALLED ===');
+    console.log('Environment check:', {
+      RAZORPAY_KEY_ID: !!process.env.RAZORPAY_KEY_ID,
+      RAZORPAY_KEY_SECRET: !!process.env.RAZORPAY_KEY_SECRET,
+      NEXT_PUBLIC_RAZORPAY_KEY_ID: !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+    });
+    
     // Check Razorpay configuration
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       console.error('Razorpay keys not configured');
@@ -34,11 +41,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate receipt length
+    if (receipt && receipt.length > 40) {
+      console.warn('Receipt too long, will be truncated:', receipt);
+    }
+
     // Create regular order (supports all payment methods)
+    // Ensure receipt is max 40 characters
+    const receiptId = receipt || `rec_${Date.now()}`;
+    const finalReceipt = receiptId.length > 40 ? receiptId.substring(0, 40) : receiptId;
+    
     const options = {
       amount: Math.round(amount), // Ensure amount is an integer
       currency: currency,
-      receipt: receipt || `receipt_${Date.now()}`,
+      receipt: finalReceipt,
       notes: {
         source: 'web_audit_pricing',
         plan_id: plan_id || 'direct_payment',
@@ -49,7 +65,12 @@ export async function POST(request: NextRequest) {
     console.log('Creating Razorpay order with options:', options);
     
     const order = await razorpay.orders.create(options);
-    console.log('Order created successfully:', order.id);
+    console.log('Order created successfully:', {
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      status: order.status
+    });
 
     return NextResponse.json({
       id: order.id,

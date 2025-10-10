@@ -36,11 +36,24 @@ const defaultPlans = [
     billing_cycle: 'monthly',
     max_projects: 5,
     can_use_features: ['basic_seo', 'performance', 'security', 'mobile_check'],
-    razorpay_plan_id: null
+    razorpay_plan_id: null,
+    isCurrentPlan: false
   }
 ];
 
-export default function PricingSection() {
+interface PricingSectionProps {
+  currentPlanType?: string;
+  showBillingToggle?: boolean;
+  showCurrentPlanHighlight?: boolean;
+  className?: string;
+}
+
+export default function PricingSection({ 
+  currentPlanType, 
+  showBillingToggle = true, 
+  showCurrentPlanHighlight = false,
+  className = ""
+}: PricingSectionProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [loading, setLoading] = useState<string | null>(null);
@@ -140,7 +153,8 @@ export default function PricingSection() {
                       'per ' + plan.billing_cycle,
               description: plan.description || '',
               features: plan.features ? plan.features.map((feature: unknown) => extractFeatureText(feature)) : [],
-              cta: plan.plan_type === 'Starter' ? 'Get Started Free' : 'Get Plan',
+              cta: plan.plan_type === 'Starter' ? 'Get Started Free' : 
+                   (showCurrentPlanHighlight && currentPlanType && plan.plan_type === currentPlanType) ? 'Current Plan' : 'Get Plan',
               popular: plan.is_popular || false,
               color: plan.color || 'gray',
               amount: plan.price,
@@ -150,7 +164,8 @@ export default function PricingSection() {
               max_projects: plan.max_projects,
               can_use_features: plan.can_use_features || [],
               razorpay_plan_id: plan.razorpay_plan_id,
-              subscription_id: plan.subscription_id
+              subscription_id: plan.subscription_id,
+              isCurrentPlan: showCurrentPlanHighlight && currentPlanType && plan.plan_type === currentPlanType
             }));
 
             // Update plans with database data (no need for Razorpay plans API)
@@ -211,26 +226,61 @@ export default function PricingSection() {
         return;
       }
 
-      // Check if plan has subscription_id configured
-      if (!plan.subscription_id || plan.subscription_id.trim() === '') {
-        throw new Error('Subscription ID not configured for this plan. Please contact support.');
+      console.log('Creating order for plan:', plan.name, 'with amount:', plan.amount);
+      console.log('Plan details:', {
+        id: plan.id,
+        name: plan.name,
+        amount: plan.amount,
+        currency: plan.currency,
+        plan_type: plan.plan_type
+      });
+      
+      // Validate plan amount
+      if (!plan.amount || plan.amount <= 0) {
+        throw new Error('Invalid plan amount. Please contact support.');
+      }
+      
+      // Create order using the create-order API (supports all payment methods)
+      const orderData = {
+        amount: Math.round(plan.amount * 100), // Convert to paise and ensure integer
+        currency: plan.currency || 'INR',
+        receipt: `rec_${Date.now()}`, // Shortened receipt (max 40 chars)
+        plan_id: plan.id
+      };
+      
+      console.log('Sending order data:', orderData);
+      
+      const orderResponse = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        console.error('Order creation failed:', errorData);
+        throw new Error(errorData.details || errorData.error || 'Failed to create payment order');
       }
 
-      console.log('Using pre-configured subscription for plan:', plan.name, 'with subscription_id:', plan.subscription_id);
+      const orderResponseData = await orderResponse.json();
+      console.log('Order created successfully:', orderResponseData);
       
-      // Initialize Razorpay with subscription data (supports all payment methods)
+      // Initialize Razorpay with order data (supports all payment methods)
       const razorpay = new window.Razorpay({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        subscription_id: plan.subscription_id,
+        order_id: orderResponseData.id,
         name: 'Web Audit Pro',
-        description: `${plan.name} Plan Subscription`,
+        description: `${plan.name} Plan - ${plan.billing_cycle} subscription`,
         image: '/logo.png', // Add your logo path
         method: {
           upi: true,
           card: true,
           netbanking: true,
           wallet: true,
-          emi: true
+          emi: true,
+          paylater: true
         },
         prefill: {
           name: 'Customer',
@@ -240,15 +290,24 @@ export default function PricingSection() {
         notes: {
           plan_name: plan.name,
           plan_type: plan.plan_type,
-          billing_cycle: plan.billing_cycle
+          billing_cycle: plan.billing_cycle,
+          plan_id: plan.id
         },
         theme: {
           color: '#000000'
+        },
+        config: {
+          display: {
+            hide: []
+          }
         },
         handler: function (response: any) {
           console.log('Payment successful:', response);
           setPaymentSuccess(response.razorpay_payment_id);
           alert('Payment successful! Your subscription is now active.');
+          
+          // Optionally, you can call a webhook or API to update user's plan
+          // This would typically be handled by Razorpay webhooks
         },
         modal: {
           ondismiss: function() {
@@ -262,14 +321,68 @@ export default function PricingSection() {
       
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Payment failed: ' + (error as Error).message);
+      
+      // Try fallback approach with direct payment
+      try {
+        console.log('Trying fallback payment approach...');
+        
+        // Fallback: Create direct payment without order
+        const razorpay = new window.Razorpay({
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: Math.round(plan.amount * 100),
+          currency: plan.currency || 'INR',
+          name: 'Web Audit Pro',
+          description: `${plan.name} Plan - ${plan.billing_cycle} subscription`,
+          image: '/logo.png',
+          method: {
+            upi: true,
+            card: true,
+            netbanking: true,
+            wallet: true,
+            emi: true,
+            paylater: true
+          },
+          prefill: {
+            name: 'Customer',
+            email: 'customer@example.com',
+            contact: '9999999999'
+          },
+          notes: {
+            plan_name: plan.name,
+            plan_type: plan.plan_type,
+            billing_cycle: plan.billing_cycle,
+            plan_id: plan.id
+          },
+          theme: {
+            color: '#000000'
+          },
+          handler: function (response: any) {
+            console.log('Fallback payment successful:', response);
+            setPaymentSuccess(response.razorpay_payment_id);
+            alert('Payment successful! Your subscription is now active.');
+          },
+          modal: {
+            ondismiss: function() {
+              console.log('Fallback payment modal dismissed');
+              setLoading(null);
+            }
+          }
+        });
+
+        razorpay.open();
+        return; // Exit early if fallback succeeds
+        
+      } catch (fallbackError) {
+        console.error('Fallback payment also failed:', fallbackError);
+        alert('Payment failed: ' + (error as Error).message + '\n\nPlease try again or contact support.');
+      }
     } finally {
       setLoading(null);
     }
   };
 
   return (
-    <section id="pricing" ref={ref} className="py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <section id="pricing" ref={ref} className={`py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -286,40 +399,42 @@ export default function PricingSection() {
           </p>
           
           {/* Billing Cycle Toggle */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex items-center justify-center space-x-4 mb-8"
-          >
-            <span className={`text-lg font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-500'}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 ${
-                billingCycle === 'yearly' ? 'bg-black' : 'bg-gray-300'
-              }`}
+          {showBillingToggle && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex items-center justify-center space-x-4 mb-8"
             >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
-                  billingCycle === 'yearly' ? 'translate-x-9' : 'translate-x-1'
+              <span className={`text-lg font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-500'}`}>
+                Monthly
+              </span>
+              <button
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 ${
+                  billingCycle === 'yearly' ? 'bg-black' : 'bg-gray-300'
                 }`}
-              />
-            </button>
-            <span className={`text-lg font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-500'}`}>
-              Yearly
-            </span>
-            {billingCycle === 'yearly' && (
-              <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full"
               >
-                Save 17%
-              </motion.span>
-            )}
-          </motion.div>
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+                    billingCycle === 'yearly' ? 'translate-x-9' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-lg font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-500'}`}>
+                Yearly
+              </span>
+              {billingCycle === 'yearly' && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full"
+                >
+                  Save 17%
+                </motion.span>
+              )}
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Pricing Cards */}
@@ -351,10 +466,14 @@ export default function PricingSection() {
               className={`relative rounded-3xl p-8 ${
                 (plan.popular && plan.billing_cycle === billingCycle)
                   ? 'bg-black text-white shadow-2xl scale-105' 
+                  : plan.isCurrentPlan
+                  ? 'bg-blue-50 text-black shadow-xl border-blue-500'
                   : 'bg-white text-black shadow-lg'
               } border-2 ${
                 (plan.popular && plan.billing_cycle === billingCycle) 
                   ? 'border-black' 
+                  : plan.isCurrentPlan
+                  ? 'border-blue-500'
                   : 'border-gray-200'
               }`}
             >
@@ -368,6 +487,20 @@ export default function PricingSection() {
                 >
                   <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                     Most Popular
+                  </span>
+                </motion.div>
+              )}
+
+              {/* Current Plan Badge */}
+              {plan.isCurrentPlan && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={isInView ? { scale: 1 } : { scale: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                >
+                  <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    Current Plan
                   </span>
                 </motion.div>
               )}
@@ -426,10 +559,12 @@ export default function PricingSection() {
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 transition={{ duration: 0.5, delay: index * 0.2 + 0.8 }}
                 onClick={() => handlePayment(plan)}
-                disabled={loading === plan.id}
+                disabled={loading === plan.id || plan.isCurrentPlan}
                 className={`w-full py-4 rounded-lg font-semibold transition-all duration-300 ${
                   (plan.popular && plan.billing_cycle === billingCycle)
                     ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-300'
+                    : plan.isCurrentPlan
+                    ? 'bg-blue-600 text-white cursor-not-allowed'
                     : 'bg-black text-white hover:bg-gray-800 disabled:bg-gray-500'
                 }`}
               >
