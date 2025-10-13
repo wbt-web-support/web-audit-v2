@@ -118,12 +118,10 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
     return (
       <div className="text-center py-12">
         <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-12 h-12 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
+          <i className="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
         </div>
-        <h2 className="text-2xl font-bold text-black mb-2">Verifying Access</h2>
-        <p className="text-gray-600">Checking your admin permissions...</p>
+        <h2 className="text-2xl font-semibold text-blue-900 mb-2">Verifying Access</h2>
+        <p className="text-blue-600">Checking your admin permissions...</p>
       </div>
     )
   }
@@ -133,19 +131,17 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
     return (
       <div className="text-center py-12">
         <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+          <i className="fas fa-ban text-4xl text-red-600"></i>
         </div>
-        <h2 className="text-2xl font-bold text-black mb-2">Access Denied</h2>
-        <p className="text-gray-600">You don&apos;t have admin permissions to access this panel.</p>
-        <p className="text-sm text-gray-500 mt-2">Database verification failed.</p>
+        <h2 className="text-2xl font-semibold text-red-900 mb-2">Access Denied</h2>
+        <p className="text-red-600">You don&apos;t have admin permissions to access this panel.</p>
+        <p className="text-sm text-red-500 mt-2">Database verification failed.</p>
         {verificationError && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">Error: {verificationError}</p>
-      </div>
+          </div>
         )}
-            </div>
+      </div>
     )
   }
 
@@ -174,11 +170,21 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
+              <i className={`fas ${
+                tab.id === 'overview' ? 'fa-chart-pie' :
+                tab.id === 'users' ? 'fa-users' :
+                tab.id === 'plans' ? 'fa-credit-card' :
+                tab.id === 'features' ? 'fa-cogs' :
+                tab.id === 'subscription' ? 'fa-sync' :
+                tab.id === 'revenue' ? 'fa-dollar-sign' :
+                tab.id === 'alerts' ? 'fa-bell' :
+                tab.id === 'support' ? 'fa-life-ring' : 'fa-circle'
+              } mr-2`}></i>
               {tab.label}
             </motion.button>
           ))}
