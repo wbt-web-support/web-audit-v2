@@ -4,17 +4,28 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import PricingSection from '@/app/home-page-components/PricingSection'
 import { useUserPlan } from '@/hooks/useUserPlan'
+import { supabase } from '@/lib/supabase'
 
 interface PaymentHistory {
   id: string
   razorpay_payment_id: string
+  razorpay_order_id?: string
   amount: number
   currency: string
   plan_name: string
   plan_type: string
+  billing_cycle?: string
+  max_projects?: number
+  can_use_features?: string[]
   payment_status: string
+  payment_method?: string
+  subscription_id?: string
+  subscription_status?: string
   payment_date: string
   created_at: string
+  expires_at?: string
+  receipt_number?: string
+  notes?: string
 }
 
 interface BillingProps {
@@ -42,16 +53,32 @@ export default function Billing({ userProfile }: BillingProps) {
   const fetchPaymentHistory = async () => {
     try {
       setLoadingHistory(true)
-      const response = await fetch('/api/payment-history')
+      console.log('Fetching payment history...')
+      
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      console.log('Session token available:', !!token)
+      
+      const response = await fetch('/api/payment-history', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()
+        console.log('Payment history response:', data)
         setPaymentHistory(data.payments || [])
       } else if (response.status === 401) {
         console.warn('User not authenticated, skipping payment history fetch')
         setPaymentHistory([])
       } else {
         console.error('Failed to fetch payment history:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error details:', errorData)
         // Set empty array as fallback
         setPaymentHistory([])
       }
@@ -103,7 +130,7 @@ export default function Billing({ userProfile }: BillingProps) {
     }
   }, [userProfile?.id])
 
-  // Mock subscription data for usage display
+  // Subscription data for usage display
   const subscription = {
     plan: planInfo?.plan_name || 'Free',
     status: 'active',
@@ -115,6 +142,10 @@ export default function Billing({ userProfile }: BillingProps) {
       maxAudits: 100
     }
   }
+
+  // Debug logging
+  console.log('Billing component - planInfo:', planInfo)
+  console.log('Billing component - paymentHistory length:', paymentHistory.length)
 
   return (
     <motion.div 
@@ -144,7 +175,7 @@ export default function Billing({ userProfile }: BillingProps) {
           >
             <h3 className="text-2xl font-bold text-black">{subscription.plan}</h3>
             <p className="text-gray-600">
-              {planInfo?.plan_type === 'Starter' ? 'Free' : 'Paid Plan'}
+              {planInfo?.plan_type === 'Starter' ? 'Free Plan' : `${planInfo?.plan_type} Plan`}
             </p>
           </motion.div>
           <motion.div
@@ -259,7 +290,11 @@ export default function Billing({ userProfile }: BillingProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </motion.svg>
             <h3 className="mt-2 text-sm font-medium text-black">No payment history</h3>
-            <p className="mt-1 text-sm text-gray-500">You&apos;re currently on the free plan.</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {planInfo?.plan_type === 'Starter' 
+                ? "You're currently on the free plan." 
+                : "No payment records found for your account."}
+            </p>
           </motion.div>
         ) : (
           <div className="space-y-4">
@@ -271,11 +306,11 @@ export default function Billing({ userProfile }: BillingProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="font-medium text-black">{payment.plan_name}</h3>
                     <p className="text-sm text-gray-600">
-                      {payment.plan_type}
+                      {payment.plan_type} • {payment.billing_cycle || 'One-time'}
                     </p>
                   </div>
                   <div className="text-right">
@@ -288,22 +323,80 @@ export default function Billing({ userProfile }: BillingProps) {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      payment.payment_status === 'completed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {payment.payment_status}
-                    </span>
-                    <span className="text-gray-500">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        payment.payment_status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : payment.payment_status === 'failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {payment.payment_status}
+                      </span>
+                      {payment.subscription_status && (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {payment.subscription_status}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
                       Payment ID: {payment.razorpay_payment_id}
-                    </span>
+                    </p>
+                    {payment.razorpay_order_id && (
+                      <p className="text-xs text-gray-500">
+                        Order ID: {payment.razorpay_order_id}
+                      </p>
+                    )}
                   </div>
-                  <div className="text-gray-500">
-                    {new Date(payment.created_at).toLocaleDateString()}
+                  
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      Created: {new Date(payment.created_at).toLocaleDateString()}
+                    </p>
+                    {payment.expires_at && (
+                      <p className="text-xs text-gray-500">
+                        Expires: {new Date(payment.expires_at).toLocaleDateString()}
+                      </p>
+                    )}
+                    {payment.receipt_number && (
+                      <p className="text-xs text-gray-500">
+                        Receipt: {payment.receipt_number}
+                      </p>
+                    )}
                   </div>
+                </div>
+
+                {/* Plan Details */}
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Max Projects</p>
+                      <p className="font-medium text-black">
+                        {payment.max_projects === -1 ? 'Unlimited' : payment.max_projects || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Features</p>
+                      <p className="font-medium text-black">
+                        {payment.can_use_features?.length || 0} features
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Payment Method</p>
+                      <p className="font-medium text-black">
+                        {payment.payment_method || 'Razorpay'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {payment.notes && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500">Notes</p>
+                      <p className="text-sm text-gray-700">{payment.notes}</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

@@ -550,16 +550,37 @@ export default function PricingSection({
               
               // Check if the response has the expected structure
               if (successData.success && successData.plan_details) {
+                console.log('Payment success response:', successData);
+                console.log('Plan details:', successData.plan_details);
+                
                 alert(`Payment successful! You are now on the ${successData.plan_details.plan_name} plan.`);
                 
-                // Trigger plan refresh
+                // Trigger multiple refresh mechanisms
+                console.log('Triggering plan refresh mechanisms...');
                 window.dispatchEvent(new CustomEvent('planUpdated'));
+                localStorage.setItem('plan_updated', 'true');
+                
+                // Wait a bit longer to ensure database update is complete
+                console.log('Waiting 3 seconds before page reload...');
+                setTimeout(() => {
+                  console.log('Reloading page to show updated plan...');
+                  window.location.reload();
+                }, 3000);
               } else {
                 console.warn('Unexpected response structure:', successData);
                 alert('Payment successful! Your plan has been updated.');
                 
                 // Still trigger plan refresh even if response structure is unexpected
+                console.log('Triggering plan refresh mechanisms (fallback)...');
                 window.dispatchEvent(new CustomEvent('planUpdated'));
+                localStorage.setItem('plan_updated', 'true');
+                
+                // Wait a bit longer to ensure database update is complete
+                console.log('Waiting 3 seconds before page reload (fallback)...');
+                setTimeout(() => {
+                  console.log('Reloading page to show updated plan (fallback)...');
+                  window.location.reload();
+                }, 3000);
               }
             } else {
               const errorData = await successResponse.json();
@@ -663,10 +684,20 @@ export default function PricingSection({
               if (successResponse.ok) {
                 const successData = await successResponse.json();
                 console.log('Fallback payment processed successfully:', successData);
+                console.log('Fallback plan details:', successData.plan_details);
                 alert(`Payment successful! You are now on the ${successData.plan_details.plan_name} plan.`);
                 
-                // Trigger plan refresh
+                // Trigger multiple refresh mechanisms
+                console.log('Triggering plan refresh mechanisms (fallback payment)...');
                 window.dispatchEvent(new CustomEvent('planUpdated'));
+                localStorage.setItem('plan_updated', 'true');
+                
+                // Wait a bit longer to ensure database update is complete
+                console.log('Waiting 3 seconds before page reload (fallback payment)...');
+                setTimeout(() => {
+                  console.log('Reloading page to show updated plan (fallback payment)...');
+                  window.location.reload();
+                }, 3000);
               } else {
                 const errorData = await successResponse.json();
                 console.error('Fallback payment processing failed:', errorData);

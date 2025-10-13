@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     // Create service client for database operations that need to bypass RLS
     const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Try to get user from session
+    // Try to get user from session - use service client for better auth handling
     let user = null;
     let userError = null;
 
@@ -77,32 +77,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If header auth failed, try direct getUser (for server-side auth)
+    // If header auth failed, try with service client (bypasses RLS)
+    if (!user) {
+      console.log('Trying service client authentication');
+      try {
+        // Use service client to get user info if we have user_id in request
+        if (user_id) {
+          // Verify user exists in database using service client
+          const { data: userRecord, error: userRecordError } = await supabaseServiceClient
+            .from('users')
+            .select('id, email, first_name, last_name')
+            .eq('id', user_id)
+            .single();
+          
+          if (userRecord && !userRecordError) {
+            user = {
+              id: userRecord.id,
+              email: userRecord.email,
+              created_at: new Date().toISOString()
+            };
+            console.log('User authenticated via service client with user_id');
+          } else {
+            console.error('User not found in database:', userRecordError);
+          }
+        }
+      } catch (serviceError) {
+        console.error('Service client authentication failed:', serviceError);
+      }
+    }
+
+    // If still no user, try direct getUser (for server-side auth)
     if (!user) {
       console.log('Trying direct getUser (server-side auth)');
       const { data: { user: directUser }, error: directError } = await supabaseClient.auth.getUser();
       user = directUser;
       userError = directError;
       console.log('Direct auth result:', { user: !!user, error: userError });
-    }
-
-    // If still no user, try to get from cookies (fallback)
-    if (!user) {
-      console.log('Trying cookie-based authentication');
-      const cookieHeader = request.headers.get('cookie');
-      if (cookieHeader) {
-        console.log('Cookies available, trying to extract session');
-        // This is a fallback - in production you might want to use a more robust approach
-        try {
-          const { data: { user: cookieUser }, error: cookieError } = await supabaseClient.auth.getUser();
-          if (cookieUser && !cookieError) {
-            user = cookieUser;
-            console.log('User authenticated via cookies');
-          }
-        } catch (cookieAuthError) {
-          console.error('Cookie authentication failed:', cookieAuthError);
-        }
-      }
     }
 
     // If still no user but we have user_id in the request, create a minimal user object
@@ -318,35 +328,118 @@ export async function POST(request: NextRequest) {
       if (paymentError.message?.includes('relation "public.payments" does not exist')) {
         console.log('Payments table does not exist yet, skipping payment record creation');
         // Still update user plan even if payment record can't be created
-        const { error: userUpdateError } = await supabaseServiceClient
-          .from('users')
-          .update({
-            plan_type: plan.plan_type,
-            plan_id: plan.id,
-            subscription_id,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
+        const userUpdateData: any = {
+          plan_type: plan.plan_type,
+          plan_id: plan.id,
+          subscription_id: subscription_id || null,
+          updated_at: new Date().toISOString()
+        };
 
-        if (userUpdateError) {
-          console.error('Error updating user plan:', userUpdateError);
+        // Add optional columns only if they exist in the schema
+        if (plan.max_projects !== undefined) {
+          userUpdateData.max_projects = plan.max_projects;
+        }
+        
+        if (plan.can_use_features !== undefined) {
+          userUpdateData.can_use_features = plan.can_use_features;
+        }
+        
+        if (plan.billing_cycle) {
+          userUpdateData.plan_expires_at = plan.billing_cycle === 'monthly' 
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+            : plan.billing_cycle === 'yearly'
+            ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
+            : null;
+        }
+
+        let fallbackUpdateResult: any = null;
+        let fallbackUserUpdateError: any = null;
+
+        // Try to update with all columns first
+        const { data: fallbackFullUpdateResult, error: fallbackFullUpdateError } = await supabaseServiceClient
+          .from('users')
+          .update(userUpdateData)
+          .eq('id', user.id)
+          .select('id, plan_type, plan_id, max_projects, can_use_features, plan_expires_at');
+
+        if (fallbackFullUpdateError) {
+          console.warn('Fallback full update failed, trying with essential columns only:', fallbackFullUpdateError.message);
+          
+          // Fallback: Update only essential columns that should exist in any users table
+          const essentialUpdateData: any = {
+            plan_type: plan.plan_type,
+            plan_id: plan.id
+          };
+
+          // Only add updated_at if the column exists (it might not in some schemas)
+          try {
+            essentialUpdateData.updated_at = new Date().toISOString();
+          } catch (e) {
+            // Ignore if updated_at column doesn't exist
+          }
+
+          console.log('Trying fallback essential update with data:', essentialUpdateData);
+
+          const { data: fallbackEssentialUpdateResult, error: fallbackEssentialUpdateError } = await supabaseServiceClient
+            .from('users')
+            .update(essentialUpdateData)
+            .eq('id', user.id)
+            .select('id, plan_type, plan_id');
+
+          if (fallbackEssentialUpdateError) {
+            console.error('Fallback essential update also failed:', fallbackEssentialUpdateError);
+            fallbackUserUpdateError = fallbackEssentialUpdateError;
+          } else {
+            console.log('Fallback essential update succeeded');
+            fallbackUpdateResult = fallbackEssentialUpdateResult;
+          }
+        } else {
+          console.log('Fallback full update succeeded');
+          fallbackUpdateResult = fallbackFullUpdateResult;
+        }
+
+        if (fallbackUserUpdateError) {
+          console.error('Error updating user plan in fallback:', fallbackUserUpdateError);
+          console.error('Fallback user update data that failed:', userUpdateData);
+          console.error('Fallback update error details:', {
+            message: fallbackUserUpdateError.message,
+            code: fallbackUserUpdateError.code,
+            details: fallbackUserUpdateError.details,
+            hint: fallbackUserUpdateError.hint
+          });
           return NextResponse.json(
-            { error: 'Payments table not set up, but user plan updated', details: 'Payment recorded but table setup needed' },
+            { error: 'Payments table not set up, but user plan update failed', details: 'Payment recorded but user plan update failed' },
             { status: 200 }
           );
+        } else {
+          console.log('Fallback: User plan updated successfully with plan type:', plan.plan_type);
+          console.log('Fallback: Updated user data:', fallbackUpdateResult);
+          
+          // Verify the update was successful
+          if (fallbackUpdateResult && fallbackUpdateResult.length > 0) {
+            const updatedUser = fallbackUpdateResult[0];
+            console.log('Fallback verification - Updated user plan_type:', updatedUser.plan_type);
+            console.log('Fallback verification - Updated user plan_id:', updatedUser.plan_id);
+          } else {
+            console.warn('Fallback: Update succeeded but no data returned - user might not exist');
+          }
         }
 
         const fallbackResponse = {
           success: true,
           message: 'Payment processed successfully (payments table not set up yet)',
           payment_id: 'temp_' + Date.now(),
-          user_plan_updated: true,
+          user_plan_updated: !fallbackUserUpdateError,
           plan_details: {
             plan_name: plan.name,
             plan_type: plan.plan_type,
             billing_cycle: plan.billing_cycle,
-            max_projects: plan.max_projects
-          }
+            max_projects: plan.max_projects,
+            can_use_features: plan.can_use_features,
+            plan_expires_at: userUpdateData.plan_expires_at
+          },
+          user_id: user.id,
+          updated_at: new Date().toISOString()
         };
 
         console.log('Returning fallback response (no payments table):', fallbackResponse);
@@ -378,29 +471,113 @@ export async function POST(request: NextRequest) {
 
     console.log('Payment record created:', payment.id);
 
-    // Update user's plan
-    const { error: userUpdateError } = await supabaseServiceClient
+    // Update user's plan with comprehensive data (only include columns that exist)
+    const userUpdateData: any = {
+      plan_type: plan.plan_type,
+      plan_id: plan.id,
+      subscription_id: subscription_id || null,
+      updated_at: new Date().toISOString()
+    };
+
+    // Add optional columns only if they exist in the schema
+    // We'll try to add them and handle errors gracefully
+    if (plan.max_projects !== undefined) {
+      userUpdateData.max_projects = plan.max_projects;
+    }
+    
+    if (plan.can_use_features !== undefined) {
+      userUpdateData.can_use_features = plan.can_use_features;
+    }
+    
+    if (plan.billing_cycle) {
+      userUpdateData.plan_expires_at = plan.billing_cycle === 'monthly' 
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+        : plan.billing_cycle === 'yearly'
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
+        : null;
+    }
+
+    console.log('Updating user plan with data:', userUpdateData);
+    console.log('Updating user ID:', user.id);
+
+    let updateResult: any = null;
+    let userUpdateError: any = null;
+
+    // Try to update with all columns first
+    const { data: fullUpdateResult, error: fullUpdateError } = await supabaseServiceClient
       .from('users')
-      .update({
+      .update(userUpdateData)
+      .eq('id', user.id)
+      .select('id, plan_type, plan_id, max_projects, can_use_features, plan_expires_at');
+
+    if (fullUpdateError) {
+      console.warn('Full update failed, trying with essential columns only:', fullUpdateError.message);
+      
+      // Fallback: Update only essential columns that should exist in any users table
+      const essentialUpdateData: any = {
         plan_type: plan.plan_type,
-        plan_id: plan.id,
-        subscription_id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
+        plan_id: plan.id
+      };
+
+      // Only add updated_at if the column exists (it might not in some schemas)
+      try {
+        essentialUpdateData.updated_at = new Date().toISOString();
+      } catch (e) {
+        // Ignore if updated_at column doesn't exist
+      }
+
+      console.log('Trying essential update with data:', essentialUpdateData);
+
+      const { data: essentialUpdateResult, error: essentialUpdateError } = await supabaseServiceClient
+        .from('users')
+        .update(essentialUpdateData)
+        .eq('id', user.id)
+        .select('id, plan_type, plan_id');
+
+      if (essentialUpdateError) {
+        console.error('Essential update also failed:', essentialUpdateError);
+        userUpdateError = essentialUpdateError;
+      } else {
+        console.log('Essential update succeeded');
+        updateResult = essentialUpdateResult;
+      }
+    } else {
+      console.log('Full update succeeded');
+      updateResult = fullUpdateResult;
+    }
 
     if (userUpdateError) {
       console.error('Error updating user plan:', userUpdateError);
-      // Don't fail the entire request, just log the error
+      console.error('User update data that failed:', userUpdateData);
+      console.error('Update error details:', {
+        message: userUpdateError.message,
+        code: userUpdateError.code,
+        details: userUpdateError.details,
+        hint: userUpdateError.hint
+      });
+      // Don't fail the entire request, but log the error
       console.warn('Payment recorded but user plan update failed');
     } else {
-      console.log('User plan updated successfully');
+      console.log('User plan updated successfully with plan type:', plan.plan_type);
+      console.log('Updated user data:', updateResult);
+      
+      // Verify the update was successful
+      if (updateResult && updateResult.length > 0) {
+        const updatedUser = updateResult[0];
+        console.log('Verification - Updated user plan_type:', updatedUser.plan_type);
+        console.log('Verification - Updated user plan_id:', updatedUser.plan_id);
+      } else {
+        console.warn('Update succeeded but no data returned - user might not exist');
+      }
     }
 
     // Trigger plan refresh for the user
     try {
       // You can add webhook or notification logic here
       console.log('Payment successful, user plan updated');
+      
+      // Set a flag in the response to trigger frontend refresh
+      console.log('Plan update completed, user should refresh their plan data');
     } catch (notificationError) {
       console.warn('Payment successful but notification failed:', notificationError);
     }
@@ -414,8 +591,12 @@ export async function POST(request: NextRequest) {
         plan_name: plan.name,
         plan_type: plan.plan_type,
         billing_cycle: plan.billing_cycle,
-        max_projects: plan.max_projects
-      }
+        max_projects: plan.max_projects,
+        can_use_features: plan.can_use_features,
+        plan_expires_at: userUpdateData.plan_expires_at
+      },
+      user_id: user.id,
+      updated_at: new Date().toISOString()
     };
 
     console.log('Returning success response:', responseData);

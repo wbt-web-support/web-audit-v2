@@ -79,12 +79,15 @@ export function useUserPlan(): UseUserPlanResult {
         throw new Error('User not authenticated')
       }
 
-      // Get user's plan type from user table
+      // Get user's plan data from user table
       const { data: userData, error: userDataError } = await supabase
         .from('users')
-        .select('plan_type')
+        .select('plan_type, plan_id, max_projects, can_use_features, plan_expires_at')
         .eq('id', user.id)
         .single()
+
+      console.log('User data from database:', userData)
+      console.log('User data error:', userError)
 
       let userPlan: UserPlanInfo | null = null
 
@@ -101,33 +104,58 @@ export function useUserPlan(): UseUserPlanResult {
           current_projects: 0
         }
       } else {
-        // Get plan details from plans table based on user's plan_type
-        const { data: planData, error: planError } = await supabase
-          .from('plans')
-          .select('id, name, plan_type, can_use_features, max_projects')
-          .eq('plan_type', userData.plan_type)
-          .eq('is_active', true)
-          .single() as { data: PlanData | null; error: any }
+        // Use data directly from users table if available, otherwise fetch from plans table
+        if (userData.plan_id && userData.max_projects !== undefined && userData.can_use_features) {
+          console.log('Using user data directly from users table')
+          // Get plan name from plans table
+          const { data: planData, error: planError } = await supabase
+            .from('plans')
+            .select('name')
+            .eq('id', userData.plan_id)
+            .single()
 
-        if (planError || !planData) {
-          console.warn(`No plan found for type ${userData.plan_type}, using fallback plan`)
-          const fallbackPlanName = await getPlanNameFromDB(userData.plan_type as PlanType)
+          const planName = planError || !planData ? 
+            await getPlanNameFromDB(userData.plan_type as PlanType) : 
+            planData.name
+
           userPlan = {
             plan_type: userData.plan_type as PlanType,
-            plan_id: 'fallback-' + userData.plan_type.toLowerCase(),
-            plan_name: fallbackPlanName,
-            can_use_features: ['basic_audit'],
-            max_projects: 1,
+            plan_id: userData.plan_id,
+            plan_name: planName,
+            can_use_features: userData.can_use_features || [],
+            max_projects: userData.max_projects || 1,
             current_projects: 0
           }
         } else {
-          userPlan = {
-            plan_type: planData.plan_type,
-            plan_id: planData.id,
-            plan_name: planData.name, // Use the actual name from database
-            can_use_features: planData.can_use_features || [],
-            max_projects: planData.max_projects || 1,
-            current_projects: 0
+          console.log('Fetching plan details from plans table')
+          // Get plan details from plans table based on user's plan_type
+          const { data: planData, error: planError } = await supabase
+            .from('plans')
+            .select('id, name, plan_type, can_use_features, max_projects')
+            .eq('plan_type', userData.plan_type)
+            .eq('is_active', true)
+            .single() as { data: PlanData | null; error: any }
+
+          if (planError || !planData) {
+            console.warn(`No plan found for type ${userData.plan_type}, using fallback plan`)
+            const fallbackPlanName = await getPlanNameFromDB(userData.plan_type as PlanType)
+            userPlan = {
+              plan_type: userData.plan_type as PlanType,
+              plan_id: 'fallback-' + userData.plan_type.toLowerCase(),
+              plan_name: fallbackPlanName,
+              can_use_features: ['basic_audit'],
+              max_projects: 1,
+              current_projects: 0
+            }
+          } else {
+            userPlan = {
+              plan_type: planData.plan_type,
+              plan_id: planData.id,
+              plan_name: planData.name, // Use the actual name from database
+              can_use_features: planData.can_use_features || [],
+              max_projects: planData.max_projects || 1,
+              current_projects: 0
+            }
           }
         }
       }
@@ -142,6 +170,7 @@ export function useUserPlan(): UseUserPlanResult {
         userPlan.current_projects = projects.length
       }
 
+      console.log('Final user plan:', userPlan)
       setPlanInfo(userPlan)
     } catch (err) {
       console.error('Error fetching user plan:', err)
@@ -185,21 +214,31 @@ export function useUserPlan(): UseUserPlanResult {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'plan_updated' && e.newValue) {
+        console.log('Plan update detected via storage, refreshing...')
         fetchUserPlan()
         localStorage.removeItem('plan_updated')
       }
     }
 
     const handleCustomEvent = () => {
+      console.log('Plan update detected via custom event, refreshing...')
+      fetchUserPlan()
+    }
+
+    // Also listen for focus events to refresh when user comes back to the tab
+    const handleFocus = () => {
+      console.log('Window focused, checking for plan updates...')
       fetchUserPlan()
     }
 
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('planUpdated', handleCustomEvent)
+    window.addEventListener('focus', handleFocus)
     
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('planUpdated', handleCustomEvent)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [])
 
