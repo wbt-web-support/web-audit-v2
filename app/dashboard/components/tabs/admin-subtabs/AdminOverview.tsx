@@ -74,10 +74,10 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <h1 className="text-2xl font-semibold text-blue-900 mb-2">
-          <i className="fas fa-tachometer-alt mr-2"></i>Welcome back, {userProfile?.first_name || 'Admin'}!
+        <h1 className="text-2xl font-bold text-black mb-2">
+          Welcome back, {userProfile?.first_name || 'Admin'}!
         </h1>
-        <p className="text-blue-600">
+        <p className="text-gray-600">
           Here&apos;s an overview of your system performance and recent activity.
         </p>
       </motion.div>
@@ -85,10 +85,10 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
       {/* System Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Users', value: systemStats.totalUsers, color: 'blue', icon: 'fa-users' },
-          { label: 'Active Users', value: systemStats.activeUsers, color: 'blue', icon: 'fa-user-check' },
-          { label: 'Total Projects', value: systemStats.totalProjects, color: 'blue', icon: 'fa-folder' },
-          { label: 'Total Audits', value: systemStats.totalAudits, color: 'blue', icon: 'fa-search' }
+          { label: 'Total Users', value: systemStats.totalUsers, color: 'blue' },
+          { label: 'Active Users', value: systemStats.activeUsers, color: 'green' },
+          { label: 'Total Projects', value: systemStats.totalProjects, color: 'purple' },
+          { label: 'Total Audits', value: systemStats.totalAudits, color: 'orange' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -99,12 +99,10 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">{stat.label}</p>
-                <p className="text-2xl font-semibold text-blue-900 mt-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                <p className="text-2xl font-bold text-black mt-1">{stat.value}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <i className={`fas ${stat.icon} text-blue-600 text-lg`}></i>
-              </div>
+              <div className={`w-3 h-3 rounded-full bg-${stat.color}-500`}></div>
             </div>
           </motion.div>
         ))}
@@ -118,32 +116,22 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">
-            <i className="fas fa-heartbeat mr-2"></i>System Health
-          </h3>
+          <h3 className="text-lg font-semibold text-black mb-4">System Health</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-blue-700 flex items-center">
-                <i className="fas fa-clock mr-2"></i>System Uptime
-              </span>
-              <span className="font-semibold text-blue-900">{systemStats.systemUptime}</span>
+              <span className="text-gray-700">System Uptime</span>
+              <span className="font-semibold text-black">{systemStats.systemUptime}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-700 flex items-center">
-                <i className="fas fa-tachometer-alt mr-2"></i>Response Time
-              </span>
-              <span className="font-semibold text-blue-900">{systemStats.responseTime}</span>
+              <span className="text-gray-700">Response Time</span>
+              <span className="font-semibold text-black">{systemStats.responseTime}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-700 flex items-center">
-                <i className="fas fa-exclamation-triangle mr-2"></i>Critical Issues
-              </span>
+              <span className="text-gray-700">Critical Issues</span>
               <span className="font-semibold text-red-600">{systemStats.criticalIssues}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-blue-700 flex items-center">
-                <i className="fas fa-check-circle mr-2"></i>Resolved Issues
-              </span>
+              <span className="text-gray-700">Resolved Issues</span>
               <span className="font-semibold text-green-600">{systemStats.resolvedIssues}</span>
             </div>
           </div>
@@ -155,9 +143,7 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">
-            <i className="fas fa-history mr-2"></i>Recent Activity
-          </h3>
+          <h3 className="text-lg font-semibold text-black mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentActivity.map((activity, index) => (
               <motion.div
@@ -167,23 +153,10 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
               >
-                <div className={`w-8 h-8 rounded-full mt-1 flex items-center justify-center ${
-                  activity.status === 'success' ? 'bg-green-100' : 
-                  activity.status === 'warning' ? 'bg-yellow-100' : 'bg-blue-100'
-                }`}>
-                  <i className={`fas ${
-                    activity.type === 'user_registration' ? 'fa-user-plus' :
-                    activity.type === 'audit_completed' ? 'fa-check-circle' :
-                    activity.type === 'system_alert' ? 'fa-exclamation-triangle' :
-                    activity.type === 'user_login' ? 'fa-sign-in-alt' : 'fa-circle'
-                  } text-xs ${
-                    activity.status === 'success' ? 'text-green-600' : 
-                    activity.status === 'warning' ? 'text-yellow-600' : 'text-blue-600'
-                  }`}></i>
-                </div>
+                <div className={`w-2 h-2 rounded-full mt-2 bg-${activity.status === 'success' ? 'green' : activity.status === 'warning' ? 'yellow' : 'blue'}-500`}></div>
                 <div className="flex-1">
-                  <p className="text-sm text-blue-900">{activity.message}</p>
-                  <p className="text-xs text-blue-500">{activity.timestamp}</p>
+                  <p className="text-sm text-black">{activity.message}</p>
+                  <p className="text-xs text-gray-500">{activity.timestamp}</p>
                 </div>
               </motion.div>
             ))}
@@ -198,30 +171,19 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">
-          <i className="fas fa-bolt mr-2"></i>Quick Actions
-        </h3>
+        <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
-            <div className="flex items-center mb-2">
-              <i className="fas fa-download text-blue-600 mr-2"></i>
-              <h4 className="font-medium text-blue-900">Export Data</h4>
-            </div>
-            <p className="text-sm text-blue-600">Download system reports</p>
+            <h4 className="font-medium text-black mb-1">Export Data</h4>
+            <p className="text-sm text-gray-600">Download system reports</p>
           </button>
           <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
-            <div className="flex items-center mb-2">
-              <i className="fas fa-broom text-blue-600 mr-2"></i>
-              <h4 className="font-medium text-blue-900">Clear Cache</h4>
-            </div>
-            <p className="text-sm text-blue-600">Optimize system performance</p>
+            <h4 className="font-medium text-black mb-1">Clear Cache</h4>
+            <p className="text-sm text-gray-600">Optimize system performance</p>
           </button>
           <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
-            <div className="flex items-center mb-2">
-              <i className="fas fa-file-alt text-blue-600 mr-2"></i>
-              <h4 className="font-medium text-blue-900">System Logs</h4>
-            </div>
-            <p className="text-sm text-blue-600">View detailed logs</p>
+            <h4 className="font-medium text-black mb-1">System Logs</h4>
+            <p className="text-sm text-gray-600">View detailed logs</p>
           </button>
         </div>
       </motion.div>

@@ -407,22 +407,18 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-blue-900">
-              <i className="fas fa-users mr-2"></i>User Management
-            </h1>
-            <p className="text-blue-600 mt-1">Manage user accounts and permissions</p>
+            <h1 className="text-2xl font-bold text-black">User Management</h1>
+            <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
-            <i className="fas fa-plus mr-2"></i>Add User
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            Add User
           </button>
         </div>
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-search mr-1"></i>Search
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <input
               type="text"
               value={searchTerm}
@@ -432,9 +428,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-user-tag mr-1"></i>Role
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
@@ -446,9 +440,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-toggle-on mr-1"></i>Status
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -461,9 +453,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-credit-card mr-1"></i>Plan
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
             <select
               value={filterPlan}
               onChange={(e) => setFilterPlan(e.target.value)}
@@ -479,9 +469,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-folder mr-1"></i>Project Limit
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Limit</label>
             <select
               value={filterProjectLimit}
               onChange={(e) => setFilterProjectLimit(e.target.value)}
@@ -498,9 +486,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
         {/* Sort Controls */}
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-sort mr-1"></i>Sort By
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -515,9 +501,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
             </select>
           </div>
           <div className="min-w-32">
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              <i className="fas fa-sort-alpha-down mr-1"></i>Order
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
@@ -538,9 +522,9 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
                 setSortBy('created_at')
                 setSortOrder('desc')
               }}
-              className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center"
+              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <i className="fas fa-eraser mr-2"></i>Clear Filters
+              Clear Filters
             </button>
           </div>
         </div>
@@ -560,14 +544,16 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
         ) : usersError ? (
           <div className="text-center py-8">
             <div className="text-red-500 mb-2">
-              <i className="fas fa-exclamation-triangle text-4xl"></i>
+              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
             </div>
             <p className="text-red-600 font-medium">{usersError}</p>
             <button 
               onClick={() => loadUsers(plans)}
-              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center mx-auto"
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
-              <i className="fas fa-redo mr-2"></i>Try again
+              Try again
             </button>
           </div>
         ) : (
