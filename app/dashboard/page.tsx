@@ -443,10 +443,10 @@ function DashboardContentWrapper() {
             />
           </div>
         ) : (
-          <DashboardContent 
-            activeTab={activeTab}
-            userProfile={userProfile}
-            projects={projects}
+        <DashboardContent 
+          activeTab={activeTab}
+          userProfile={userProfile as any}
+          projects={projects}
             projectsLoading={projectsLoading}
             projectsError={projectsError}
             refreshProjects={refreshProjects}

@@ -8,6 +8,7 @@ import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 import UpgradeModal from '../modals/UpgradeModal'
+import UserAlerts from '../UserAlerts'
 
 interface UserProfile {
   id: string
@@ -307,6 +308,9 @@ export default function DashboardOverview({
 
   return (
     <div className="space-y-6">
+      {/* User Alerts */}
+      <UserAlerts userPlan={planInfo?.plan_type || 'free'} />
+
       {/* Welcome Section */}
       <div className="bg-white  rounded-lg ">
         <h1 className="text-2xl font-bold text-black  mb-2">

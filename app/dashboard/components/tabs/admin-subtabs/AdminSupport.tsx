@@ -303,7 +303,7 @@ export default function AdminSupport({  }: AdminSupportProps) {
       </motion.div>
 
       {/* Support Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {[
           { label: 'Total Tickets', value: supportStats.totalTickets, color: 'blue' },
           { label: 'Open Tickets', value: supportStats.openTickets, color: 'red' },
@@ -329,6 +329,42 @@ export default function AdminSupport({  }: AdminSupportProps) {
           </motion.div>
         ))}
       </div>
+
+      {/* Ticket Analytics */}
+      <motion.div
+        className="bg-white rounded-lg border border-gray-200 p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <h3 className="text-lg font-semibold text-black mb-4">Ticket Analytics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600 mb-1">
+              {supportStats.totalTickets > 0 ? ((supportStats.resolvedTickets / supportStats.totalTickets) * 100).toFixed(1) : 0}%
+            </div>
+            <div className="text-sm text-gray-600">Resolution Rate</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600 mb-1">
+              {supportStats.averageResolutionTime}
+            </div>
+            <div className="text-sm text-gray-600">Avg Resolution Time</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600 mb-1">
+              {supportStats.customerSatisfaction}
+            </div>
+            <div className="text-sm text-gray-600">Customer Satisfaction</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600 mb-1">
+              {supportStats.responseTime}
+            </div>
+            <div className="text-sm text-gray-600">Avg Response Time</div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Filters */}
       <motion.div

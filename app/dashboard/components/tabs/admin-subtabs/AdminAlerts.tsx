@@ -1,7 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { AdminAlert, AdminAlertStats, CreateAdminAlertRequest } from '@/types/audit'
+import { supabaseAdmin } from '@/lib/supabase'
 
 interface AdminAlertsProps {
   userProfile: {
@@ -16,79 +18,327 @@ interface AdminAlertsProps {
 }
 
 export default function AdminAlerts({ }: AdminAlertsProps) {
-  const [alerts] = useState([
-    {
-      id: 1,
-      type: 'system',
-      severity: 'high',
-      title: 'High CPU Usage Detected',
-      message: 'Server CPU usage has exceeded 90% for the past 15 minutes',
-      timestamp: '2 minutes ago',
-      status: 'active',
-      resolved: false
-    },
-    {
-      id: 2,
-      type: 'security',
-      severity: 'medium',
-      title: 'Multiple Failed Login Attempts',
-      message: 'User admin@example.com has 5 failed login attempts in the last hour',
-      timestamp: '15 minutes ago',
-      status: 'active',
-      resolved: false
-    },
-    {
-      id: 3,
-      type: 'performance',
-      severity: 'low',
-      title: 'Database Query Slow',
-      message: 'Query execution time exceeded 5 seconds for user reports',
-      timestamp: '1 hour ago',
-      status: 'acknowledged',
-      resolved: false
-    },
-    {
-      id: 4,
-      type: 'billing',
-      severity: 'medium',
-      title: 'Payment Processing Error',
-      message: 'Failed to process payment for subscription ID 12345',
-      timestamp: '2 hours ago',
-      status: 'resolved',
-      resolved: true
-    },
-    {
-      id: 5,
-      type: 'system',
-      severity: 'high',
-      title: 'Memory Usage Critical',
-      message: 'Available memory has dropped below 10%',
-      timestamp: '3 hours ago',
-      status: 'resolved',
-      resolved: true
-    }
-  ])
+  const [alerts, setAlerts] = useState<AdminAlert[]>([])
+  const [alertStats, setAlertStats] = useState<AdminAlertStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingAlert, setEditingAlert] = useState<AdminAlert | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterSeverity, setFilterSeverity] = useState<string>('all')
 
-  const [alertStats] = useState({
-    totalAlerts: 156,
-    activeAlerts: 23,
-    resolvedAlerts: 133,
-    criticalAlerts: 5,
-    averageResolutionTime: '2.5 hours',
-    systemUptime: '99.9%'
+  // Form state for creating/editing alerts
+  const [formData, setFormData] = useState<CreateAdminAlertRequest & { status: string }>({
+    title: '',
+    message: '',
+    alert_type: 'info',
+    severity: 'low',
+    status: 'active',
+    is_global: true,
+    target_audience: 'all',
+    priority: 1,
+    dismissible: true,
+    auto_expire: false
   })
 
-  const [alertTypes] = useState([
-    { type: 'system', count: 45, color: 'red' },
-    { type: 'security', count: 23, color: 'orange' },
-    { type: 'performance', count: 34, color: 'yellow' },
-    { type: 'billing', count: 12, color: 'blue' },
-    { type: 'user', count: 42, color: 'green' }
-  ])
+  // Fetch alerts and stats
+  useEffect(() => {
+    fetchAlerts()
+    fetchStats()
+  }, [filterStatus, filterType, filterSeverity])
+
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true)
+      
+      let query = supabaseAdmin
+        .from('admin_alerts')
+        .select(`
+          *,
+          created_by_user:users!admin_alerts_created_by_fkey(first_name, last_name, email)
+        `)
+        .order('created_at', { ascending: false })
+
+      // Apply filters
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus)
+      }
+      if (filterType !== 'all') {
+        query = query.eq('alert_type', filterType)
+      }
+      if (filterSeverity !== 'all') {
+        query = query.eq('severity', filterSeverity)
+      }
+
+      const { data: alerts, error } = await query
+      
+      if (error) {
+        console.error('Error fetching alerts:', error)
+        setAlerts([])
+      } else {
+        setAlerts(alerts || [])
+      }
+    } catch (error) {
+      console.error('Error fetching alerts:', error)
+      setAlerts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      // Get total counts
+      const { count: totalAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+
+      const { count: activeAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+
+      const { count: inactiveAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'inactive')
+
+      const { count: draftAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'draft')
+
+      const { count: criticalAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('severity', 'critical')
+        .eq('status', 'active')
+
+      const { count: highPriorityAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('*', { count: 'exact', head: true })
+        .gte('priority', 8)
+        .eq('status', 'active')
+
+      // Get alerts by type
+      const { data: alertsByType } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('alert_type')
+        .eq('status', 'active')
+
+      const typeCounts = alertsByType?.reduce((acc: any, alert) => {
+        acc[alert.alert_type] = (acc[alert.alert_type] || 0) + 1
+        return acc
+      }, {}) || {}
+
+      const alertsByTypeArray = Object.entries(typeCounts).map(([type, count]) => ({
+        type,
+        count: count as number
+      }))
+
+      // Get alerts by severity
+      const { data: alertsBySeverity } = await supabaseAdmin
+        .from('admin_alerts')
+        .select('severity')
+        .eq('status', 'active')
+
+      const severityCounts = alertsBySeverity?.reduce((acc: any, alert) => {
+        acc[alert.severity] = (acc[alert.severity] || 0) + 1
+        return acc
+      }, {}) || {}
+
+      const alertsBySeverityArray = Object.entries(severityCounts).map(([severity, count]) => ({
+        severity,
+        count: count as number
+      }))
+
+      // Get recent alerts
+      const { data: recentAlerts } = await supabaseAdmin
+        .from('admin_alerts')
+        .select(`
+          *,
+          created_by_user:users!admin_alerts_created_by_fkey(first_name, last_name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      const stats: AdminAlertStats = {
+        totalAlerts: totalAlerts || 0,
+        activeAlerts: activeAlerts || 0,
+        inactiveAlerts: inactiveAlerts || 0,
+        draftAlerts: draftAlerts || 0,
+        criticalAlerts: criticalAlerts || 0,
+        highPriorityAlerts: highPriorityAlerts || 0,
+        alertsByType: alertsByTypeArray,
+        alertsBySeverity: alertsBySeverityArray,
+        recentAlerts: recentAlerts || []
+      }
+
+      setAlertStats(stats)
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    }
+  }
+
+  const handleCreateAlert = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('admin_alerts')
+        .insert({
+          title: formData.title,
+          message: formData.message,
+          alert_type: formData.alert_type,
+          severity: formData.severity,
+          status: formData.status,
+          is_global: formData.is_global,
+          target_audience: formData.target_audience,
+          start_date: formData.start_date,
+          end_date: formData.end_date || null,
+          priority: formData.priority,
+          action_url: formData.action_url || null,
+          action_text: formData.action_text || null,
+          dismissible: formData.dismissible,
+          auto_expire: formData.auto_expire,
+          created_by: null
+        })
+        .select()
+
+      if (error) {
+        console.error('Error creating alert:', error)
+        alert(`Error creating alert: ${error.message}`)
+      } else {
+        setShowCreateModal(false)
+        resetForm()
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      console.error('Error creating alert:', error)
+      alert('Error creating alert')
+    }
+  }
+
+  const handleUpdateAlert = async () => {
+    if (!editingAlert) return
+
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('admin_alerts')
+        .update({
+          title: formData.title,
+          message: formData.message,
+          alert_type: formData.alert_type,
+          severity: formData.severity,
+          status: formData.status,
+          is_global: formData.is_global,
+          target_audience: formData.target_audience,
+          start_date: formData.start_date,
+          end_date: formData.end_date || null,
+          priority: formData.priority,
+          action_url: formData.action_url || null,
+          action_text: formData.action_text || null,
+          dismissible: formData.dismissible,
+          auto_expire: formData.auto_expire
+        })
+        .eq('id', editingAlert.id)
+        .select()
+
+      if (error) {
+        console.error('Error updating alert:', error)
+        alert(`Error updating alert: ${error.message}`)
+      } else {
+        setEditingAlert(null)
+        resetForm()
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      console.error('Error updating alert:', error)
+      alert('Error updating alert')
+    }
+  }
+
+  const handleDeleteAlert = async (alertId: string) => {
+    if (!confirm('Are you sure you want to delete this alert?')) return
+
+    try {
+      const { error } = await supabaseAdmin
+        .from('admin_alerts')
+        .delete()
+        .eq('id', alertId)
+
+      if (error) {
+        console.error('Error deleting alert:', error)
+        alert(`Error deleting alert: ${error.message}`)
+      } else {
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      console.error('Error deleting alert:', error)
+      alert('Error deleting alert')
+    }
+  }
+
+  const handleToggleStatus = async (alert: AdminAlert) => {
+    const newStatus = alert.status === 'active' ? 'inactive' : 'active'
+    
+    try {
+      const { error } = await supabaseAdmin
+        .from('admin_alerts')
+        .update({ status: newStatus })
+        .eq('id', alert.id)
+
+      if (error) {
+        console.error('Error updating alert status:', error)
+        alert(`Error updating alert status: ${error.message}`)
+      } else {
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      console.error('Error updating alert status:', error)
+      alert('Error updating alert status')
+    }
+  }
+
+  const handleEditAlert = (alert: AdminAlert) => {
+    setEditingAlert(alert)
+    setFormData({
+      title: alert.title,
+      message: alert.message,
+      alert_type: alert.alert_type,
+      severity: alert.severity,
+      status: alert.status,
+      is_global: alert.is_global,
+      target_audience: alert.target_audience,
+      priority: alert.priority,
+      action_url: alert.action_url || '',
+      action_text: alert.action_text || '',
+      dismissible: alert.dismissible,
+      auto_expire: alert.auto_expire
+    })
+  }
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      message: '',
+      alert_type: 'info',
+      severity: 'low',
+      status: 'active',
+      is_global: true,
+      target_audience: 'all',
+      priority: 1,
+      dismissible: true,
+      auto_expire: false
+    })
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800'
+      case 'critical': return 'bg-red-100 text-red-800'
+      case 'high': return 'bg-orange-100 text-orange-800'
       case 'medium': return 'bg-yellow-100 text-yellow-800'
       case 'low': return 'bg-blue-100 text-blue-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -97,22 +347,42 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-red-100 text-red-800'
-      case 'acknowledged': return 'bg-yellow-100 text-yellow-800'
-      case 'resolved': return 'bg-green-100 text-green-800'
+      case 'active': return 'bg-green-100 text-green-800'
+      case 'inactive': return 'bg-gray-100 text-gray-800'
+      case 'draft': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'system': return 'bg-red-500'
-      case 'security': return 'bg-orange-500'
-      case 'performance': return 'bg-yellow-500'
-      case 'billing': return 'bg-blue-500'
-      case 'user': return 'bg-green-500'
+      case 'info': return 'bg-blue-500'
+      case 'warning': return 'bg-yellow-500'
+      case 'error': return 'bg-red-500'
+      case 'success': return 'bg-green-500'
+      case 'maintenance': return 'bg-orange-500'
+      case 'announcement': return 'bg-purple-500'
+      case 'offer': return 'bg-pink-500'
       default: return 'bg-gray-500'
     }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -131,58 +401,119 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-black mb-2">System Alerts</h1>
-            <p className="text-gray-600">Monitor system health and security alerts</p>
+            <h1 className="text-2xl font-bold text-black mb-2">Admin Alerts</h1>
+            <p className="text-gray-600">Create and manage alerts for all users</p>
           </div>
           <div className="flex space-x-3">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              Acknowledge All
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Create Alert
             </button>
-            <button className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-              Clear Resolved
+            <button 
+              onClick={fetchAlerts}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Refresh
             </button>
           </div>
         </div>
       </motion.div>
 
-      {/* Alert Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Alerts', value: alertStats.totalAlerts, color: 'blue' },
-          { label: 'Active Alerts', value: alertStats.activeAlerts, color: 'red' },
-          { label: 'Resolved Alerts', value: alertStats.resolvedAlerts, color: 'green' },
-          { label: 'Critical Alerts', value: alertStats.criticalAlerts, color: 'orange' }
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            className="bg-white rounded-lg border border-gray-200 p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+      {/* Filters */}
+      <motion.div
+        className="bg-white rounded-lg border border-gray-200 p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <div className="flex flex-wrap gap-4">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-black mt-1">{stat.value}</p>
-              </div>
-              <div className={`w-3 h-3 rounded-full bg-${stat.color}-500`}></div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="draft">Draft</option>
+          </select>
+          
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Types</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="success">Success</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="announcement">Announcement</option>
+            <option value="offer">Offer</option>
+          </select>
+          
+          <select
+            value={filterSeverity}
+            onChange={(e) => setFilterSeverity(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Severity</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </motion.div>
 
-      {/* Active Alerts */}
+      {/* Alert Stats */}
+      {alertStats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: 'Total Alerts', value: alertStats.totalAlerts, color: 'blue' },
+            { label: 'Active Alerts', value: alertStats.activeAlerts, color: 'green' },
+            { label: 'Draft Alerts', value: alertStats.draftAlerts, color: 'yellow' },
+            { label: 'Critical Alerts', value: alertStats.criticalAlerts, color: 'red' }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              className="bg-white rounded-lg border border-gray-200 p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                  <p className="text-2xl font-bold text-black mt-1">{stat.value}</p>
+                </div>
+                <div className={`w-3 h-3 rounded-full bg-${stat.color}-500`}></div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Alerts List */}
       <motion.div
         className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <h3 className="text-lg font-semibold text-black mb-4">Active Alerts</h3>
+        <h3 className="text-lg font-semibold text-black mb-4">Alerts ({alerts.length})</h3>
         <div className="space-y-4">
-          {alerts.filter(alert => !alert.resolved).map((alert, index) => (
+          {alerts.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No alerts found. Create your first alert to get started.
+            </div>
+          ) : (
+            alerts.map((alertItem, index) => (
             <motion.div
-              key={alert.id}
+              key={alertItem.id}
               className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -190,139 +521,287 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
-                  <div className={`w-3 h-3 rounded-full mt-2 ${getTypeColor(alert.type)}`}></div>
+                    <div className={`w-3 h-3 rounded-full mt-2 ${getTypeColor(alertItem.alert_type)}`}></div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-black">{alert.title}</h4>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(alert.severity)}`}>
-                        {alert.severity}
+                      <h4 className="font-semibold text-black">{alertItem.title}</h4>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(alertItem.severity)}`}>
+                        {alertItem.severity}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(alert.status)}`}>
-                        {alert.status}
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(alertItem.status)}`}>
+                        {alertItem.status}
                       </span>
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                          {alertItem.alert_type}
+                        </span>
                     </div>
-                    <p className="text-gray-600 text-sm mb-2">{alert.message}</p>
-                    <p className="text-xs text-gray-500">{alert.timestamp}</p>
+                    <p className="text-gray-600 text-sm mb-2">{alertItem.message}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>Created: {formatDate(alertItem.created_at)}</span>
+                        <span>Priority: {alertItem.priority}</span>
+                        <span>Views: {alertItem.view_count}</span>
+                        <span>Clicks: {alertItem.click_count}</span>
+                      </div>
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 text-sm">Acknowledge</button>
-                  <button className="text-green-600 hover:text-green-900 text-sm">Resolve</button>
-                  <button className="text-gray-600 hover:text-gray-900 text-sm">View</button>
+                    <button 
+                      onClick={() => handleToggleStatus(alertItem)}
+                      className={`text-sm px-2 py-1 rounded ${
+                        alertItem.status === 'active' 
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      }`}
+                    >
+                      {alertItem.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button 
+                      onClick={() => handleEditAlert(alertItem)}
+                      className="text-blue-600 hover:text-blue-900 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteAlert(alertItem.id)}
+                      className="text-red-600 hover:text-red-900 text-sm"
+                    >
+                      Delete
+                    </button>
                 </div>
               </div>
             </motion.div>
-          ))}
+            ))
+          )}
         </div>
       </motion.div>
 
-      {/* Alert Types */}
-      <motion.div
-        className="bg-white rounded-lg border border-gray-200 p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-      >
-        <h3 className="text-lg font-semibold text-black mb-4">Alert Types Distribution</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {alertTypes.map((type, index) => (
-            <motion.div
-              key={type.type}
-              className="p-4 rounded-lg border border-gray-200 text-center"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
-            >
-              <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${getTypeColor(type.type)}`}></div>
-              <h4 className="font-semibold text-black capitalize">{type.type}</h4>
-              <p className="text-2xl font-bold text-black mt-1">{type.count}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* System Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Alert Types Distribution */}
+      {alertStats && alertStats.alertsByType.length > 0 && (
         <motion.div
           className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold text-black mb-4">System Health</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-700">System Uptime</span>
-              <span className="font-semibold text-green-600">{alertStats.systemUptime}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Average Resolution Time</span>
-              <span className="font-semibold text-black">{alertStats.averageResolutionTime}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Active Alerts</span>
-              <span className="font-semibold text-red-600">{alertStats.activeAlerts}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Resolved Today</span>
-              <span className="font-semibold text-green-600">12</span>
-            </div>
+          <h3 className="text-lg font-semibold text-black mb-4">Alert Types Distribution</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {alertStats.alertsByType.map((type, index) => (
+              <motion.div
+                key={type.type}
+                className="p-4 rounded-lg border border-gray-200 text-center"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
+              >
+                <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${getTypeColor(type.type)}`}></div>
+                <h4 className="font-semibold text-black capitalize">{type.type}</h4>
+                <p className="text-2xl font-bold text-black mt-1">{type.count}</p>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
+      )}
 
-        <motion.div
-          className="bg-white rounded-lg border border-gray-200 p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-        >
-          <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Configure Alert Rules</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Export Alert Logs</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Set Up Notifications</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">View System Logs</span>
-            </button>
-          </div>
-        </motion.div>
-      </div>
+      {/* Create/Edit Modal */}
+      {(showCreateModal || editingAlert) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-black">
+                {editingAlert ? 'Edit Alert' : 'Create New Alert'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setEditingAlert(null)
+                  resetForm()
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
 
-      {/* Resolved Alerts */}
-      <motion.div
-        className="bg-white rounded-lg border border-gray-200 p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.8 }}
-      >
-        <h3 className="text-lg font-semibold text-black mb-4">Recently Resolved</h3>
-        <div className="space-y-3">
-          {alerts.filter(alert => alert.resolved).slice(0, 3).map((alert, index) => (
-            <motion.div
-              key={alert.id}
-              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-gray-50"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.9 + index * 0.1 }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-2 h-2 rounded-full ${getTypeColor(alert.type)}`}></div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter alert title"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  placeholder="Enter alert message"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="font-medium text-black">{alert.title}</p>
-                  <p className="text-xs text-gray-500">{alert.timestamp}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={formData.alert_type}
+                    onChange={(e) => setFormData({ ...formData, alert_type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="info">Info</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                    <option value="success">Success</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="announcement">Announcement</option>
+                    <option value="offer">Offer</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+                  <select
+                    value={formData.severity}
+                    onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="draft">Draft</option>
+                  </select>
                 </div>
               </div>
-              <span className="text-green-600 text-sm font-medium">Resolved</span>
-            </motion.div>
-          ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+                  <select
+                    value={formData.target_audience}
+                    onChange={(e) => setFormData({ ...formData, target_audience: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="free">Free Users</option>
+                    <option value="premium">Premium Users</option>
+                    <option value="enterprise">Enterprise Users</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.priority || 1}
+                    onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Action URL (Optional)</label>
+                  <input
+                    type="url"
+                    value={formData.action_url || ''}
+                    onChange={(e) => setFormData({ ...formData, action_url: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Action Text (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.action_text || ''}
+                    onChange={(e) => setFormData({ ...formData, action_text: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Learn More"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_global}
+                    onChange={(e) => setFormData({ ...formData, is_global: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Global Alert</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.dismissible}
+                    onChange={(e) => setFormData({ ...formData, dismissible: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Dismissible</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.auto_expire}
+                    onChange={(e) => setFormData({ ...formData, auto_expire: e.target.checked })}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Auto Expire</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setEditingAlert(null)
+                  resetForm()
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingAlert ? handleUpdateAlert : handleCreateAlert}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {editingAlert ? 'Update Alert' : 'Create Alert'}
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
+      )}
     </motion.div>
   )
 }

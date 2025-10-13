@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { OverviewStats, RecentActivity } from '@/types/audit'
 
 interface AdminOverviewProps {
   userProfile: {
@@ -16,49 +17,112 @@ interface AdminOverviewProps {
 }
 
 export default function AdminOverview({ userProfile }: AdminOverviewProps) {
-  const [systemStats] = useState({
-    totalUsers: 156,
-    activeUsers: 142,
-    totalProjects: 324,
-    totalAudits: 1247,
-    criticalIssues: 23,
-    resolvedIssues: 1204,
+  const [systemStats, setSystemStats] = useState<OverviewStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalProjects: 0,
+    totalAudits: 0,
+    criticalIssues: 0,
+    resolvedIssues: 0,
+    totalScrapedPages: 0,
+    pagesWithSocialMeta: 0,
+    pagesWithCMS: 0,
+    totalTickets: 0,
+    openTickets: 0,
+    inProgressTickets: 0,
+    resolvedTickets: 0,
+    highPriorityTickets: 0,
     systemUptime: '99.9%',
     responseTime: '120ms'
   })
 
-  const [recentActivity] = useState([
-    {
-      id: 1,
-      type: 'user_registration',
-      message: 'New user registered: john.doe@example.com',
-      timestamp: '2 minutes ago',
-      status: 'success'
-    },
-    {
-      id: 2,
-      type: 'audit_completed',
-      message: 'Audit completed for example.com',
-      timestamp: '5 minutes ago',
-      status: 'success'
-    },
-    {
-      id: 3,
-      type: 'system_alert',
-      message: 'High CPU usage detected',
-      timestamp: '10 minutes ago',
-      status: 'warning'
-    },
-    {
-      id: 4,
-      type: 'user_login',
-      message: 'Admin user logged in',
-      timestamp: '15 minutes ago',
-      status: 'info'
-    }
-  ])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
- 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch overview statistics
+        const statsResponse = await fetch('/api/admin/overview-stats')
+        if (!statsResponse.ok) {
+          throw new Error('Failed to fetch overview statistics')
+        }
+        const statsData = await statsResponse.json()
+        setSystemStats(statsData)
+
+        // Fetch recent activity
+        const activityResponse = await fetch('/api/admin/recent-activity?limit=10')
+        if (!activityResponse.ok) {
+          throw new Error('Failed to fetch recent activity')
+        }
+        const activityData = await activityResponse.json()
+        setRecentActivity(activityData)
+        
+      } catch (err) {
+        console.error('Error fetching data:', err)
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <motion.div
+        className="space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    )
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        className="space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="text-center">
+            <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
+            <p className="text-gray-600">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -83,12 +147,16 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
       </motion.div>
 
       {/* System Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[
           { label: 'Total Users', value: systemStats.totalUsers, color: 'blue' },
           { label: 'Active Users', value: systemStats.activeUsers, color: 'green' },
           { label: 'Total Projects', value: systemStats.totalProjects, color: 'purple' },
-          { label: 'Total Audits', value: systemStats.totalAudits, color: 'orange' }
+          { label: 'Total Audits', value: systemStats.totalAudits, color: 'orange' },
+          { label: 'Scraped Pages', value: systemStats.totalScrapedPages, color: 'indigo' },
+          { label: 'Total Tickets', value: systemStats.totalTickets, color: 'red' },
+          { label: 'Open Tickets', value: systemStats.openTickets, color: 'yellow' },
+          { label: 'Resolved Tickets', value: systemStats.resolvedTickets, color: 'emerald' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -108,58 +176,105 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
         ))}
       </div>
 
-      {/* System Health */}
+      {/* Recent Activity and Latest Tickets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
         <motion.div
           className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <h3 className="text-lg font-semibold text-black mb-4">System Health</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">System Uptime</span>
-              <span className="font-semibold text-black">{systemStats.systemUptime}</span>
+          <h3 className="text-lg font-semibold text-black mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  className="flex items-start space-x-3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
+                >
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    activity.status === 'success' ? 'bg-green-500' : 
+                    activity.status === 'warning' ? 'bg-yellow-500' : 
+                    activity.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                  }`}></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-black">{activity.message}</p>
+                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Response Time</span>
-              <span className="font-semibold text-black">{systemStats.responseTime}</span>
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No recent activity found
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Critical Issues</span>
-              <span className="font-semibold text-red-600">{systemStats.criticalIssues}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Resolved Issues</span>
-              <span className="font-semibold text-green-600">{systemStats.resolvedIssues}</span>
-            </div>
+            )}
           </div>
         </motion.div>
 
+        {/* Latest Tickets */}
         <motion.div
           className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <h3 className="text-lg font-semibold text-black mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-semibold text-black mb-4">Latest Tickets</h3>
           <div className="space-y-3">
-            {recentActivity.map((activity, index) => (
-              <motion.div
-                key={activity.id}
-                className="flex items-start space-x-3"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
-              >
-                <div className={`w-2 h-2 rounded-full mt-2 bg-${activity.status === 'success' ? 'green' : activity.status === 'warning' ? 'yellow' : 'blue'}-500`}></div>
-                <div className="flex-1">
-                  <p className="text-sm text-black">{activity.message}</p>
-                  <p className="text-xs text-gray-500">{activity.timestamp}</p>
+            {systemStats.totalTickets > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-black">Open Tickets</p>
+                      <p className="text-xs text-gray-500">{systemStats.openTickets} tickets</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-bold text-red-600">{systemStats.openTickets}</span>
                 </div>
-              </motion.div>
-            ))}
+                
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-black">In Progress</p>
+                      <p className="text-xs text-gray-500">{systemStats.inProgressTickets} tickets</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-bold text-yellow-600">{systemStats.inProgressTickets}</span>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-black">Resolved</p>
+                      <p className="text-xs text-gray-500">{systemStats.resolvedTickets} tickets</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-bold text-green-600">{systemStats.resolvedTickets}</span>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium text-black">High Priority</p>
+                      <p className="text-xs text-gray-500">{systemStats.highPriorityTickets} urgent tickets</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-bold text-orange-600">{systemStats.highPriorityTickets}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No tickets found
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

@@ -9,7 +9,6 @@ import AdminUsers from './admin-subtabs/AdminUsers'
 import AdminPlans from './admin-subtabs/AdminPlans'
 import AdminFeatureManagement from './admin-subtabs/AdminFeatureManagement'
 import AdminSubscription from './admin-subtabs/AdminSubscription'
-import AdminRevenue from './admin-subtabs/AdminRevenue'
 import AdminAlerts from './admin-subtabs/AdminAlerts'
 import AdminSupport from './admin-subtabs/AdminSupport'
 
@@ -85,7 +84,6 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
     { id: 'plans', label: 'Plans & Usage' },
     { id: 'features', label: 'Feature Management' },
     { id: 'subscription', label: 'Subscription' },
-    { id: 'revenue', label: 'Revenue' },
     { id: 'alerts', label: 'Alerts' },
     { id: 'support', label: 'Support' }
   ]
@@ -102,8 +100,7 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
         return <AdminFeatureManagement userProfile={userProfile} />
       case 'subscription':
         return <AdminSubscription userProfile={userProfile} />
-      case 'revenue':
-        return <AdminRevenue userProfile={userProfile} />
+     
       case 'alerts':
         return <AdminAlerts userProfile={userProfile} />
       case 'support':

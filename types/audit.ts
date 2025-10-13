@@ -422,3 +422,131 @@ export interface SocialMetaTagsData {
   completeness_score: number
   missing_platforms: string[]
 }
+
+// Payment and subscription related types
+export interface PaymentStats {
+  totalSubscriptions: number
+  activeSubscriptions: number
+  cancelledSubscriptions: number
+  monthlyRevenue: number
+  annualRevenue: number
+  averageRevenuePerUser: number
+}
+
+export interface PaymentHistory {
+  id: string
+  user: string
+  userName: string
+  plan: string
+  amount: number
+  currency: string
+  status: string
+  date: string
+  paymentMethod?: string
+  receiptNumber?: string
+}
+
+export interface PlanStatistics {
+  name: string
+  type: string
+  users: number
+  revenue: number
+  status: string
+}
+
+export interface PaymentHistoryResponse {
+  payments: PaymentHistory[]
+  planStatistics: PlanStatistics[]
+}
+
+// Admin overview related types
+export interface OverviewStats {
+  totalUsers: number
+  activeUsers: number
+  totalProjects: number
+  totalAudits: number
+  criticalIssues: number
+  resolvedIssues: number
+  totalScrapedPages: number
+  pagesWithSocialMeta: number
+  pagesWithCMS: number
+  totalTickets: number
+  openTickets: number
+  inProgressTickets: number
+  resolvedTickets: number
+  highPriorityTickets: number
+  systemUptime: string
+  responseTime: string
+}
+
+export interface RecentActivity {
+  id: string
+  type: 'user_registration' | 'audit_completed' | 'payment_received' | 'ticket_created' | 'system_alert' | 'user_login'
+  message: string
+  timestamp: string
+  status: 'success' | 'warning' | 'error' | 'info'
+  priority?: number
+}
+
+// Admin Alerts related types
+export interface AdminAlert {
+  id: string
+  title: string
+  message: string
+  alert_type: 'info' | 'warning' | 'error' | 'success' | 'maintenance' | 'announcement' | 'offer'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  status: 'active' | 'inactive' | 'draft'
+  is_global: boolean
+  target_audience: 'all' | 'free' | 'premium' | 'enterprise'
+  start_date: string
+  end_date: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  priority: number
+  action_url: string | null
+  action_text: string | null
+  dismissible: boolean
+  auto_expire: boolean
+  view_count: number
+  click_count: number
+}
+
+export interface CreateAdminAlertRequest {
+  title: string
+  message: string
+  alert_type: 'info' | 'warning' | 'error' | 'success' | 'maintenance' | 'announcement' | 'offer'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  is_global?: boolean
+  target_audience?: 'all' | 'free' | 'premium' | 'enterprise'
+  start_date?: string
+  end_date?: string
+  priority?: number
+  action_url?: string
+  action_text?: string
+  dismissible?: boolean
+  auto_expire?: boolean
+}
+
+export interface UpdateAdminAlertRequest extends Partial<CreateAdminAlertRequest> {
+  id: string
+  status?: 'active' | 'inactive' | 'draft'
+}
+
+export interface AdminAlertStats {
+  totalAlerts: number
+  activeAlerts: number
+  inactiveAlerts: number
+  draftAlerts: number
+  criticalAlerts: number
+  highPriorityAlerts: number
+  alertsByType: Array<{
+    type: string
+    count: number
+  }>
+  alertsBySeverity: Array<{
+    severity: string
+    count: number
+  }>
+  recentAlerts: AdminAlert[]
+}

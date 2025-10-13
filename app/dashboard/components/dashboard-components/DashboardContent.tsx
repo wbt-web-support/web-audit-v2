@@ -6,6 +6,7 @@ import DashboardOverview from '../tabs/DashboardOverview'
 import ProjectsTab from '../tabs/ProjectsTab'
 import ProfileTab from '../tabs/ProfileTab'
 import AdminTab from '../tabs/AdminTab'
+import UserAlerts from '../UserAlerts'
 
 interface DashboardContentProps {
   activeTab: string
@@ -108,6 +109,11 @@ export default function DashboardContent({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
+      {/* User Alerts - Show on all tabs except admin */}
+      {activeTab !== 'admin' && userProfile && (
+        <UserAlerts userPlan={userProfile.role === 'admin' ? 'enterprise' : 'free'} />
+      )}
+      
       {renderContent()}
     </motion.main>
   )

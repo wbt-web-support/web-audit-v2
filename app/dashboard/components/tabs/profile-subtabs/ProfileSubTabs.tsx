@@ -8,18 +8,7 @@ import Security from './Security'
 import Support from './Support'
 
 interface ProfileSubTabsProps {
-  userProfile: {
-    id: string
-    email: string
-    first_name: string | null
-    last_name: string | null
-    full_name?: string
-    avatar_url?: string
-    role: 'user' | 'admin'
-    email_confirmed: boolean
-    created_at: string
-    updated_at?: string
-  }
+  userProfile: any
 }
 
 type TabType = 'profile' | 'billing' | 'security' | 'support'
