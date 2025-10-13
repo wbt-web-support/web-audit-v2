@@ -63,7 +63,7 @@ export default function Navbar() {
           isScrolled 
             ? 'bg-gray-900/95 backdrop-blur-md border border-gray-700' 
             : 'bg-gray-800/90 backdrop-blur-sm border border-gray-600'
-        } shadow-2xl`}
+        } `}
         animate={{
           paddingTop: isMobileMenuOpen ? '0.75rem' : '0.75rem',
           paddingBottom: isMobileMenuOpen ? '0.75rem' : '0.75rem',

@@ -44,7 +44,7 @@ export default function UpgradeModal({
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-lg shadow-lg max-w-md w-full"
+        className="bg-white rounded-lg  max-w-md w-full"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}

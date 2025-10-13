@@ -103,7 +103,7 @@ export default function FeaturesSection() {
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               whileHover={{ y: -10, scale: 1.02 }}
-              className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 hover:shadow-2xl transition-all duration-500 border border-gray-200 relative overflow-hidden group"
+              className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 hover: transition-all duration-500 border border-gray-200 relative overflow-hidden group"
             >
               {/* Card Background Gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -162,7 +162,7 @@ export default function FeaturesSection() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-8 py-3 sm:px-12 sm:py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300 shadow-lg text-sm sm:text-base"
+            className="px-8 py-3 sm:px-12 sm:py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300  text-sm sm:text-base"
           >
             Start Your Free Audit
           </motion.button>

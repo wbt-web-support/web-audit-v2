@@ -744,7 +744,7 @@ export default function HeroSection() {
                 whileTap={{ scale: isAnalyzing ? 1 : 0.95 }}
                 onClick={analyzeWebsite}
                 disabled={isAnalyzing}
-                className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg whitespace-nowrap text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-300  whitespace-nowrap text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isAnalyzing ? (
                   <div className="flex items-center gap-2">
@@ -879,7 +879,7 @@ export default function HeroSection() {
                   alt="Website Screenshot"
                   width={800}
                   height={600}
-                  className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
+                  className="max-w-full h-auto rounded-lg  mx-auto"
                   style={{ maxHeight: '400px' }}
                 />
               </div>

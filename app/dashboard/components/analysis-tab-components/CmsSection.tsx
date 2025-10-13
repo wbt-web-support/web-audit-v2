@@ -8,7 +8,7 @@ interface CmsSectionProps {
 
 export default function CmsSection({ project }: CmsSectionProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg  border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">CMS Analysis</h3>
       {project.cms_detected ? (
         <div className="space-y-6">

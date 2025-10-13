@@ -11,7 +11,7 @@ interface AccessibilityTabProps {
 
 export default function AccessibilityTab({ page }: AccessibilityTabProps) {
   const content = page.html_content || ''
-  const images = page.images || []
+  const images = Array.isArray(page.images) ? page.images : []
   
   // Accessibility Analysis
   const hasTitle = page.title && page.title.trim() !== ''

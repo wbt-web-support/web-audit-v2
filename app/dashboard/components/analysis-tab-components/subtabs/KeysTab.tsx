@@ -271,7 +271,7 @@ export default function KeysTab({
 
               <div className="space-y-3">
                 {keysData.keys.map((key, index) => (
-                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover: transition-shadow">
+                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover: ">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">

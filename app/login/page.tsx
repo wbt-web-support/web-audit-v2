@@ -127,7 +127,7 @@ function LoginPageContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-6xl bg-white rounded-2xl  overflow-hidden"
       >
         <div className="flex">
           {/* Left Section - Background */}

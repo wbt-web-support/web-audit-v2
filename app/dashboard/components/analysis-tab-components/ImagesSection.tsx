@@ -341,7 +341,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg  border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Images Analysis</h3>
         <div className="text-sm text-gray-500">
@@ -612,7 +612,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
       {/* Image Modal */}
       {showModal && selectedImage && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden border border-gray-300 shadow-xl">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden border border-gray-300 ">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Image Details</h3>
@@ -637,7 +637,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                       alt={selectedImage.alt || 'No alt text'}
                       width={400}
                       height={400}
-                      className="max-w-full max-h-[400px] object-contain rounded-lg shadow-sm"
+                      className="max-w-full max-h-[400px] object-contain rounded-lg "
                       onError={(e) => {
                         const target = e.currentTarget
                         target.style.display = 'none'

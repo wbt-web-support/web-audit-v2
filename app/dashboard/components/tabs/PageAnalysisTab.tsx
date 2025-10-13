@@ -259,7 +259,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       case 'technical':
         return <TechnicalTab page={page!} />
       case 'performance':
-        return page ? <PerformanceTab page={{...page, html_content: page.html_content || undefined, images: page.images?.map(() => ({ size: 0, loading: 'lazy', format: 'unknown' })) || undefined, response_time: page.response_time || undefined, html_content_length: page.html_content_length || undefined, performance_analysis: undefined}} cachedAnalysis={undefined} /> : null
+        return page ? <PerformanceTab page={{...page, html_content: page.html_content || undefined, images: Array.isArray(page.images) ? page.images.map(() => ({ size: 0, loading: 'lazy', format: 'unknown' })) : undefined, response_time: page.response_time || undefined, html_content_length: page.html_content_length || undefined, performance_analysis: undefined}} cachedAnalysis={undefined} /> : null
       case 'accessibility':
         return page ? <AccessibilityTab page={page} /> : null
       default:

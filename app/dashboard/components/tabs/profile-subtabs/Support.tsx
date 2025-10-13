@@ -156,20 +156,20 @@ export default function Support({ userProfile }: SupportProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800'
-      case 'resolved': return 'bg-green-100 text-green-800'
-      case 'closed': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'in_progress': return 'bg-blue-100 text-blue-700'
+      case 'resolved': return 'bg-blue-100 text-blue-600'
+      case 'closed': return 'bg-blue-100 text-blue-500'
+      default: return 'bg-blue-100 text-blue-600'
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-green-100 text-green-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'high': return 'bg-orange-100 text-orange-800'
-      case 'urgent': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'low': return 'bg-blue-100 text-blue-600'
+      case 'medium': return 'bg-blue-100 text-blue-700'
+      case 'high': return 'bg-blue-100 text-blue-800'
+      case 'urgent': return 'bg-blue-100 text-blue-900'
+      default: return 'bg-blue-100 text-blue-600'
     }
   }
 
@@ -193,20 +193,20 @@ export default function Support({ userProfile }: SupportProps) {
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'tickets'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
+                : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
             }`}
           >
-            My Tickets ({tickets.length})
+            <i className="fas fa-ticket-alt mr-2"></i>My Tickets ({tickets.length})
           </button>
           <button
             onClick={() => setActiveTab('new')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'new'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
+                : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
             }`}
           >
-            Create New Ticket
+            <i className="fas fa-plus mr-2"></i>Create New Ticket
           </button>
         </nav>
       </motion.div>
@@ -226,15 +226,13 @@ export default function Support({ userProfile }: SupportProps) {
           ) : ticketsError ? (
             <div className="text-center py-8">
               <div className="text-red-500 mb-2">
-                <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
+                <i className="fas fa-exclamation-triangle text-4xl mb-2"></i>
               </div>
               <p className="text-red-600 font-medium">{ticketsError}</p>
               {ticketsError.includes('not set up') || ticketsError.includes('does not exist') ? (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
                   <p className="text-sm text-yellow-800 mb-2">
-                    <strong>🚨 Setup Required:</strong> The ticket system database tables haven&apos;t been created yet.
+                    <strong><i className="fas fa-exclamation-circle mr-1"></i>Setup Required:</strong> The ticket system database tables haven&apos;t been created yet.
                   </p>
                   <p className="text-xs text-yellow-700 mb-2">
                     <strong>Quick Fix:</strong> Go to your Supabase dashboard → SQL Editor → Run the <code className="bg-yellow-100 px-1 rounded">create-tickets-table-fixed.sql</code> script.
@@ -246,7 +244,7 @@ export default function Support({ userProfile }: SupportProps) {
               ) : ticketsError.includes('permission denied') ? (
                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-auto">
                   <p className="text-sm text-red-800 mb-2">
-                    <strong>🔒 Permission Issue:</strong> Database access is restricted by Row Level Security policies.
+                    <strong><i className="fas fa-lock mr-1"></i>Permission Issue:</strong> Database access is restricted by Row Level Security policies.
                   </p>
                   <p className="text-xs text-red-700 mb-2">
                     <strong>Solution:</strong> Run the <code className="bg-red-100 px-1 rounded">create-tickets-table-fixed.sql</code> script to set up proper RLS policies.
@@ -260,7 +258,7 @@ export default function Support({ userProfile }: SupportProps) {
                   onClick={loadTickets}
                   className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  Try again
+                  <i className="fas fa-redo mr-2"></i>Try again
                 </button>
               )}
             </div>
@@ -271,19 +269,16 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <motion.svg 
-                className="mx-auto h-12 w-12 text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+              <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
+                className="mx-auto h-12 w-12 text-blue-400"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </motion.svg>
-              <h3 className="mt-2 text-sm font-medium text-black">No tickets yet</h3>
-              <p className="mt-1 text-sm text-gray-500">Create your first support ticket to get help.</p>
+                <i className="fas fa-ticket-alt text-4xl"></i>
+              </motion.div>
+              <h3 className="mt-2 text-sm font-medium text-blue-900">No tickets yet</h3>
+              <p className="mt-1 text-sm text-blue-600">Create your first support ticket to get help.</p>
             </motion.div>
           ) : (
             tickets.map((ticket, index) => (
@@ -311,7 +306,9 @@ export default function Support({ userProfile }: SupportProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <h2 className="text-lg font-semibold text-black mb-6">Create New Support Ticket</h2>
+          <h2 className="text-lg font-semibold text-blue-900 mb-6">
+            <i className="fas fa-plus-circle mr-2"></i>Create New Support Ticket
+          </h2>
           <motion.form 
             onSubmit={handleCreateTicket} 
             className="space-y-6"
@@ -324,8 +321,8 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ticket Title
+              <label className="block text-sm font-medium text-blue-700 mb-2">
+                <i className="fas fa-heading mr-1"></i>Ticket Title
               </label>
               <input
                 type="text"
@@ -343,8 +340,8 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.5 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Priority
+              <label className="block text-sm font-medium text-blue-700 mb-2">
+                <i className="fas fa-flag mr-1"></i>Priority
               </label>
               <select
                 name="priority"
@@ -364,8 +361,8 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.6 }}
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+              <label className="block text-sm font-medium text-blue-700 mb-2">
+                <i className="fas fa-align-left mr-1"></i>Description
               </label>
               <textarea
                 name="description"
@@ -387,16 +384,17 @@ export default function Support({ userProfile }: SupportProps) {
               <button
                 type="submit"
                 disabled={isCreatingTicket}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
+                <i className={`fas ${isCreatingTicket ? 'fa-spinner fa-spin' : 'fa-plus-circle'} mr-2`}></i>
                 {isCreatingTicket ? 'Creating Ticket...' : 'Create Ticket'}
               </button>
               <button
                 type="button"
                 onClick={() => setNewTicket({ title: '', description: '', priority: 'medium' })}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400 transition-colors"
+                className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400 transition-colors flex items-center"
               >
-                Clear Form
+                <i className="fas fa-eraser mr-2"></i>Clear Form
               </button>
             </motion.div>
           </motion.form>
@@ -410,7 +408,9 @@ export default function Support({ userProfile }: SupportProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <h3 className="text-lg font-semibold text-black mb-4">Support Resources</h3>
+        <h3 className="text-lg font-semibold text-blue-900 mb-4">
+          <i className="fas fa-life-ring mr-2"></i>Support Resources
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <motion.div 
             className="flex items-start space-x-3"
@@ -419,11 +419,11 @@ export default function Support({ userProfile }: SupportProps) {
             transition={{ duration: 0.4, delay: 0.4 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <span className="text-blue-600 text-sm">📚</span>
+              <i className="fas fa-book text-blue-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-black">Documentation</h4>
-              <p className="text-sm text-gray-600">Browse our comprehensive guides and tutorials</p>
+              <h4 className="font-medium text-blue-900">Documentation</h4>
+              <p className="text-sm text-blue-600">Browse our comprehensive guides and tutorials</p>
             </div>
           </motion.div>
           <motion.div 
@@ -433,11 +433,11 @@ export default function Support({ userProfile }: SupportProps) {
             transition={{ duration: 0.4, delay: 0.5 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <span className="text-blue-600 text-sm">💬</span>
+              <i className="fas fa-comments text-blue-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-black">Live Chat</h4>
-              <p className="text-sm text-gray-600">Get instant help from our support team</p>
+              <h4 className="font-medium text-blue-900">Live Chat</h4>
+              <p className="text-sm text-blue-600">Get instant help from our support team</p>
             </div>
           </motion.div>
           <motion.div 
@@ -447,11 +447,11 @@ export default function Support({ userProfile }: SupportProps) {
             transition={{ duration: 0.4, delay: 0.6 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <span className="text-blue-600 text-sm">🎥</span>
+              <i className="fas fa-play-circle text-blue-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-black">Video Tutorials</h4>
-              <p className="text-sm text-gray-600">Watch step-by-step video guides</p>
+              <h4 className="font-medium text-blue-900">Video Tutorials</h4>
+              <p className="text-sm text-blue-600">Watch step-by-step video guides</p>
             </div>
           </motion.div>
           <motion.div 
@@ -461,11 +461,11 @@ export default function Support({ userProfile }: SupportProps) {
             transition={{ duration: 0.4, delay: 0.7 }}
           >
             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <span className="text-blue-600 text-sm">❓</span>
+              <i className="fas fa-question-circle text-blue-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-black">FAQ</h4>
-              <p className="text-sm text-gray-600">Find answers to common questions</p>
+              <h4 className="font-medium text-blue-900">FAQ</h4>
+              <p className="text-sm text-blue-600">Find answers to common questions</p>
             </div>
           </motion.div>
         </div>

@@ -48,7 +48,7 @@ export default function CallToActionSection() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-12 py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300 shadow-lg text-lg"
+                className="px-12 py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors duration-300  text-lg"
               >
                 Start Free Audit
               </motion.button>

@@ -89,7 +89,7 @@ export default function EditProjectModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -137,7 +137,7 @@ export default function EditProjectModal({
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+                  className="bg-white rounded-lg  max-w-md w-full mx-4"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="p-6">

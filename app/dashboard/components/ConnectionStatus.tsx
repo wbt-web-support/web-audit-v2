@@ -20,7 +20,7 @@ export default function ConnectionStatus() {
 
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm">
-      <div className={`p-4 rounded-lg shadow-lg border ${
+      <div className={`p-4 rounded-lg  border ${
         connectionError 
           ? 'bg-red-50 border-red-200 text-red-800' 
           : 'bg-yellow-50 border-yellow-200 text-yellow-800'

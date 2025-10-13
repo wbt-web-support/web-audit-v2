@@ -803,7 +803,7 @@ export default function AdminUsers({ userProfile: _userProfile }: AdminUsersProp
           onClick={() => setShowUserDetails(false)}
         >
           <motion.div
-            className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}

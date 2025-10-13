@@ -360,7 +360,7 @@ export default function SEOAnalysisSection({
       {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && <div className="mb-6">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">✨ What&apos;s Working Well</h4>
           <div className="space-y-2">
-            {seoAnalysis.highlights.map((highlight: SEOHighlight, index: number) => <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 transition-shadow">
+            {seoAnalysis.highlights.map((highlight: SEOHighlight, index: number) => <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 ">
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">
                     <i className={highlight.type === 'achievement' ? 'fas fa-trophy text-yellow-600' : highlight.type === 'good-practice' ? 'fas fa-check-circle text-green-600' : 'fas fa-bolt text-blue-500'}></i>
@@ -386,7 +386,7 @@ export default function SEOAnalysisSection({
       {seoAnalysis.issues && seoAnalysis.issues.length > 0 && <div className="mb-6">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Issues & Fixes</h4>
           <div className="space-y-2">
-            {seoAnalysis.issues.map((issue, index) => <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 transition-shadow">
+            {seoAnalysis.issues.map((issue, index) => <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 ">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <span className="text-lg"><i className={getIssueIcon(issue.type)}></i></span>

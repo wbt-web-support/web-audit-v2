@@ -132,7 +132,7 @@ export default function PagesSection({
   }, [filterStatus, sortBy, sortOrder, itemsPerPage])
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <h3 className="text-lg font-semibold text-gray-900">Scraped Pages</h3>
@@ -246,7 +246,7 @@ export default function PagesSection({
             {filteredAndSortedPages.length !== pages.length && ` (${pages.length} total)`}
           </div>
           {paginatedPages.map((page, index) => (
-            <div key={page.id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+            <div key={page.id || index} className="border border-gray-200 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-gray-900 truncate">{page.title || 'Untitled'}</h4>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${

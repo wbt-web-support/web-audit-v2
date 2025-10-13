@@ -149,20 +149,20 @@ export default function TicketCard({ ticket }: TicketCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800'
-      case 'resolved': return 'bg-green-100 text-green-800'
-      case 'closed': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'in_progress': return 'bg-blue-100 text-blue-700'
+      case 'resolved': return 'bg-blue-100 text-blue-600'
+      case 'closed': return 'bg-blue-100 text-blue-500'
+      default: return 'bg-blue-100 text-blue-600'
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-green-100 text-green-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'high': return 'bg-orange-100 text-orange-800'
-      case 'urgent': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'low': return 'bg-blue-100 text-blue-600'
+      case 'medium': return 'bg-blue-100 text-blue-700'
+      case 'high': return 'bg-blue-100 text-blue-800'
+      case 'urgent': return 'bg-blue-100 text-blue-900'
+      default: return 'bg-blue-100 text-blue-600'
     }
   }
 
@@ -181,7 +181,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+      className="bg-white rounded-lg  border border-gray-200 overflow-hidden"
     >
       {/* Ticket Header */}
       <div 
@@ -191,19 +191,21 @@ export default function TicketCard({ ticket }: TicketCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">{ticket.title}</h3>
+              <h3 className="text-lg font-semibold text-blue-900">{ticket.title}</h3>
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                <i className="fas fa-circle text-xs mr-1"></i>
                 {ticket.status.replace('_', ' ')}
               </span>
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
+                <i className="fas fa-flag text-xs mr-1"></i>
                 {ticket.priority}
               </span>
             </div>
-            <p className="text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <span>Created: {formatDate(ticket.created_at)}</span>
-              <span>Updated: {formatDate(ticket.updated_at)}</span>
-              <span>Messages: {messages.length}</span>
+            <p className="text-blue-700 mb-3 line-clamp-2">{ticket.description}</p>
+            <div className="flex items-center space-x-4 text-sm text-blue-600">
+              <span><i className="fas fa-calendar-plus mr-1"></i>Created: {formatDate(ticket.created_at)}</span>
+              <span><i className="fas fa-edit mr-1"></i>Updated: {formatDate(ticket.updated_at)}</span>
+              <span><i className="fas fa-comments mr-1"></i>Messages: {messages.length}</span>
             </div>
           </div>
           <motion.div
@@ -211,9 +213,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
             transition={{ duration: 0.2 }}
             className="ml-4"
           >
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <i className="fas fa-chevron-down text-blue-500 text-lg"></i>
           </motion.div>
         </div>
       </div>
@@ -231,20 +231,21 @@ export default function TicketCard({ ticket }: TicketCardProps) {
             <div className="p-6">
               {/* Messages */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-4">Conversation</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-4">
+                  <i className="fas fa-comments mr-2"></i>Conversation
+                </h4>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-blue-600">
+                    <i className="fas fa-comment-slash text-4xl mb-4 text-blue-400"></i>
                     <p>No messages yet. Start the conversation!</p>
                     {hasDatabaseError && (
                       <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-center mb-2">
-                          <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                          </svg>
+                          <i className="fas fa-exclamation-triangle text-red-500 mr-2"></i>
                           <p className="text-sm font-medium text-red-800">Database Setup Required</p>
                         </div>
                         <p className="text-xs text-red-700">
@@ -267,15 +268,22 @@ export default function TicketCard({ ticket }: TicketCardProps) {
                       >
                         <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                           message.is_from_support 
-                            ? 'bg-gray-100 text-gray-900' 
+                            ? 'bg-blue-50 text-blue-900 border border-blue-200' 
                             : 'bg-blue-600 text-white'
                         }`}>
-                          <p className="text-sm">{message.message}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.is_from_support ? 'text-gray-500' : 'text-blue-100'
-                          }`}>
-                            {formatDate(message.created_at)}
-                          </p>
+                          <div className="flex items-start">
+                            <i className={`fas ${message.is_from_support ? 'fa-user-tie' : 'fa-user'} text-xs mr-2 mt-1 ${
+                              message.is_from_support ? 'text-blue-600' : 'text-blue-100'
+                            }`}></i>
+                            <div className="flex-1">
+                              <p className="text-sm">{message.message}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.is_from_support ? 'text-blue-600' : 'text-blue-100'
+                              }`}>
+                                {formatDate(message.created_at)}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -285,21 +293,25 @@ export default function TicketCard({ ticket }: TicketCardProps) {
 
               {/* Message Input */}
               <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                  disabled={isSubmitting}
-                />
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="w-full px-3 py-2 pl-10 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-blue-900"
+                    disabled={isSubmitting}
+                  />
+                  <i className="fas fa-paper-plane absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500"></i>
+                </div>
                 <motion.button
                   type="submit"
                   disabled={!newMessage.trim() || isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
+                  <i className={`fas ${isSubmitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'} mr-2`}></i>
                   {isSubmitting ? 'Sending...' : 'Send'}
                 </motion.button>
               </form>

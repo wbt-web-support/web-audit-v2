@@ -927,7 +927,7 @@ export default function PricingSection({
 
             Array.from({ length: filteredPlans.length || 3 }).map((_, index) => (
 
-              <div key={index} className="bg-white rounded-3xl p-8 shadow-lg animate-pulse">
+              <div key={index} className="bg-white rounded-3xl p-8  animate-pulse">
 
                 <div className="h-8 bg-gray-200 rounded mb-4"></div>
 
@@ -961,8 +961,8 @@ export default function PricingSection({
 
               className={`relative rounded-3xl p-8 ${
                 (plan.popular && plan.billing_cycle === billingCycle)
-                  ? 'bg-black text-white shadow-2xl scale-105' 
-                  : 'bg-white text-black shadow-lg'
+                  ? 'bg-black text-white  scale-105' 
+                  : 'bg-white text-black '
               } border-2 ${
                 (plan.popular && plan.billing_cycle === billingCycle) 
                   ? 'border-black' 
@@ -987,7 +987,7 @@ export default function PricingSection({
 
                 >
 
-                  <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold ">
 
                     Most Popular
 
@@ -1006,7 +1006,7 @@ export default function PricingSection({
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
                   className="absolute -top-4 left-1/2 transform -translate-x-1/2"
                 >
-                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold ">
                     Current Plan
                   </span>
                 </motion.div>
@@ -1020,7 +1020,7 @@ export default function PricingSection({
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
                   className="absolute -top-4 left-1/2 transform -translate-x-1/2"
                 >
-                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold ">
                     Switch Billing
                   </span>
                 </motion.div>
@@ -1034,7 +1034,7 @@ export default function PricingSection({
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
                   className="absolute -top-4 left-1/2 transform -translate-x-1/2"
                 >
-                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold ">
                     {plan.amount > (plans.find(p => p.plan_type === currentPlanType)?.amount || 0) ? 'Upgrade' : 'Downgrade'}
                   </span>
                 </motion.div>

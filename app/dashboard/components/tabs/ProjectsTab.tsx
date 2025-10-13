@@ -914,7 +914,7 @@ export default function ProjectsTab({
       {/* Delete Confirmation Modal */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full border border-gray-300 shadow-xl">
+          <div className="bg-white rounded-lg max-w-md w-full border border-gray-300 ">
             <div className="p-6">
               <div className="flex items-center mb-4">
                 <div className="flex-shrink-0">

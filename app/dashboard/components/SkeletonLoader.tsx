@@ -65,7 +65,7 @@ export function ProjectCardSkeleton() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+      className="bg-white rounded-lg  border border-gray-200 p-6"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
@@ -127,7 +127,7 @@ export function RecentProjectSkeleton() {
 // Stats Card Skeleton
 export function StatsCardSkeleton() {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div className="bg-white rounded-lg  border border-gray-200 p-4">
       <div className="flex items-center">
         <Skeleton variant="circular" width={40} height={40} />
         <div className="ml-3">
