@@ -13,7 +13,7 @@ import { ScrapedPage } from './components/analysis-tab/types'
 
 function DashboardContentWrapper() {
   const { user, userProfile, loading, isAuthenticated, authChecked } = useAuth()
-  const { getAuditProjectsOptimized } = useSupabase()
+  const { getAuditProjectsOptimized, deleteAuditProject } = useSupabase()
   const searchParams = useSearchParams()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -245,9 +245,13 @@ function DashboardContentWrapper() {
     console.log('Dashboard: handleDeleteProject called with:', projectId);
     
     try {
-      // TODO: Implement actual API call to delete project
-      // For now, just simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the actual delete API
+      const { error } = await deleteAuditProject(projectId);
+      
+      if (error) {
+        console.error('Dashboard: Error deleting project from database:', error);
+        throw new Error(`Failed to delete project: ${error.message}`);
+      }
       
       // Remove the project from local state
       setProjects(prev => prev.filter(project => project.id !== projectId));

@@ -1246,29 +1246,237 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       return { data: null, error: { message: 'No user logged in' } }
     }
 
+    if (!pagesData || pagesData.length === 0) {
+      return { data: null, error: { message: 'No pages data provided' } }
+    }
+
     try {
+      // Validate and clean the data before insertion
       const pagesWithUserId = pagesData.map(page => {
         const { social_meta_tags, social_meta_tags_count, ...pageWithoutSocialTags } = page
-        return {
+        
+        // Ensure required fields are present and valid
+        const cleanedPage = {
           ...pageWithoutSocialTags,
-          user_id: user.id
+          user_id: user.id,
+          // Ensure audit_project_id is a valid UUID
+          audit_project_id: pageWithoutSocialTags.audit_project_id || null,
+          // Ensure URL is not empty
+          url: pageWithoutSocialTags.url || '',
+          // Ensure numeric fields are valid
+          status_code: pageWithoutSocialTags.status_code || 200,
+          html_content_length: pageWithoutSocialTags.html_content_length || 0,
+          links_count: pageWithoutSocialTags.links_count || 0,
+          images_count: pageWithoutSocialTags.images_count || 0,
+          meta_tags_count: pageWithoutSocialTags.meta_tags_count || 0,
+          technologies_count: pageWithoutSocialTags.technologies_count || 0,
+          social_meta_tags_count: social_meta_tags_count || 0,
+          // Ensure boolean fields are valid
+          is_external: Boolean(pageWithoutSocialTags.is_external),
+          // Ensure JSON fields are properly formatted
+          links: pageWithoutSocialTags.links ? JSON.stringify(pageWithoutSocialTags.links) : null,
+          images: pageWithoutSocialTags.images ? JSON.stringify(pageWithoutSocialTags.images) : null,
+          // Filter out null values from arrays to avoid malformed array literals
+          technologies: pageWithoutSocialTags.technologies ? 
+            pageWithoutSocialTags.technologies.filter(tech => tech !== null && tech !== undefined && tech !== '') : null,
+          cms_plugins: pageWithoutSocialTags.cms_plugins ? 
+            pageWithoutSocialTags.cms_plugins.filter(plugin => plugin !== null && plugin !== undefined && plugin !== '') : null,
+          social_meta_tags: social_meta_tags ? JSON.stringify(social_meta_tags) : null,
+          performance_analysis: pageWithoutSocialTags.performance_analysis ? JSON.stringify(pageWithoutSocialTags.performance_analysis) : null
         }
+        
+        return cleanedPage
       })
 
-      const { data, error } = await supabase
-        .from('scraped_pages')
-        .insert(pagesWithUserId)
-        .select()
+      console.log('📝 Inserting scraped pages:', pagesWithUserId.length, 'pages')
+      console.log('📝 Sample page data:', pagesWithUserId[0])
 
-      if (error) {
-        console.error('Error creating scraped pages:', error)
-        return { data: null, error }
+      // Validate data before insertion
+      const validationErrors: string[] = []
+      pagesWithUserId.forEach((page, index) => {
+        if (!page.url) validationErrors.push(`Page ${index}: Missing URL`)
+        if (!page.audit_project_id) validationErrors.push(`Page ${index}: Missing audit_project_id`)
+        if (!page.user_id) validationErrors.push(`Page ${index}: Missing user_id`)
+      })
+
+      if (validationErrors.length > 0) {
+        console.error('❌ Validation errors:', validationErrors)
+        return { data: null, error: { message: 'Validation failed', details: validationErrors } }
       }
 
+      console.log('🔍 About to insert into database:', {
+        table: 'scraped_pages',
+        recordCount: pagesWithUserId.length,
+        sampleRecord: pagesWithUserId[0]
+      })
+
+      // Check if we have valid data
+      if (!pagesWithUserId || pagesWithUserId.length === 0) {
+        console.error('❌ No valid pages to insert')
+        return { data: null, error: { message: 'No valid pages to insert' } }
+      }
+
+      // Check if user is authenticated
+      if (!user) {
+        console.error('❌ No authenticated user')
+        return { data: null, error: { message: 'No authenticated user' } }
+      }
+
+      // Test database connection first
+      try {
+        console.log('🔍 Testing database connection...')
+        const { data: testData, error: testError } = await supabase
+          .from('scraped_pages')
+          .select('id')
+          .limit(1)
+        
+        console.log('🔍 Connection test result:', { 
+          testData, 
+          testError,
+          hasTestData: !!testData,
+          hasTestError: !!testError,
+          testErrorKeys: testError ? Object.keys(testError) : 'null',
+          testErrorStringified: JSON.stringify(testError),
+          testErrorMessage: testError?.message,
+          testErrorCode: testError?.code,
+          testErrorDetails: testError?.details,
+          testErrorHint: testError?.hint
+        })
+        
+        if (testError) {
+          console.error('❌ Database connection test failed:', testError)
+          
+          // Check for specific error types
+          if (testError.message?.includes('relation "scraped_pages" does not exist') || 
+              testError.code === 'PGRST301') {
+            return { data: null, error: { message: 'scraped_pages table does not exist', code: 'TABLE_NOT_EXISTS' } }
+          }
+          
+          if (testError.message?.includes('permission denied') || testError.message?.includes('RLS')) {
+            return { data: null, error: { message: 'Permission denied - check RLS policies', code: 'PERMISSION_DENIED' } }
+          }
+          
+          return { data: null, error: { message: 'Database connection failed', details: testError } }
+        }
+        
+        // Test if we can insert a simple record
+        console.log('🔍 Testing simple insert...')
+        const testInsertData = {
+          user_id: user.id,
+          audit_project_id: pagesWithUserId[0]?.audit_project_id,
+          url: 'test-url',
+          status_code: 200,
+          title: 'Test',
+          html_content: 'test',
+          html_content_length: 4,
+          links_count: 0,
+          images_count: 0,
+          meta_tags_count: 0,
+          technologies_count: 0,
+          is_external: false
+        }
+        
+        const { data: insertTestData, error: insertTestError } = await supabase
+          .from('scraped_pages')
+          .insert([testInsertData])
+          .select()
+        
+        console.log('🔍 Insert test result:', {
+          insertTestData,
+          insertTestError,
+          hasInsertData: !!insertTestData,
+          hasInsertError: !!insertTestError,
+          insertErrorKeys: insertTestError ? Object.keys(insertTestError) : 'null',
+          insertErrorStringified: JSON.stringify(insertTestError)
+        })
+        
+        if (insertTestError) {
+          console.error('❌ Insert test failed:', insertTestError)
+          return { data: null, error: { message: 'Insert test failed - likely RLS policy issue', details: insertTestError } }
+        }
+        
+        // Clean up test record
+        if (insertTestData && insertTestData[0]) {
+          await supabase
+            .from('scraped_pages')
+            .delete()
+            .eq('id', insertTestData[0].id)
+        }
+      } catch (connectionError) {
+        console.error('❌ Database connection exception:', connectionError)
+        return { data: null, error: { message: 'Database connection exception', details: connectionError } }
+      }
+
+      let data, error
+      try {
+        console.log('🔍 Attempting database insert...')
+        const result = await supabase
+          .from('scraped_pages')
+          .insert(pagesWithUserId)
+          .select()
+        
+        data = result.data
+        error = result.error
+        
+        console.log('🔍 Raw database response:', {
+          data: data,
+          error: error,
+          dataType: typeof data,
+          errorType: typeof error,
+          dataKeys: data ? Object.keys(data) : 'null',
+          errorKeys: error ? Object.keys(error) : 'null',
+          errorStringified: JSON.stringify(error),
+          hasData: !!data,
+          hasError: !!error
+        })
+      } catch (dbException) {
+        console.error('❌ Database exception during insert:', dbException)
+        console.error('❌ Exception details:', {
+          name: dbException instanceof Error ? dbException.name : 'Unknown',
+          message: dbException instanceof Error ? dbException.message : String(dbException),
+          stack: dbException instanceof Error ? dbException.stack : undefined,
+          type: typeof dbException
+        })
+        return { data: null, error: { message: 'Database exception', details: dbException } }
+      }
+
+      if (error) {
+        console.error('❌ Database error creating scraped pages:', {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: JSON.stringify(error, null, 2)
+        })
+        
+        // Log the actual data being inserted for debugging
+        console.error('❌ Data being inserted:', {
+          samplePage: pagesWithUserId[0],
+          totalPages: pagesWithUserId.length,
+          dataTypes: pagesWithUserId.map(page => ({
+            url: typeof page.url,
+            html_content: typeof page.html_content,
+            links: typeof page.links,
+            images: typeof page.images,
+            audit_project_id: typeof page.audit_project_id
+          }))
+        })
+        
+        // Check if it's an RLS policy issue
+        if (!error.message || error.message === '' || Object.keys(error).length === 0) {
+          console.error('❌ Empty error object detected - likely RLS policy issue')
+          return { data: null, error: { message: 'RLS policy issue - check database permissions', code: 'RLS_POLICY_ISSUE' } }
+        }
+        
+        return { data: null, error: { message: error.message, details: error.details, code: error.code } }
+      }
+
+      console.log('✅ Successfully created scraped pages:', data?.length, 'pages')
       return { data, error: null }
     } catch (error) {
-      console.error('Error creating scraped pages:', error)
-      return { data: null, error }
+      console.error('❌ Exception creating scraped pages:', error)
+      return { data: null, error: { message: 'Unexpected error occurred', details: error } }
     }
   }
 

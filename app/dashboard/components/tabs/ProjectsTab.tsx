@@ -53,6 +53,8 @@ export default function ProjectsTab({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<AuditProject | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Monitor project status changes and refresh when crawling is successful
   useEffect(() => {
@@ -138,15 +140,27 @@ export default function ProjectsTab({
 
   // Removed unused handleRecrawlProject function
 
-  const handleDeleteProject = async (projectId: string) => {
-    if (!onDeleteProject) return;
+  const handleDeleteProject = (projectId: string) => {
+    setProjectToDelete(projectId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!onDeleteProject || !projectToDelete) return;
     
     try {
-      await onDeleteProject(projectId);
+      await onDeleteProject(projectToDelete);
       await refreshProjects();
+      setDeleteConfirmOpen(false);
+      setProjectToDelete(null);
     } catch (error) {
       console.error('Error deleting project:', error);
     }
+  };
+
+  const cancelDeleteProject = () => {
+    setDeleteConfirmOpen(false);
+    setProjectToDelete(null);
   };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -896,5 +910,52 @@ export default function ProjectsTab({
         onDelete={handleDeleteProject}
         isSubmitting={isSubmitting}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full border border-gray-300 shadow-xl">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Project</h3>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to delete this project? This action cannot be undone and will permanently remove all project data including:
+                </p>
+                <ul className="mt-2 text-sm text-gray-600 list-disc list-inside">
+                  <li>Project configuration</li>
+                  <li>Scraped pages and data</li>
+                  <li>Analysis results</li>
+                  <li>All associated files</li>
+                </ul>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={cancelDeleteProject}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteProject}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>;
 }

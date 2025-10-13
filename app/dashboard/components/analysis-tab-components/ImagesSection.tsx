@@ -38,9 +38,6 @@ interface ImageData {
 }
 
 export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [altFilter, setAltFilter] = useState<'all' | 'with-alt' | 'without-alt'>('all')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
@@ -268,26 +265,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     return allImages
   }, [scrapedPages, project.site_url, originalScrapingData])
 
-  const filteredImages = useMemo(() => {
-    return images.filter(img => {
-      // Search filter
-      const matchesSearch = searchTerm === '' || 
-        (img.url || img.src || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (img.alt && img.alt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (img.title && img.title.toLowerCase().includes(searchTerm.toLowerCase()))
-
-      // Alt text filter
-      const hasAltText = img.alt && img.alt.trim() !== ''
-      const matchesAlt = altFilter === 'all' || 
-        (altFilter === 'with-alt' && hasAltText) ||
-        (altFilter === 'without-alt' && !hasAltText)
-
-      // Type filter
-      const matchesType = typeFilter === 'all' || img.type === typeFilter
-
-      return matchesSearch && matchesAlt && matchesType
-    })
-  }, [images, searchTerm, altFilter, typeFilter])
+  // Use all images without filtering
+  const filteredImages = images
 
   // Pagination logic
   const totalPages = Math.ceil(filteredImages.length / itemsPerPage)
@@ -295,18 +274,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const endIndex = startIndex + itemsPerPage
   const paginatedImages = filteredImages.slice(startIndex, endIndex)
 
-  // Reset to first page when filters change
-  const handleFilterChange = (newSearchTerm: string, newAltFilter: 'all' | 'with-alt' | 'without-alt', newTypeFilter: string) => {
-    setSearchTerm(newSearchTerm)
-    setAltFilter(newAltFilter)
-    setTypeFilter(newTypeFilter)
+  // Reset to first page when needed
+  const resetToFirstPage = () => {
     setCurrentPage(1)
   }
 
-  const imageTypes = useMemo(() => {
-    const types = [...new Set(images.map(img => img.type).filter(Boolean))]
-    return types.sort()
-  }, [images])
 
   const stats = useMemo(() => {
     const total = images.length
@@ -317,13 +289,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   }, [images])
 
 
-  // Debounced search handler
-  const debouncedSearch = useCallback((value: string) => {
-    const timeoutId = setTimeout(() => {
-      setSearchTerm(value)
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }, [])
 
   // Handle image click to open modal
   const handleImageClick = (image: ImageData) => {
@@ -373,50 +338,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex justify-end gap-3 mb-6">
-        {/* Search */}
-        <div className="w-48">
-          <input
-            type="text"
-            placeholder="Search images..."
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value
-              debouncedSearch(value)
-              handleFilterChange(value, altFilter, typeFilter)
-            }}
-            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-        </div>
-
-        {/* Alt Text Filter */}
-        <div className="w-40">
-          <select
-            value={altFilter}
-            onChange={(e) => handleFilterChange(searchTerm, e.target.value as 'all' | 'with-alt' | 'without-alt', typeFilter)}
-            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-          >
-            <option value="all">All Images</option>
-            <option value="with-alt">With Alt Text</option>
-            <option value="without-alt">Without Alt Text</option>
-          </select>
-        </div>
-
-        {/* Type Filter */}
-        <div className="w-32">
-          <select
-            value={typeFilter}
-            onChange={(e) => handleFilterChange(searchTerm, altFilter, e.target.value)}
-            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-          >
-            <option value="all">All Types</option>
-            {imageTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-      </div>
 
       {/* Images Table */}
       {filteredImages.length > 0 ? (

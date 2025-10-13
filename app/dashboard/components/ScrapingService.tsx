@@ -468,43 +468,116 @@ export default function ScrapingService({ projectId, scrapingData, onScrapingCom
       const scrapedPagesData = scrapingData.pages.map((page: PageData) => {
         const { socialMetaTags, count: socialMetaTagsCount } = extractSocialMetaTags(page.html)
         
+        // Validate required fields
+        if (!page.url) {
+          console.warn('⚠️ Page missing URL, skipping:', page)
+          return null
+        }
+        
         return {
           audit_project_id: projectId,
           url: page.url,
-          status_code: page.statusCode,
-          title: page.title,
+          status_code: page.statusCode || 200,
+          title: page.title || '',
           description: page.metaTags?.find((tag: MetaTagData) => tag.name === 'description')?.content || null,
-          html_content: page.html, // Keep original HTML content
-          html_content_length: page.htmlContentLength, // Keep original HTML length
+          html_content: page.html || '', // Ensure HTML content is not null
+          html_content_length: page.htmlContentLength || 0, // Ensure numeric value
           links_count: page.links?.length || 0,
           images_count: page.images?.length || 0,
           links: page.links || null, // Store actual links data
           images: page.images || null, // Store actual images data
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
-          technologies: page.technologies?.map(tech => tech.name) || null,
+          technologies: page.technologies?.map(tech => tech.name).filter(tech => tech !== null && tech !== undefined && tech !== '') || null,
           cms_type: scrapingData.extractedData?.cms?.type || null,
           cms_version: scrapingData.extractedData?.cms?.version || null,
-          cms_plugins: scrapingData.extractedData?.cms?.plugins?.map(plugin => plugin.name) || null,
+          cms_plugins: scrapingData.extractedData?.cms?.plugins?.map(plugin => plugin.name).filter(plugin => plugin !== null && plugin !== undefined && plugin !== '') || null,
           social_meta_tags: socialMetaTags, // Store full social meta tags data
           social_meta_tags_count: socialMetaTagsCount, // Store count as well
           is_external: false, // Main page is not external
           response_time: scrapingData.responseTime || null,
           performance_analysis: null // Add missing required property
         }
-      })
+      }).filter(Boolean) // Remove any null entries
 
       
 
-      // Save scraped pages to database
-      const { error: pagesError } = await createScrapedPages(scrapedPagesData)
-      
-      if (pagesError) {
-        console.error('❌ Error saving scraped pages:', pagesError)
+      // Validate data before saving
+      if (!scrapedPagesData || scrapedPagesData.length === 0) {
+        console.error('❌ No scraped pages data to save')
         onScrapingComplete(false)
         return
-      } else {
+      }
+
+      // Validate each page has required fields
+      const invalidPages = scrapedPagesData.filter(page => page && (!page.url || !page.audit_project_id))
+      if (invalidPages.length > 0) {
+        console.error('❌ Invalid pages found:', invalidPages)
+        onScrapingComplete(false)
+        return
+      }
+
+      // Save scraped pages to database
+      const filteredPages = scrapedPagesData.filter((page): page is NonNullable<typeof page> => page !== null)
+      console.log('💾 Saving scraped pages to database...', filteredPages.length, 'pages')
+      console.log('💾 Sample page data:', {
+        url: filteredPages[0]?.url,
+        audit_project_id: filteredPages[0]?.audit_project_id,
+        html_content_length: filteredPages[0]?.html_content?.length,
+        links_count: filteredPages[0]?.links_count,
+        images_count: filteredPages[0]?.images_count
+      })
+      
+      // Log the exact data structure being sent
+      console.log('🔍 Full page data structure:', JSON.stringify(filteredPages[0], null, 2))
+      
+      const { data: savedPages, error: pagesError } = await createScrapedPages(filteredPages)
+      
+      if (pagesError) {
+        console.error('❌ Error saving scraped pages:', {
+          error: pagesError,
+          message: pagesError.message,
+          details: pagesError.details,
+          code: pagesError.code,
+          fullError: JSON.stringify(pagesError, null, 2)
+        })
         
+        // Log the data that failed to save
+        console.error('❌ Failed to save data:', {
+          scrapedPagesDataLength: scrapedPagesData.length,
+          sampleData: scrapedPagesData[0],
+          projectId: projectId
+        })
+        
+        // Try to save individual pages if bulk insert fails
+        console.log('🔄 Attempting to save pages individually...')
+        let successCount = 0
+        let errorCount = 0
+        
+        for (const pageData of scrapedPagesData) {
+          if (!pageData) continue
+          try {
+            const { error: singlePageError } = await createScrapedPages([pageData])
+            if (singlePageError) {
+              console.error(`❌ Failed to save individual page ${pageData.url}:`, singlePageError)
+              errorCount++
+            } else {
+              successCount++
+            }
+          } catch (err) {
+            console.error(`❌ Exception saving individual page ${pageData.url}:`, err)
+            errorCount++
+          }
+        }
+        
+        console.log(`📊 Individual save results: ${successCount} success, ${errorCount} failed`)
+        
+        if (successCount === 0) {
+          onScrapingComplete(false)
+          return
+        }
+      } else {
+        console.log('✅ Successfully saved scraped pages:', savedPages?.length, 'pages')
       }
 
       // Process meta tags data from homepage

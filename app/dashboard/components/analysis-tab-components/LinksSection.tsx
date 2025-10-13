@@ -31,8 +31,6 @@ interface LinkData {
 
 
 export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'internal' | 'external'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
@@ -146,20 +144,8 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return allLinks
   }, [scrapedPages, project.site_url, originalScrapingData])
 
-  const filteredLinks = useMemo(() => {
-    return links.filter(link => {
-      // Search filter
-      const matchesSearch = searchTerm === '' || 
-        link.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (link.text && link.text.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (link.title && link.title.toLowerCase().includes(searchTerm.toLowerCase()))
-
-      // Type filter
-      const matchesType = typeFilter === 'all' || link.type === typeFilter
-
-      return matchesSearch && matchesType
-    })
-  }, [links, searchTerm, typeFilter])
+  // Use all links without filtering
+  const filteredLinks = links
 
   // Pagination logic
   const totalPages = Math.ceil(filteredLinks.length / itemsPerPage)
@@ -167,10 +153,8 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const endIndex = startIndex + itemsPerPage
   const paginatedLinks = filteredLinks.slice(startIndex, endIndex)
 
-  // Reset to first page when filters change
-  const handleFilterChange = (newSearchTerm: string, newTypeFilter: 'all' | 'internal' | 'external') => {
-    setSearchTerm(newSearchTerm)
-    setTypeFilter(newTypeFilter)
+  // Reset to first page when needed
+  const resetToFirstPage = () => {
     setCurrentPage(1)
   }
 
@@ -182,13 +166,6 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return { total, internal, external }
   }, [links])
 
-  // Debounced search handler
-  const debouncedSearch = useCallback((value: string) => {
-    const timeoutId = setTimeout(() => {
-      setSearchTerm(value)
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }, [])
 
   // Export functions
   const exportToCSV = () => {
@@ -391,36 +368,6 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex justify-end gap-3 mb-6">
-        {/* Search */}
-        <div className="w-48">
-          <input
-            type="text"
-            placeholder="Search links..."
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value
-              debouncedSearch(value)
-              handleFilterChange(value, typeFilter)
-            }}
-            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-        </div>
-
-        {/* Type Filter */}
-        <div className="w-40">
-          <select
-            value={typeFilter}
-            onChange={(e) => handleFilterChange(searchTerm, e.target.value as 'all' | 'internal' | 'external')}
-            className="w-full px-3 py-1.5 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-          >
-            <option value="all">All Links</option>
-            <option value="internal">Internal Links</option>
-            <option value="external">External Links</option>
-          </select>
-        </div>
-      </div>
 
       {/* Links Table */}
       {filteredLinks.length > 0 ? (
