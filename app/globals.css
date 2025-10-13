@@ -1,1 +1,64 @@
 @import "tailwindcss";
+@import "@fortawesome/fontawesome-free/css/all.css";
+
+/* Raleway Font Configuration */
+.raleway {
+  font-family: "Raleway", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+/* Set Raleway as default font for the entire application */
+* {
+  font-family: var(--font-raleway), "Raleway", sans-serif;
+  font-weight: 400;
+}
+
+/* Make headings and important text heavier */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+}
+
+/* Make body text slightly heavier */
+body {
+  font-weight: 500;
+}
+
+/* Make buttons and interactive elements heavier */
+button, .btn, input, select, textarea {
+  font-weight: 500;
+}
+
+/* Raleway Font Weight Utilities */
+.font-raleway-100 { font-weight: 100; }
+.font-raleway-200 { font-weight: 200; }
+.font-raleway-300 { font-weight: 300; }
+.font-raleway-400 { font-weight: 400; }
+.font-raleway-500 { font-weight: 500; }
+.font-raleway-600 { font-weight: 600; }
+.font-raleway-700 { font-weight: 700; }
+.font-raleway-800 { font-weight: 800; }
+.font-raleway-900 { font-weight: 900; }
+
+/* Raleway Italic Utilities */
+.font-raleway-italic { font-style: italic; }
+
+/* Additional font weight improvements */
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Make specific elements heavier */
+.font-bold, .font-semibold, .font-medium {
+  font-weight: 600;
+}
+
+/* Improve readability for small text */
+.text-sm, .text-xs {
+  font-weight: 500;
+}
+
+/* Make navigation and menu items heavier */
+nav a, .nav-link, .menu-item {
+  font-weight: 500;
+}

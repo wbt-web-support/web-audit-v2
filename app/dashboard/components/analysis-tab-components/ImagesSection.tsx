@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../analysis-tab/types'
@@ -35,6 +35,8 @@ interface ImageData {
   titleText?: string
   title_text?: string
   fullTag?: string
+  isBroken?: boolean
+  loadError?: boolean
 }
 
 export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
@@ -43,6 +45,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null)
   const [showModal, setShowModal] = useState(false)
+  
+  // Filter states
+  const [selectedImageType, setSelectedImageType] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   
 
@@ -60,10 +66,17 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         return 'WebP'
       case 'svg':
         return 'SVG'
+      case 'bmp':
+        return 'BMP'
+      case 'ico':
+        return 'ICO'
+      case 'tiff':
+        return 'TIFF'
       default:
         return 'Unknown'
     }
   }
+
 
   // Helper function to parse fullTag HTML and extract image attributes
   const parseImageFromFullTag = (fullTag: string) => {
@@ -265,8 +278,29 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     return allImages
   }, [scrapedPages, project.site_url, originalScrapingData])
 
-  // Use all images without filtering
-  const filteredImages = images
+  // Filter images based on selected criteria
+  const filteredImages = useMemo(() => {
+    let filtered = [...images]
+
+    // Filter by image type
+    if (selectedImageType !== 'all') {
+      filtered = filtered.filter(img => img.type === selectedImageType)
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(img => 
+        img.url?.toLowerCase().includes(query) ||
+        img.alt?.toLowerCase().includes(query) ||
+        img.title?.toLowerCase().includes(query) ||
+        img.page_url?.toLowerCase().includes(query)
+      )
+    }
+
+
+    return filtered
+  }, [images, selectedImageType, searchQuery])
 
   // Pagination logic
   const totalPages = Math.ceil(filteredImages.length / itemsPerPage)
@@ -274,11 +308,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
   const endIndex = startIndex + itemsPerPage
   const paginatedImages = filteredImages.slice(startIndex, endIndex)
 
-  // Reset to first page when needed
-  const resetToFirstPage = () => {
+  // Reset to first page when filters change
+  useEffect(() => {
     setCurrentPage(1)
-  }
-
+  }, [selectedImageType, searchQuery])
 
   const stats = useMemo(() => {
     const total = images.length
@@ -287,6 +320,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     
     return { total, withAlt, withoutAlt }
   }, [images])
+
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1)
+  }
 
 
 
@@ -336,6 +374,69 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           <div className="text-2xl font-bold text-gray-900">{stats.withoutAlt}</div>
           <div className="text-sm text-gray-600">Without Alt Text</div>
         </div>
+      </div>
+
+      {/* Filter Controls */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search Images</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by URL, alt text, title, or page..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
+          </div>
+
+          {/* Image Type Filter */}
+          <div className="lg:w-48">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image Type</label>
+            <select
+              value={selectedImageType}
+              onChange={(e) => setSelectedImageType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Types</option>
+              <option value="JPEG">JPEG</option>
+              <option value="PNG">PNG</option>
+              <option value="GIF">GIF</option>
+              <option value="WebP">WebP</option>
+              <option value="SVG">SVG</option>
+              <option value="BMP">BMP</option>
+              <option value="ICO">ICO</option>
+              <option value="TIFF">TIFF</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </div>
+
+
+        </div>
+
+        {/* Clear Filters */}
+        {(selectedImageType !== 'all' || searchQuery) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setSelectedImageType('all')
+                setSearchQuery('')
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
       </div>
 
 

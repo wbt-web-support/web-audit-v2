@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { useUserPlan } from '@/hooks/useUserPlan'
 
 interface ProfileProps {
   userProfile: {
@@ -12,15 +13,33 @@ interface ProfileProps {
     last_name: string | null
     full_name?: string
     avatar_url?: string
-    role: 'user' | 'admin'
+    role: 'user' | 'admin' | 'moderator'
     email_confirmed: boolean
     created_at: string
-    updated_at?: string
+    updated_at: string
+    blocked: boolean
+    blocked_at: string | null
+    blocked_by: string | null
+    role_changed_at: string | null
+    role_changed_by: string | null
+    last_activity_at: string | null
+    login_count: number
+    notes: string | null
+    projects: number
+    plan_type: string
+    plan_name: string | null
+    plan_id: string | null
+    billing_cycle: string
+    max_projects: number
+    can_use_features: any[]
+    plan_expires_at: string | null
+    subscription_id: string | null
   }
 }
 
 export default function Profile({ userProfile }: ProfileProps) {
-  const { updateProfile } = useSupabase()
+  const { updateProfile, getAuditProjectsOptimized, user, userProfile: contextUserProfile } = useSupabase()
+  const { planInfo } = useUserPlan()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     first_name: userProfile?.first_name || '',
@@ -28,6 +47,102 @@ export default function Profile({ userProfile }: ProfileProps) {
     email: userProfile?.email || ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [actualProjectCount, setActualProjectCount] = useState(0)
+  const [projectCountLoading, setProjectCountLoading] = useState(true)
+  const [localFirstName, setLocalFirstName] = useState(userProfile?.first_name || '')
+  const [localLastName, setLocalLastName] = useState(userProfile?.last_name || '')
+  const [dbFirstName, setDbFirstName] = useState('')
+  const [dbLastName, setDbLastName] = useState('')
+  const [dbRole, setDbRole] = useState('')
+
+
+  // Create full name from first and last name - prioritize database values
+  const fullName = (dbFirstName && dbLastName) 
+    ? `${dbFirstName} ${dbLastName}`
+    : (localFirstName && localLastName) 
+      ? `${localFirstName} ${localLastName}`
+      : (formData.first_name && formData.last_name) 
+        ? `${formData.first_name} ${formData.last_name}`
+        : (userProfile?.first_name && userProfile?.last_name) 
+          ? `${userProfile.first_name} ${userProfile.last_name}`
+          : dbFirstName || dbLastName || localFirstName || localLastName || formData.first_name || formData.last_name || userProfile?.first_name || userProfile?.last_name || 'Not provided'
+
+  // Fetch actual project count
+  useEffect(() => {
+    const fetchProjectCount = async () => {
+      try {
+        setProjectCountLoading(true)
+        const { data: projects, error } = await getAuditProjectsOptimized()
+        if (!error && projects) {
+          setActualProjectCount(projects.length)
+          console.log('Actual project count:', projects.length)
+        } else {
+          console.error('Error fetching projects:', error)
+          setActualProjectCount(0)
+        }
+      } catch (error) {
+        console.error('Error fetching project count:', error)
+        setActualProjectCount(0)
+      } finally {
+        setProjectCountLoading(false)
+      }
+    }
+
+    fetchProjectCount()
+  }, [getAuditProjectsOptimized])
+
+  // Update formData and local state when userProfile changes
+  useEffect(() => {
+    setFormData({
+      first_name: userProfile?.first_name || '',
+      last_name: userProfile?.last_name || '',
+      email: userProfile?.email || ''
+    })
+    setLocalFirstName(userProfile?.first_name || '')
+    setLocalLastName(userProfile?.last_name || '')
+  }, [userProfile])
+
+  // Fetch data directly from database on component mount
+  useEffect(() => {
+    const fetchDirectData = async () => {
+      if (!user) return
+      
+      try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('first_name, last_name, role')
+          .eq('id', user.id)
+          .single()
+        
+        if (data && !error) {
+          setDbFirstName(data.first_name || '')
+          setDbLastName(data.last_name || '')
+          setDbRole(data.role || '')
+          
+          // Update local state with database values
+          setLocalFirstName(data.first_name || '')
+          setLocalLastName(data.last_name || '')
+          
+          // Update form data with database values
+          setFormData(prev => ({
+            ...prev,
+            first_name: data.first_name || '',
+            last_name: data.last_name || ''
+          }))
+        }
+      } catch (error) {
+        // Handle error silently
+      }
+    }
+
+    fetchDirectData()
+  }, [user])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -46,14 +161,21 @@ export default function Profile({ userProfile }: ProfileProps) {
       })
       
       if (error) {
-        console.error('Error updating profile:', error)
         alert('Failed to update profile. Please try again.')
       } else {
         alert('Profile updated successfully!')
         setIsEditing(false)
+        
+        // Update the form data and local state to reflect the saved values
+        setFormData({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: userProfile?.email || ''
+        })
+        setLocalFirstName(formData.first_name)
+        setLocalLastName(formData.last_name)
       }
     } catch (error) {
-      console.error('Error updating profile:', error)
       alert('Failed to update profile. Please try again.')
     } finally {
       setIsLoading(false)
@@ -68,6 +190,7 @@ export default function Profile({ userProfile }: ProfileProps) {
     })
     setIsEditing(false)
   }
+
 
   return (
     <motion.div 
@@ -122,7 +245,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   ) : (
-                    <p className="text-black">{userProfile?.first_name || 'Not provided'}</p>
+                    <p className="text-black">{dbFirstName || localFirstName || formData.first_name || userProfile?.first_name || 'Not provided'}</p>
                   )}
                 </motion.div>
                 <motion.div
@@ -142,7 +265,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   ) : (
-                    <p className="text-black">{userProfile?.last_name || 'Not provided'}</p>
+                    <p className="text-black">{dbLastName || localLastName || formData.last_name || userProfile?.last_name || 'Not provided'}</p>
                   )}
                 </motion.div>
               </div>
@@ -151,6 +274,17 @@ export default function Profile({ userProfile }: ProfileProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <p className="text-black">{fullName}</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -162,7 +296,7 @@ export default function Profile({ userProfile }: ProfileProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
@@ -175,7 +309,7 @@ export default function Profile({ userProfile }: ProfileProps) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 }}
+                transition={{ duration: 0.4, delay: 0.8 }}
               >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Confirmed
@@ -195,6 +329,7 @@ export default function Profile({ userProfile }: ProfileProps) {
                   )}
                 </div>
               </motion.div>
+
 
               {isEditing && (
                 <motion.div 
@@ -258,7 +393,9 @@ export default function Profile({ userProfile }: ProfileProps) {
                 transition={{ duration: 0.4, delay: 0.5 }}
               >
                 <span className="text-gray-600">Total Projects</span>
-                <span className="font-medium text-black">12</span>
+                <span className="font-medium text-black">
+                  {projectCountLoading ? '...' : actualProjectCount}
+                </span>
               </motion.div>
               <motion.div 
                 className="flex justify-between"
@@ -266,8 +403,8 @@ export default function Profile({ userProfile }: ProfileProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
               >
-                <span className="text-gray-600">Completed Audits</span>
-                <span className="font-medium text-black">8</span>
+                <span className="text-gray-600">Current Plan</span>
+                <span className="font-medium text-black capitalize">{planInfo?.plan_name || userProfile?.plan_name || userProfile?.plan_type || 'Starter'}</span>
               </motion.div>
               <motion.div 
                 className="flex justify-between"
@@ -275,9 +412,31 @@ export default function Profile({ userProfile }: ProfileProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.7 }}
               >
-                <span className="text-gray-600">Issues Found</span>
-                <span className="font-medium text-black">24</span>
+                <span className="text-gray-600">Max Projects</span>
+                <span className="font-medium text-black">{planInfo?.max_projects || userProfile?.max_projects || 1}</span>
               </motion.div>
+              <motion.div 
+                className="flex justify-between"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.8 }}
+              >
+                <span className="text-gray-600">Login Count</span>
+                <span className="font-medium text-black">{userProfile?.login_count || 0}</span>
+              </motion.div>
+              {userProfile?.last_activity_at && (
+                <motion.div 
+                  className="flex justify-between"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.9 }}
+                >
+                  <span className="text-gray-600">Last Activity</span>
+                  <span className="font-medium text-black">
+                    {new Date(userProfile.last_activity_at).toLocaleDateString()}
+                  </span>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </motion.div>

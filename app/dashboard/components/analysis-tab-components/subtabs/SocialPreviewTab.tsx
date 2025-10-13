@@ -129,7 +129,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <div className="animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="space-y-3">
@@ -146,7 +146,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Social Preview Mockup */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Preview</h3>
         <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
           <div className="flex gap-4">
@@ -201,7 +201,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
 
       {/* Image Preview */}
       {socialImage && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Image</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -238,7 +238,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
       )}
 
       {/* Summary */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
         <div className="space-y-2">
           <p className="text-sm text-gray-600">
@@ -253,11 +253,11 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
       {/* Twitter and Open Graph Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Twitter Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Twitter</h3>
             {twitterPresent > 0 && (
-              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
                 Present
               </span>
             )}
@@ -297,11 +297,11 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
         </div>
 
         {/* Open Graph Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Open Graph</h3>
             {openGraphPresent > 0 && (
-              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
                 Present
               </span>
             )}

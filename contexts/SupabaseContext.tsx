@@ -11,9 +11,27 @@ interface UserProfile {
   email: string
   first_name: string | null
   last_name: string | null
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'moderator'
   email_confirmed: boolean
   created_at: string
+  updated_at: string
+  blocked: boolean
+  blocked_at: string | null
+  blocked_by: string | null
+  role_changed_at: string | null
+  role_changed_by: string | null
+  last_activity_at: string | null
+  login_count: number
+  notes: string | null
+  projects: number
+  plan_type: string
+  plan_name: string | null
+  plan_id: string | null
+  billing_cycle: string
+  max_projects: number
+  can_use_features: any[]
+  plan_expires_at: string | null
+  subscription_id: string | null
 }
 
 interface AuditProjectWithUserId extends AuditProject {
@@ -275,7 +293,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           last_name: user.user_metadata?.last_name || '',
           role: 'user' as const,
           email_confirmed: !!user.email_confirmed_at,
-          created_at: user.created_at
+          created_at: user.created_at,
+          updated_at: user.created_at,
+          blocked: false,
+          blocked_at: null,
+          blocked_by: null,
+          role_changed_at: null,
+          role_changed_by: null,
+          last_activity_at: null,
+          login_count: 0,
+          notes: null,
+          projects: 0,
+          plan_type: 'Starter',
+          plan_name: null,
+          plan_id: null,
+          billing_cycle: 'monthly',
+          max_projects: 1,
+          can_use_features: [],
+          plan_expires_at: null,
+          subscription_id: null
         } as UserProfile
       }
 
@@ -320,7 +356,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           last_name: user.user_metadata?.last_name || '',
           role: 'user' as const,
           email_confirmed: !!user.email_confirmed_at,
-          created_at: user.created_at
+          created_at: user.created_at,
+          updated_at: user.created_at,
+          blocked: false,
+          blocked_at: null,
+          blocked_by: null,
+          role_changed_at: null,
+          role_changed_by: null,
+          last_activity_at: null,
+          login_count: 0,
+          notes: null,
+          projects: 0,
+          plan_type: 'Starter',
+          plan_name: null,
+          plan_id: null,
+          billing_cycle: 'monthly',
+          max_projects: 1,
+          can_use_features: [],
+          plan_expires_at: null,
+          subscription_id: null
         } as UserProfile
       }
 
@@ -344,7 +398,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   // Function to fetch user profile
   const fetchUserProfile = async (userId: string) => {
     try {
-      
+      console.log('Fetching user profile for userId:', userId)
       
       // Try to fetch user profile
       const { data, error } = await supabase
@@ -352,6 +406,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('id', userId)
         .maybeSingle() // Use maybeSingle() instead of single() to avoid errors when no rows found
+      
+      console.log('Database query result:', { data, error })
       
       if (error) {
         console.error('Database error fetching user profile:', {
@@ -373,10 +429,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data) {
-        
+        console.log('User profile data fetched:', data)
+        console.log('First name:', data.first_name)
+        console.log('Last name:', data.last_name)
         return data as UserProfile
       } else {
-        
+        console.log('No user profile data found')
         return null
       }
     } catch (error) {
@@ -422,7 +480,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
               last_name: session.user.user_metadata?.last_name || '',
               role: 'user' as const,
               email_confirmed: !!session.user.email_confirmed_at,
-              created_at: session.user.created_at
+              created_at: session.user.created_at,
+              updated_at: session.user.created_at,
+              blocked: false,
+              blocked_at: null,
+              blocked_by: null,
+              role_changed_at: null,
+              role_changed_by: null,
+              last_activity_at: null,
+              login_count: 0,
+              notes: null,
+              projects: 0,
+              plan_type: 'Starter',
+              plan_name: null,
+              plan_id: null,
+              billing_cycle: 'monthly',
+              max_projects: 1,
+              can_use_features: [],
+              plan_expires_at: null,
+              subscription_id: null
             }
             
             setUserProfile(fallbackProfile)
@@ -548,7 +624,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
               last_name: session.user.user_metadata?.last_name || '',
               role: 'user' as const,
               email_confirmed: !!session.user.email_confirmed_at,
-              created_at: session.user.created_at
+              created_at: session.user.created_at,
+              updated_at: session.user.created_at,
+              blocked: false,
+              blocked_at: null,
+              blocked_by: null,
+              role_changed_at: null,
+              role_changed_by: null,
+              last_activity_at: null,
+              login_count: 0,
+              notes: null,
+              projects: 0,
+              plan_type: 'Starter',
+              plan_name: null,
+              plan_id: null,
+              billing_cycle: 'monthly',
+              max_projects: 1,
+              can_use_features: [],
+              plan_expires_at: null,
+              subscription_id: null
             }
             setUserProfile(fallbackProfile)
           }
@@ -648,14 +742,21 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       return { error: { message: 'No user logged in' } as any }
     }
 
+    console.log('Updating profile with:', updates)
+    console.log('User ID:', user.id)
+
     const { error } = await supabase
       .from('users')
       .update(updates)
       .eq('id', user.id)
 
+    console.log('Update result:', { error })
+
     if (!error) {
+      console.log('Profile updated successfully, refreshing...')
       // Refresh user profile
       const profile = await fetchUserProfile(user.id)
+      console.log('Refreshed profile:', profile)
       setUserProfile(profile)
     }
 

@@ -12,6 +12,7 @@
     "@babel/generator": "^7.28.3",
     "@babel/parser": "^7.28.4",
     "@babel/traverse": "^7.28.4",
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.57.4",

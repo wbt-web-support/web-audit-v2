@@ -97,15 +97,15 @@ export default function KeysTab({
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-blue-300 text-blue-900 border-blue-300';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-blue-200 text-blue-900 border-blue-200';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-blue-100 text-blue-800 border-blue-100';
       case 'low':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-blue-50 text-blue-700 border-blue-50';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-blue-100 text-blue-800 border-blue-100';
     }
   };
 
@@ -134,9 +134,9 @@ export default function KeysTab({
     <div className="space-y-6">
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start">
-          <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+          <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
+            <span className="text-sm">⚠</span>
+          </div>
           <div>
             <h4 className="text-sm font-medium text-yellow-800">Security Keys Analysis</h4>
             <p className="text-sm text-yellow-700 mt-1">
@@ -163,11 +163,11 @@ export default function KeysTab({
       {/* Error State */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
+            <div className="flex items-start">
+              <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
+                <span className="text-sm">❌</span>
+              </div>
+              <div>
               <h4 className="text-sm font-medium text-red-800">Error</h4>
               <p className="text-sm text-red-700 mt-1">{error}</p>
             </div>
@@ -188,13 +188,13 @@ export default function KeysTab({
                 </p>
               </div>
               <div className="flex items-center space-x-4 text-sm">
-                <span className="text-red-600 font-medium">
+                <span className="text-blue-600 font-medium">
                   {keysData.summary.exposedKeys} Exposed
                 </span>
-                <span className="text-green-600 font-medium">
+                <span className="text-blue-500 font-medium">
                   {keysData.summary.secureKeys} Secure
                 </span>
-                <span className="text-orange-600 font-medium">
+                <span className="text-blue-400 font-medium">
                   {keysData.summary.criticalKeys} Critical
                 </span>
               </div>
@@ -271,7 +271,7 @@ export default function KeysTab({
 
               <div className="space-y-3">
                 {keysData.keys.map((key, index) => (
-                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover: transition-shadow">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
@@ -280,9 +280,9 @@ export default function KeysTab({
                             {key.severity}
                           </span>
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            key.status === 'exposed' ? 'bg-red-100 text-red-800' : 
-                            key.status === 'secure' ? 'bg-green-100 text-green-800' : 
-                            'bg-yellow-100 text-yellow-800'
+                            key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : 
+                            key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 
+                            'bg-blue-200 text-blue-900'
                           }`}>
                             {key.status}
                           </span>
@@ -344,9 +344,9 @@ export default function KeysTab({
           ) : (
             <div className="text-center py-8">
               <div className="text-gray-500">
-                <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <div className="w-12 h-12 mx-auto mb-4 text-gray-300 flex items-center justify-center">
+                  <span className="text-3xl">🔒</span>
+                </div>
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No Keys Detected</h4>
                 <p className="text-gray-600">No security keys or credentials were found in the analyzed pages.</p>
               </div>

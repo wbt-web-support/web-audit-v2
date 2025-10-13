@@ -61,70 +61,37 @@ export default function SEOAnalysisSection({
       let htmlContent = '';
       let siteUrl = '';
       
-      // Debug: Check what's actually in the database
-      if (!isPageAnalysis && project) {
-        console.log('🔍 SEO Analysis - Project ID:', project.id);
-        console.log('🔍 SEO Analysis - Project scraping data exists:', !!project.scraping_data);
-        if (project.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
-          console.log('🔍 SEO Analysis - Project scraping pages count:', project.scraping_data.pages.length);
-          console.log('🔍 SEO Analysis - First scraping page HTML length:', (project.scraping_data.pages[0] as { html?: string })?.html?.length || 0);
-        }
-      }
       
       // If no HTML content found in current data, fetch fresh data from database
       if (!isPageAnalysis && project && (!scrapedPages.length || !scrapedPages.some(p => p.html_content && p.html_content.trim().length > 0))) {
-        console.log('🔄 SEO Analysis - No HTML content in current data, fetching fresh data from database...');
         try {
           const { data: freshPages, error: pagesError } = await getScrapedPages(project.id);
           if (pagesError) {
-            console.error('❌ Error fetching fresh scraped pages:', pagesError);
+            // Error fetching fresh scraped pages
           } else if (freshPages && freshPages.length > 0) {
-            console.log('✅ SEO Analysis - Fresh scraped pages fetched:', freshPages.length);
             // Update scraped pages with fresh data
             scrapedPages.splice(0, scrapedPages.length, ...freshPages);
-            console.log('🔍 SEO Analysis - Fresh pages HTML content check:', freshPages.map(p => ({
-              id: p.id,
-              url: p.url,
-              hasHtmlContent: !!p.html_content,
-              htmlContentLength: p.html_content?.length || 0
-            })));
-          } else {
-            console.log('❌ SEO Analysis - No fresh scraped pages found in database');
           }
         } catch (fetchError) {
-          console.error('❌ Error fetching fresh scraped pages:', fetchError);
+          // Error fetching fresh scraped pages
         }
       }
       
       // If still no HTML content, try a direct database query for any page with HTML content
       if (!htmlContent && !isPageAnalysis && project) {
-        console.log('🔄 SEO Analysis - Trying direct database query for HTML content...');
         try {
           const { data: directPages, error: directError } = await getScrapedPages(project.id);
           if (directError) {
-            console.error('❌ Error in direct database query:', directError);
+            // Error in direct database query
           } else if (directPages && directPages.length > 0) {
-            console.log('🔍 SEO Analysis - Direct query found pages:', directPages.length);
             const pageWithHtml = directPages.find(p => p.html_content && p.html_content.trim().length > 0);
             if (pageWithHtml && pageWithHtml.html_content) {
               htmlContent = pageWithHtml.html_content;
               siteUrl = project.site_url;
-              console.log('✅ SEO Analysis - Found HTML content via direct query, length:', htmlContent.length);
-            } else {
-              console.log('❌ SEO Analysis - Direct query found pages but none have HTML content');
-              console.log('🔍 SEO Analysis - Direct query pages data:', directPages.map(p => ({
-                id: p.id,
-                url: p.url,
-                hasHtmlContent: !!p.html_content,
-                htmlContentLength: p.html_content?.length || 0,
-                htmlContentPreview: p.html_content?.substring(0, 100) || 'null'
-              })));
             }
-          } else {
-            console.log('❌ SEO Analysis - Direct query returned no pages');
           }
         } catch (directFetchError) {
-          console.error('❌ Error in direct database query:', directFetchError);
+          // Error in direct database query
         }
       }
       
@@ -134,44 +101,23 @@ export default function SEOAnalysisSection({
         siteUrl = page.url || page.audit_project_id || 'Unknown URL';
       } else if (!isPageAnalysis && scrapedPages.length > 0 && project) {
         // For project analysis - get the first page with HTML content
-        console.log('🔍 SEO Analysis - Available scraped pages:', scrapedPages.length);
-        console.log('🔍 SEO Analysis - Scraped pages data:', scrapedPages.map(p => ({
-          id: p.id,
-          url: p.url,
-          hasHtmlContent: !!p.html_content,
-          htmlContentLength: p.html_content?.length || 0,
-          title: p.title
-        })));
-        
         const firstPage = scrapedPages.find(p => p.html_content && p.html_content.trim().length > 0);
         if (firstPage?.html_content) {
           htmlContent = firstPage.html_content;
           siteUrl = project.site_url;
-          console.log('✅ SEO Analysis - Found HTML content, length:', htmlContent.length);
         } else {
-          console.log('❌ SEO Analysis - No HTML content found in any scraped page');
-          console.log('🔍 SEO Analysis - Project scraping data:', project.scraping_data);
-          
           // Try to get HTML from project scraping data as fallback
           if (project?.scraping_data?.pages && Array.isArray(project.scraping_data.pages)) {
-            console.log('🔍 SEO Analysis - Project scraping pages:', project.scraping_data.pages.length);
             const scrapingPage = project.scraping_data.pages.find((p: { html?: string }) => p.html && p.html.trim().length > 0);
             if (scrapingPage?.html) {
               htmlContent = scrapingPage.html;
               siteUrl = project.site_url;
-              console.log('✅ SEO Analysis - Found HTML content in project scraping data, length:', htmlContent.length);
-            } else {
-              console.log('❌ SEO Analysis - No HTML content found in project scraping data either');
             }
-          } else {
-            console.log('❌ SEO Analysis - No project scraping data available');
           }
         }
         
         // Final fallback: Try to get HTML from any available source
         if (!htmlContent && project?.scraping_data) {
-          console.log('🔄 SEO Analysis - Trying final fallback methods...');
-          
           // Try different possible structures in scraping_data
           const scrapingData = project.scraping_data as Record<string, unknown>;
           const possibleHtmlSources = [
@@ -187,7 +133,6 @@ export default function SEOAnalysisSection({
             if (source && typeof source === 'string' && source.trim().length > 0) {
               htmlContent = source;
               siteUrl = project.site_url;
-              console.log('✅ SEO Analysis - Found HTML content in fallback source, length:', htmlContent.length);
               break;
             }
           }
@@ -196,7 +141,6 @@ export default function SEOAnalysisSection({
       
       // Final fallback: If still no HTML content found, create a basic HTML structure
       if (!htmlContent && !isPageAnalysis && project) {
-        console.log('🔄 SEO Analysis - No HTML content found anywhere, creating fallback HTML...');
         htmlContent = `
           <!DOCTYPE html>
           <html lang="en">
@@ -214,7 +158,6 @@ export default function SEOAnalysisSection({
           </html>
         `;
         siteUrl = project.site_url;
-        console.log('⚠️ SEO Analysis - Using fallback HTML content for analysis');
       }
       
       if (htmlContent) {
@@ -228,11 +171,7 @@ export default function SEOAnalysisSection({
             seo_analysis: analysis
           });
           if (updateError) {
-            console.error('❌ Failed to store SEO analysis:', updateError);
             // Don't set error for database update failures - analysis still completed successfully
-            console.log('✅ SEO analysis completed successfully, but database update failed');
-          } else {
-            console.log('✅ SEO analysis completed and saved to database');
           }
         }
       } else {
@@ -240,7 +179,6 @@ export default function SEOAnalysisSection({
       }
     } catch (err) {
       setError('Failed to analyze SEO content');
-      console.error('SEO Analysis Error:', err);
     } finally {
       setLoading(false);
     }
@@ -275,13 +213,13 @@ export default function SEOAnalysisSection({
   const getIssueIcon = (type: string) => {
     switch (type) {
       case 'error':
-        return '❌';
+        return 'fas fa-times-circle text-red-600';
       case 'warning':
-        return '⚠️';
+        return 'fas fa-exclamation-triangle text-yellow-600';
       case 'info':
-        return 'ℹ️';
+        return 'fas fa-info-circle text-blue-500';
       default:
-        return '📝';
+        return 'fas fa-file-alt text-gray-500';
     }
   };
 
@@ -299,7 +237,7 @@ export default function SEOAnalysisSection({
   // }
 
   if (loading) {
-    return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    return <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
           <button 
@@ -321,7 +259,7 @@ export default function SEOAnalysisSection({
       </div>;
   }
   if (error) {
-    return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    return <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
           <button
@@ -333,13 +271,15 @@ export default function SEOAnalysisSection({
           </button>
         </div>
         <div className="text-center py-8">
-          <div className="text-red-500 text-4xl mb-2">⚠️</div>
+          <div className="text-4xl mb-2">
+            <i className="fas fa-exclamation-triangle text-red-500"></i>
+          </div>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>;
   }
   if (!seoAnalysis) {
-    return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    return <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
           <button
@@ -351,12 +291,14 @@ export default function SEOAnalysisSection({
           </button>
         </div>
         <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-2">🔍</div>
+          <div className="text-4xl mb-2">
+            <i className="fas fa-search text-blue-400"></i>
+          </div>
           <p className="text-gray-600">No data available for SEO analysis</p>
         </div>
       </div>;
   }
-  return <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  return <div className="bg-white rounded-lg  border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">SEO Analysis</h3>
         <button
@@ -397,7 +339,7 @@ export default function SEOAnalysisSection({
               <div className="text-xs text-gray-600">SEO Score</div>
             </div>
             {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">{seoAnalysis.summary?.totalHighlights || 0}</div>
+                <div className="text-2xl font-bold text-green-600">{seoAnalysis.summary?.totalHighlights || 0}</div>
                 <div className="text-xs text-gray-600">Highlights</div>
               </div>}
             {seoAnalysis.issues && seoAnalysis.issues.length > 0 && <>
@@ -406,7 +348,7 @@ export default function SEOAnalysisSection({
                   <div className="text-xs text-gray-600">Errors</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{seoAnalysis.summary?.warnings || 0}</div>
+                  <div className="text-2xl font-bold text-yellow-600">{seoAnalysis.summary?.warnings || 0}</div>
                   <div className="text-xs text-gray-600">Warnings</div>
                 </div>
               </>}
@@ -418,10 +360,10 @@ export default function SEOAnalysisSection({
       {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && <div className="mb-6">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">✨ What&apos;s Working Well</h4>
           <div className="space-y-2">
-            {seoAnalysis.highlights.map((highlight: SEOHighlight, index: number) => <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+            {seoAnalysis.highlights.map((highlight: SEOHighlight, index: number) => <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 transition-shadow">
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">
-                    {highlight.type === 'achievement' ? '🏆' : highlight.type === 'good-practice' ? '✅' : '⚡'}
+                    <i className={highlight.type === 'achievement' ? 'fas fa-trophy text-yellow-600' : highlight.type === 'good-practice' ? 'fas fa-check-circle text-green-600' : 'fas fa-bolt text-blue-500'}></i>
                   </span>
                   <div>
                     <div className="font-medium text-gray-900">{highlight.title}</div>
@@ -432,7 +374,7 @@ export default function SEOAnalysisSection({
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                     {highlight.category}
                   </span>
-                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                     {highlight.impact}
                   </span>
                 </div>
@@ -444,10 +386,10 @@ export default function SEOAnalysisSection({
       {seoAnalysis.issues && seoAnalysis.issues.length > 0 && <div className="mb-6">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Issues & Fixes</h4>
           <div className="space-y-2">
-            {seoAnalysis.issues.map((issue, index) => <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+            {seoAnalysis.issues.map((issue, index) => <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 transition-shadow">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center space-x-3">
-                    <span className="text-lg">{getIssueIcon(issue.type)}</span>
+                    <span className="text-lg"><i className={getIssueIcon(issue.type)}></i></span>
                     <div>
                       <div className="font-medium text-gray-900">{issue.title}</div>
                       <div className="text-xs text-gray-500">{issue.description}</div>
@@ -457,7 +399,7 @@ export default function SEOAnalysisSection({
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                       {issue.category}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded ${issue.impact === 'high' ? 'bg-red-100 text-red-700' : issue.impact === 'medium' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                    <span className={`text-xs px-2 py-1 rounded ${issue.impact === 'high' ? 'bg-red-100 text-red-700' : issue.impact === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
                       {issue.impact}
                     </span>
                   </div>
@@ -476,16 +418,20 @@ export default function SEOAnalysisSection({
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Recommendations</h4>
           <div className="space-y-2">
             {seoAnalysis.recommendations.map((recommendation, index) => <div key={index} className="flex items-start bg-white border border-gray-200 rounded-lg p-3">
-                <span className="text-blue-500 mr-3 mt-0.5">💡</span>
+                <span className="mr-3 mt-0.5">
+                  <i className="fas fa-lightbulb text-blue-500"></i>
+                </span>
                 <p className="text-sm text-gray-700">{recommendation}</p>
               </div>)}
           </div>
         </div>}
 
-      {(!seoAnalysis.issues || seoAnalysis.issues.length === 0) && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
-          <div className="text-emerald-500 text-4xl mb-2">🎉</div>
+      {(!seoAnalysis.issues || seoAnalysis.issues.length === 0) && <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+          <div className="text-4xl mb-2">
+            <i className="fas fa-check-circle text-green-500"></i>
+          </div>
           <p className="text-gray-700 font-medium">Excellent! No SEO issues found.</p>
-          {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && <p className="text-sm text-emerald-600 mt-2">
+          {seoAnalysis.highlights && seoAnalysis.highlights.length > 0 && <p className="text-sm text-green-600 mt-2">
               Your page is following {seoAnalysis.highlights.length} SEO best practice{seoAnalysis.highlights.length !== 1 ? 's' : ''}!
             </p>}
         </div>}

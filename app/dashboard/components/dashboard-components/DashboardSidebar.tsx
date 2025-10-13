@@ -37,6 +37,8 @@ export default function DashboardSidebar({
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [displayName, setDisplayName] = useState<string>('');
+  const [userInitial, setUserInitial] = useState<string>('U');
   
   // Get user plan information
   const { planInfo, loading: planLoading, refreshPlan } = useUserPlan();
@@ -65,6 +67,27 @@ export default function DashboardSidebar({
   useEffect(() => {
     verifyRole();
   }, [verifyRole]);
+
+  // Update display name when userProfile changes
+  useEffect(() => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      const fullName = `${userProfile.first_name} ${userProfile.last_name}`;
+      setDisplayName(fullName);
+      setUserInitial(userProfile.first_name[0].toUpperCase());
+    } else if (userProfile?.first_name) {
+      setDisplayName(userProfile.first_name);
+      setUserInitial(userProfile.first_name[0].toUpperCase());
+    } else if (userProfile?.last_name) {
+      setDisplayName(userProfile.last_name);
+      setUserInitial(userProfile.last_name[0].toUpperCase());
+    } else if (userProfile?.email) {
+      setDisplayName(userProfile.email.split('@')[0]);
+      setUserInitial(userProfile.email[0].toUpperCase());
+    } else {
+      setDisplayName('User');
+      setUserInitial('U');
+    }
+  }, [userProfile]);
 
   // Refresh plan information when user changes
   const handlePlanRefresh = useCallback(() => {
@@ -195,16 +218,12 @@ export default function DashboardSidebar({
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-gray-700 font-medium text-sm">
-                  {userProfile?.first_name?.[0] || userProfile?.email?.[0] || 'U'}
+                  {userInitial}
                 </span>
               </div>
               <div>
                 <p className="text-sm font-medium text-black">
-                  {userProfile?.first_name && userProfile?.last_name 
-                    ? `${userProfile.first_name} ${userProfile.last_name}` 
-                    : userProfile?.email 
-                      ? userProfile.email.split('@')[0] 
-                      : 'User'}
+                  {displayName}
                 </p>
                 <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
@@ -330,16 +349,12 @@ export default function DashboardSidebar({
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-gray-700 font-medium text-sm">
-                  {userProfile?.first_name?.[0] || userProfile?.email?.[0] || 'U'}
+                  {userInitial}
                 </span>
               </div>
               <div>
                 <p className="text-sm font-medium text-black">
-                  {userProfile?.first_name && userProfile?.last_name 
-                    ? `${userProfile.first_name} ${userProfile.last_name}` 
-                    : userProfile?.email 
-                      ? userProfile.email.split('@')[0] 
-                      : 'User'}
+                  {displayName}
                 </p>
                 <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">

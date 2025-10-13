@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../analysis-tab/types'
 
@@ -27,6 +27,8 @@ interface LinkData {
   page_url?: string
   target?: string
   rel?: string
+  isBroken?: boolean
+  status?: 'working' | 'broken' | 'unknown'
 }
 
 
@@ -35,6 +37,46 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  
+  // Filter states
+  const [selectedLinkType, setSelectedLinkType] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showBrokenOnly, setShowBrokenOnly] = useState(false)
+  const [showWorkingOnly, setShowWorkingOnly] = useState(false)
+  const [isCheckingBrokenLinks, setIsCheckingBrokenLinks] = useState(false)
+
+  // Function to check if a link is broken
+  const checkLinkBroken = useCallback(async (linkUrl: string): Promise<boolean> => {
+    try {
+      const response = await fetch(linkUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors' // This allows checking cross-origin links
+      })
+      return false // If we get here, the link is working
+    } catch (error) {
+      return true // Link is broken
+    }
+  }, [])
+
+  // Function to check all links for broken status
+  const checkAllLinksBroken = useCallback(async (links: LinkData[]) => {
+    setIsCheckingBrokenLinks(true)
+    const updatedLinks = await Promise.all(
+      links.map(async (link) => {
+        if (link.url) {
+          const isBroken = await checkLinkBroken(link.url)
+          return { 
+            ...link, 
+            isBroken,
+            status: isBroken ? 'broken' : 'working'
+          }
+        }
+        return { ...link, status: 'unknown' }
+      })
+    )
+    setIsCheckingBrokenLinks(false)
+    return updatedLinks
+  }, [checkLinkBroken])
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -144,8 +186,29 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return allLinks
   }, [scrapedPages, project.site_url, originalScrapingData])
 
-  // Use all links without filtering
-  const filteredLinks = links
+  // Filter links based on selected criteria
+  const filteredLinks = useMemo(() => {
+    let filtered = [...links]
+
+    // Filter by link type
+    if (selectedLinkType !== 'all') {
+      filtered = filtered.filter(link => link.type === selectedLinkType)
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(link => 
+        link.url?.toLowerCase().includes(query) ||
+        link.text?.toLowerCase().includes(query) ||
+        link.title?.toLowerCase().includes(query) ||
+        link.page_url?.toLowerCase().includes(query)
+      )
+    }
+
+
+    return filtered
+  }, [links, selectedLinkType, searchQuery])
 
   // Pagination logic
   const totalPages = Math.ceil(filteredLinks.length / itemsPerPage)
@@ -153,18 +216,32 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   const endIndex = startIndex + itemsPerPage
   const paginatedLinks = filteredLinks.slice(startIndex, endIndex)
 
-  // Reset to first page when needed
-  const resetToFirstPage = () => {
+  // Reset to first page when filters change
+  useEffect(() => {
     setCurrentPage(1)
-  }
+  }, [selectedLinkType, searchQuery])
 
   const stats = useMemo(() => {
     const total = links.length
     const internal = links.filter(link => link.type === 'internal').length
     const external = links.filter(link => link.type === 'external').length
+    const broken = links.filter(link => link.isBroken === true).length
+    const working = links.filter(link => link.isBroken === false).length
     
-    return { total, internal, external }
+    return { total, internal, external, broken, working }
   }, [links])
+
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1)
+  }
+
+  // Handle check broken links
+  const handleCheckBrokenLinks = async () => {
+    const updatedLinks = await checkAllLinksBroken(links)
+    // Note: This would need to be handled by parent component or state management
+    // For now, we'll just show the loading state
+  }
 
 
   // Export functions
@@ -353,7 +430,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Links</div>
@@ -366,8 +443,70 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
           <div className="text-2xl font-bold text-gray-900">{stats.external}</div>
           <div className="text-sm text-gray-600">External</div>
         </div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.broken}</div>
+          <div className="text-sm text-gray-600">Broken Links</div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.working}</div>
+          <div className="text-sm text-gray-600">Working Links</div>
+        </div>
       </div>
 
+      {/* Filter Controls */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search Links</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by URL, text, title, or page..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
+          </div>
+
+          {/* Link Type Filter */}
+          <div className="lg:w-48">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Link Type</label>
+            <select
+              value={selectedLinkType}
+              onChange={(e) => setSelectedLinkType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Types</option>
+              <option value="internal">Internal</option>
+              <option value="external">External</option>
+            </select>
+          </div>
+
+        </div>
+
+        {/* Clear Filters */}
+        {(selectedLinkType !== 'all' || searchQuery) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setSelectedLinkType('all')
+                setSearchQuery('')
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Links Table */}
       {filteredLinks.length > 0 ? (

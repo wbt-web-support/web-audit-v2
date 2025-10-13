@@ -39,25 +39,25 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
 
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'javascript': 'bg-yellow-100 text-yellow-800',
-      'css': 'bg-blue-100 text-blue-800',
-      'html': 'bg-orange-100 text-orange-800',
-      'framework': 'bg-purple-100 text-purple-800',
-      'library': 'bg-green-100 text-green-800',
-      'database': 'bg-red-100 text-red-800',
-      'server': 'bg-gray-100 text-gray-800',
-      'analytics': 'bg-indigo-100 text-indigo-800',
-      'cms': 'bg-pink-100 text-pink-800',
-      'ecommerce': 'bg-emerald-100 text-emerald-800',
+      'javascript': 'bg-blue-100 text-blue-800',
+      'css': 'bg-blue-200 text-blue-900',
+      'html': 'bg-blue-300 text-blue-900',
+      'framework': 'bg-blue-100 text-blue-800',
+      'library': 'bg-blue-200 text-blue-900',
+      'database': 'bg-blue-300 text-blue-900',
+      'server': 'bg-blue-100 text-blue-800',
+      'analytics': 'bg-blue-200 text-blue-900',
+      'cms': 'bg-blue-300 text-blue-900',
+      'ecommerce': 'bg-blue-100 text-blue-800',
       'detected': 'bg-blue-100 text-blue-800',
-      'unknown': 'bg-slate-100 text-slate-800'
+      'unknown': 'bg-blue-100 text-blue-800'
     }
     return colors[category?.toLowerCase() || 'unknown'] || colors['detected']
   }
 
   if (tech.icon) {
     return (
-      <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
+      <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 `}>
         <Image 
           src={tech.icon} 
           alt={tech.name || 'Technology'}
@@ -82,7 +82,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
   }
 
   return (
-    <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 shadow-sm`}>
+    <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 `}>
       <div className={`w-6 h-6 rounded flex items-center justify-center ${getCategoryColor(tech.category || 'unknown')}`}>
         <span className="text-xs font-semibold">{getInitials(tech.name || 'Unknown')}</span>
       </div>
@@ -161,7 +161,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
               
               <div className="space-y-6">
                 {Object.entries(project.technologies_metadata.technologies_by_category).map(([category, techs]) => (
-                  <div key={category} className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div key={category} className="bg-white rounded-xl border border-gray-200 ">
                     <div className="p-6 border-b border-gray-100">
                       <h4 className="text-lg font-semibold text-gray-900 capitalize flex items-center">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
@@ -172,7 +172,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
                     <div className="p-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {(techs as Technology[]).map((tech: Technology, index: number) => (
-                          <div key={index} className="group bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all duration-200 hover:shadow-md">
+                          <div key={index} className="group bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all duration-200">
                             <div className="flex items-center space-x-3">
                               <TechnologyIcon tech={tech} className="w-10 h-10 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
@@ -210,7 +210,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {technologies.map((tech: Technology, index: number) => (
-                  <div key={index} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300">
+                  <div key={index} className="group bg-white rounded-xl border border-gray-200  hover: transition-all duration-200 hover:border-gray-300">
                     <div className="p-6">
                       <div className="flex items-start space-x-4">
                         <TechnologyIcon tech={tech} className="w-12 h-12 flex-shrink-0" />
@@ -233,16 +233,16 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <div className={`w-2 h-2 rounded-full ${
-                            (tech.confidence || 0.8) >= 0.8 ? 'bg-green-500' :
-                            (tech.confidence || 0.8) >= 0.5 ? 'bg-yellow-500' :
-                            'bg-red-500'
+                            (tech.confidence || 0.8) >= 0.8 ? 'bg-blue-500' :
+                            (tech.confidence || 0.8) >= 0.5 ? 'bg-blue-400' :
+                            'bg-blue-300'
                           }`}></div>
                           <span className="text-xs text-gray-500">Confidence</span>
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          (tech.confidence || 0.8) >= 0.8 ? 'bg-green-100 text-green-700' :
-                          (tech.confidence || 0.8) >= 0.5 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
+                          (tech.confidence || 0.8) >= 0.8 ? 'bg-blue-100 text-blue-700' :
+                          (tech.confidence || 0.8) >= 0.5 ? 'bg-blue-200 text-blue-800' :
+                          'bg-blue-300 text-blue-900'
                         }`}>
                           {Math.round((tech.confidence || 0.8) * 100)}%
                         </span>
@@ -257,9 +257,7 @@ export default function TechnologiesTab({ project }: TechnologiesTabProps) {
       ) : (
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
+            <span className="text-2xl text-gray-400">🔍</span>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Sorry, we can&apos;t detect any technologies</h3>
           <p className="text-gray-500 max-w-sm mx-auto">

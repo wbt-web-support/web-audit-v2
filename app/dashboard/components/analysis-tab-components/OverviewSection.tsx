@@ -24,15 +24,15 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800";
-      case "in_progress":
         return "bg-blue-100 text-blue-800";
+      case "in_progress":
+        return "bg-blue-200 text-blue-900";
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-blue-50 text-blue-700";
       case "failed":
-        return "bg-red-100 text-red-800";
+        return "bg-blue-300 text-blue-900";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-blue-100 text-blue-800";
     }
   };
 
@@ -67,7 +67,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Stats */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Content Summary
           </h3>
@@ -79,19 +79,19 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
               <div className="text-sm text-gray-600">Pages</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-blue-600">
                 {project.total_links || 0}
               </div>
               <div className="text-sm text-gray-600">Links</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-blue-600">
                 {project.total_images || 0}
               </div>
               <div className="text-sm text-gray-600">Images</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-blue-600">
                 {project.total_meta_tags || 0}
               </div>
               <div className="text-sm text-gray-600">Meta Tags</div>
@@ -108,7 +108,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
         </div>
         {/* Technologies Overview */}
         {project.technologies && project.technologies.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg  border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Technical Detected
             </h3>
@@ -137,10 +137,10 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
                         (tech.confidence || 0) >= 0.8
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-blue-100 text-blue-800"
                           : (tech.confidence || 0) >= 0.5
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-blue-200 text-blue-900"
+                          : "bg-blue-300 text-blue-900"
                       }`}
                     >
                       {Math.round((tech.confidence || 0) * 100)}%
@@ -159,7 +159,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
 
       {/* Sidebar Stats */}
       <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Project Info
           </h3>
@@ -195,7 +195,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
 
         {/* CMS Info */}
         {project.cms_detected && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg  border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               CMS Information
             </h3>
@@ -232,7 +232,7 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
 
         {/* Pages List */}
         {scrapedPages && scrapedPages.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg  border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Pages List
             </h3>
@@ -244,9 +244,9 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                       {page.title || 'Untitled'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
-                      page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                      page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-blue-100 text-blue-800' :
+                      page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-blue-200 text-blue-900' :
+                      'bg-blue-300 text-blue-900'
                     }`}>
                       {page.status_code || 'N/A'}
                     </span>
