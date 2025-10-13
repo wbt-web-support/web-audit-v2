@@ -82,6 +82,9 @@ const defaultPlans = [
 
 interface PricingSectionProps {
   currentPlanType?: string;
+  currentPlanId?: string;
+  currentBillingCycle?: string;
+  planExpiresAt?: string;
   showBillingToggle?: boolean;
   showCurrentPlanHighlight?: boolean;
   className?: string;
@@ -89,6 +92,9 @@ interface PricingSectionProps {
 
 export default function PricingSection({ 
   currentPlanType, 
+  currentPlanId,
+  currentBillingCycle,
+  planExpiresAt,
   showBillingToggle = true, 
   showCurrentPlanHighlight = false,
   className = ""
@@ -270,7 +276,10 @@ export default function PricingSection({
               features: plan.features ? plan.features.map((feature: unknown) => extractFeatureText(feature)) : [],
 
               cta: plan.plan_type === 'Starter' ? 'Get Started Free' : 
-                   (showCurrentPlanHighlight && currentPlanType && plan.plan_type === currentPlanType) ? 'Current Plan' : 'Get Plan',
+                   plan.planStatus === 'current' ? 'Current Plan' :
+                   plan.planStatus === 'billing_change' ? `Switch to ${plan.billing_cycle}` :
+                   plan.planStatus === 'upgrade_downgrade' ? (plan.amount > (plans.find(p => p.plan_type === currentPlanType)?.amount || 0) ? 'Upgrade' : 'Downgrade') :
+                   'Get Plan',
               popular: plan.is_popular || false,
 
               color: plan.color || 'gray',
@@ -341,50 +350,106 @@ export default function PricingSection({
 
 
 
+  // Function to check if a plan can be purchased
+  const canPurchasePlan = useCallback((plan: any) => {
+    // Always allow free plan
+    if (plan.plan_type === 'Starter') return true;
+    
+    // If no current plan, allow any plan
+    if (!currentPlanType) return true;
+    
+    // If current plan is Starter, allow any paid plan
+    if (currentPlanType === 'Starter') return true;
+    
+    // Check if plan has expired
+    const isPlanExpired = planExpiresAt ? new Date(planExpiresAt) < new Date() : false;
+    
+    // If plan has expired, allow any plan
+    if (isPlanExpired) return true;
+    
+    // If same plan type but different billing cycle, allow (monthly to yearly or vice versa)
+    if (plan.plan_type === currentPlanType && plan.billing_cycle !== currentBillingCycle) {
+      return true;
+    }
+    
+    // If different plan type, allow (upgrade or downgrade)
+    if (plan.plan_type !== currentPlanType) {
+      return true;
+    }
+    
+    // If same plan type and same billing cycle, don't allow
+    if (plan.plan_type === currentPlanType && plan.billing_cycle === currentBillingCycle) {
+      return false;
+    }
+    
+    return true;
+  }, [currentPlanType, currentBillingCycle, planExpiresAt]);
+
+  // Function to get plan status
+  const getPlanStatus = useCallback((plan: any) => {
+    if (plan.plan_type === 'Starter') return 'available';
+    
+    if (!currentPlanType) return 'available';
+    
+    if (currentPlanType === 'Starter') return 'available';
+    
+    const isPlanExpired = planExpiresAt ? new Date(planExpiresAt) < new Date() : false;
+    if (isPlanExpired) return 'available';
+    
+    if (plan.plan_type === currentPlanType && plan.billing_cycle === currentBillingCycle) {
+      return 'current';
+    }
+    
+    if (plan.plan_type === currentPlanType && plan.billing_cycle !== currentBillingCycle) {
+      return 'billing_change';
+    }
+    
+    if (plan.plan_type !== currentPlanType) {
+      return 'upgrade_downgrade';
+    }
+    
+    return 'available';
+  }, [currentPlanType, currentBillingCycle, planExpiresAt]);
+
   // Memoized filtered plans for better performance
-
   const filteredPlans = useMemo(() => {
-
     return plans
-
       .filter(plan => {
-
         if (plan.plan_type === 'Starter') return true; // Always show free plan
-
         return plan.billing_cycle === billingCycle;
-
       })
-
+      .map(plan => ({
+        ...plan,
+        canPurchase: canPurchasePlan(plan),
+        planStatus: getPlanStatus(plan)
+      }))
       .sort((a, b) => {
-
         // Always put Starter plan first
-
         if (a.plan_type === 'Starter') return -1;
-
         if (b.plan_type === 'Starter') return 1;
-
         
-
         // Then sort by price (ascending)
-
         return a.amount - b.amount;
-
       });
-
-  }, [plans, billingCycle]);
+  }, [plans, billingCycle, canPurchasePlan, getPlanStatus]);
 
 
 
   const handlePayment = async (plan: any) => {
+    // Check if plan can be purchased
+    if (!plan.canPurchase) {
+      if (plan.planStatus === 'current') {
+        alert('You are already on this plan!');
+        return;
+      }
+      alert('This plan is not available for purchase at this time.');
+      return;
+    }
 
     // Handle free plan
-
     if (plan.plan_type === 'Starter' || plan.amount === 0) {
-
       alert('Free plan selected! No payment required.');
-
       return;
-
     }
 
     
@@ -895,25 +960,13 @@ export default function PricingSection({
               whileHover={{ y: -10 }}
 
               className={`relative rounded-3xl p-8 ${
-
                 (plan.popular && plan.billing_cycle === billingCycle)
-
                   ? 'bg-black text-white shadow-2xl scale-105' 
-
-                  : plan.isCurrentPlan
-                  ? 'bg-blue-50 text-black shadow-xl border-blue-500'
                   : 'bg-white text-black shadow-lg'
-
               } border-2 ${
-
                 (plan.popular && plan.billing_cycle === billingCycle) 
-
                   ? 'border-black' 
-
-                  : plan.isCurrentPlan
-                  ? 'border-blue-500'
                   : 'border-gray-200'
-
               }`}
 
             >
@@ -946,15 +999,43 @@ export default function PricingSection({
 
 
               {/* Current Plan Badge */}
-              {plan.isCurrentPlan && (
+              {plan.planStatus === 'current' && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={isInView ? { scale: 1 } : { scale: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
                   className="absolute -top-4 left-1/2 transform -translate-x-1/2"
                 >
-                  <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                     Current Plan
+                  </span>
+                </motion.div>
+              )}
+
+              {/* Billing Change Badge */}
+              {plan.planStatus === 'billing_change' && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={isInView ? { scale: 1 } : { scale: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                >
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    Switch Billing
+                  </span>
+                </motion.div>
+              )}
+
+              {/* Upgrade/Downgrade Badge */}
+              {plan.planStatus === 'upgrade_downgrade' && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={isInView ? { scale: 1 } : { scale: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                >
+                  <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    {plan.amount > (plans.find(p => p.plan_type === currentPlanType)?.amount || 0) ? 'Upgrade' : 'Downgrade'}
                   </span>
                 </motion.div>
               )}
@@ -1068,17 +1149,13 @@ export default function PricingSection({
 
                 onClick={() => handlePayment(plan)}
 
-                disabled={loading === plan.id || plan.isCurrentPlan}
+                disabled={loading === plan.id || !plan.canPurchase}
                 className={`w-full py-4 rounded-lg font-semibold transition-all duration-300 ${
-
                   (plan.popular && plan.billing_cycle === billingCycle)
-
                     ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-300'
-
-                    : plan.isCurrentPlan
-                    ? 'bg-blue-600 text-white cursor-not-allowed'
+                    : plan.planStatus === 'current'
+                    ? 'bg-gray-500 text-white cursor-not-allowed'
                     : 'bg-black text-white hover:bg-gray-800 disabled:bg-gray-500'
-
                 }`}
 
               >

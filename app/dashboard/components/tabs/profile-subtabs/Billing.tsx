@@ -48,6 +48,46 @@ export default function Billing({ userProfile }: BillingProps) {
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
+  const [planExpiryStatus, setPlanExpiryStatus] = useState<{
+    is_expired: boolean
+    expires_at: string | null
+    days_until_expiry: number | null
+  } | null>(null)
+
+  // Check plan expiry status
+  const checkPlanExpiryStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        console.warn('No session token available for plan expiry check')
+        return
+      }
+
+      const response = await fetch('/api/check-plan-expiry', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Plan expiry status:', data)
+        setPlanExpiryStatus({
+          is_expired: data.is_expired,
+          expires_at: data.expires_at,
+          days_until_expiry: data.days_until_expiry
+        })
+      } else {
+        console.warn('Plan expiry status check failed:', response.status)
+      }
+    } catch (error) {
+      console.error('Error checking plan expiry status:', error)
+    }
+  }
 
   // Fetch payment history function
   const fetchPaymentHistory = async () => {
@@ -91,11 +131,12 @@ export default function Billing({ userProfile }: BillingProps) {
     }
   }
 
-  // Fetch payment history on mount
+  // Fetch payment history and check plan expiry on mount
   useEffect(() => {
     // Only fetch if user is authenticated
     if (userProfile?.id) {
       fetchPaymentHistory()
+      checkPlanExpiryStatus()
     } else {
       setLoadingHistory(false)
     }
@@ -154,6 +195,72 @@ export default function Billing({ userProfile }: BillingProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Plan Expiry Warning */}
+      {planExpiryStatus && planExpiryStatus.expires_at && (
+        <motion.div 
+          className={`rounded-lg border p-4 mb-6 ${
+            planExpiryStatus.is_expired 
+              ? 'bg-red-50 border-red-200' 
+              : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+              ? 'bg-yellow-50 border-yellow-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
+        >
+          <div className="flex items-center">
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+              planExpiryStatus.is_expired 
+                ? 'bg-red-100' 
+                : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+                ? 'bg-yellow-100'
+                : 'bg-blue-100'
+            }`}>
+              <span className={`text-lg ${
+                planExpiryStatus.is_expired 
+                  ? 'text-red-600' 
+                  : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+                  ? 'text-yellow-600'
+                  : 'text-blue-600'
+              }`}>
+                {planExpiryStatus.is_expired ? '⚠️' : '⏰'}
+              </span>
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium ${
+                planExpiryStatus.is_expired 
+                  ? 'text-red-800' 
+                  : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+                  ? 'text-yellow-800'
+                  : 'text-blue-800'
+              }`}>
+                {planExpiryStatus.is_expired 
+                  ? 'Plan Expired' 
+                  : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+                  ? 'Plan Expiring Soon'
+                  : 'Plan Status'
+                }
+              </h3>
+              <p className={`text-sm ${
+                planExpiryStatus.is_expired 
+                  ? 'text-red-700' 
+                  : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7
+                  ? 'text-yellow-700'
+                  : 'text-blue-700'
+              }`}>
+                {planExpiryStatus.is_expired 
+                  ? 'Your plan has expired and you have been downgraded to the Starter plan.'
+                  : planExpiryStatus.days_until_expiry 
+                  ? `Your plan expires in ${planExpiryStatus.days_until_expiry} day${planExpiryStatus.days_until_expiry === 1 ? '' : 's'} on ${new Date(planExpiryStatus.expires_at!).toLocaleDateString()}.`
+                  : `Your plan expires on ${new Date(planExpiryStatus.expires_at!).toLocaleDateString()}.`
+                }
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Current Plan Usage */}
       <motion.div 
         className="bg-white rounded-lg border border-gray-200 p-6"
@@ -230,6 +337,9 @@ export default function Billing({ userProfile }: BillingProps) {
       >
         <PricingSection 
           currentPlanType={planInfo?.plan_type}
+          currentPlanId={planInfo?.plan_id}
+          currentBillingCycle={planInfo?.billing_cycle}
+          planExpiresAt={planInfo?.plan_expires_at}
           showBillingToggle={true}
           showCurrentPlanHighlight={true}
           className="py-8"

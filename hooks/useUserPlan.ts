@@ -10,6 +10,8 @@ export interface UserPlanInfo {
   can_use_features: string[]
   max_projects: number
   current_projects: number
+  billing_cycle?: string
+  plan_expires_at?: string
 }
 
 export interface UseUserPlanResult {
@@ -67,6 +69,48 @@ export function useUserPlan(): UseUserPlanResult {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Function to check plan expiry
+  const checkPlanExpiry = async () => {
+    try {
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        console.warn('No session token available for plan expiry check')
+        return
+      }
+
+      console.log('Checking plan expiry...')
+      
+      const response = await fetch('/api/check-plan-expiry', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Plan expiry check result:', data)
+        
+        if (data.downgraded) {
+          console.log('User plan was downgraded due to expiry')
+          // Trigger a refresh of plan data
+          setTimeout(() => {
+            fetchUserPlan()
+          }, 1000)
+        }
+      } else {
+        console.warn('Plan expiry check failed:', response.status)
+      }
+    } catch (error) {
+      console.error('Error checking plan expiry:', error)
+      // Don't throw error - this is a background check
+    }
+  }
+
 
   const fetchUserPlan = async () => {
     try {
@@ -79,10 +123,13 @@ export function useUserPlan(): UseUserPlanResult {
         throw new Error('User not authenticated')
       }
 
+      // Check plan expiry first
+      await checkPlanExpiry()
+
       // Get user's plan data from user table
       const { data: userData, error: userDataError } = await supabase
         .from('users')
-        .select('plan_type, plan_id, max_projects, can_use_features, plan_expires_at')
+        .select('plan_type, plan_id, max_projects, can_use_features, plan_expires_at, billing_cycle')
         .eq('id', user.id)
         .single()
 
@@ -124,7 +171,9 @@ export function useUserPlan(): UseUserPlanResult {
             plan_name: planName,
             can_use_features: userData.can_use_features || [],
             max_projects: userData.max_projects || 1,
-            current_projects: 0
+            current_projects: 0,
+            billing_cycle: userData.billing_cycle,
+            plan_expires_at: userData.plan_expires_at
           }
         } else {
           console.log('Fetching plan details from plans table')
@@ -154,7 +203,9 @@ export function useUserPlan(): UseUserPlanResult {
               plan_name: planData.name, // Use the actual name from database
               can_use_features: planData.can_use_features || [],
               max_projects: planData.max_projects || 1,
-              current_projects: 0
+              current_projects: 0,
+              billing_cycle: userData.billing_cycle,
+              plan_expires_at: userData.plan_expires_at
             }
           }
         }
