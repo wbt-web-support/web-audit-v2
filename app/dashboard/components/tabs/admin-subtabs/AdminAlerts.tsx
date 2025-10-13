@@ -291,14 +291,14 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
       if (error) {
         console.error('Error updating alert status:', error)
-        alert(`Error updating alert status: ${error.message}`)
+      
       } else {
         fetchAlerts()
         fetchStats()
       }
     } catch (error) {
       console.error('Error updating alert status:', error)
-      alert('Error updating alert status')
+    
     }
   }
 

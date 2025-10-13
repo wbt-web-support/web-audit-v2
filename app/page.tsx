@@ -1,6 +1,7 @@
 import Navbar from './home-page-components/Navbar';
 import HeroSection from './home-page-components/HeroSection';
 import FeaturesSection from './home-page-components/FeaturesSection';
+import WhyChooseUsSection from './home-page-components/WhyChooseUsSection';
 import StatsSection from './home-page-components/StatsSection';
 import PricingSection from './home-page-components/PricingSection';
 import CallToActionSection from './home-page-components/CallToActionSection';
@@ -11,11 +12,12 @@ export default function Home() {
     <main className="min-h-screen">
       <Navbar />
       <HeroSection />
-      <FeaturesSection />
-      <StatsSection />
+      {/* <FeaturesSection /> */}
+      <WhyChooseUsSection />
+      {/* <StatsSection />
       <PricingSection />
       <CallToActionSection />
-      <FooterSection />
+      <FooterSection /> */}
     </main>
   );
 }
