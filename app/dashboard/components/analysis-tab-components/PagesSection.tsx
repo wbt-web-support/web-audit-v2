@@ -157,7 +157,7 @@ export default function PagesSection({
       </div>
 
       {/* Filters and Sorting */}
-      <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-gray-700">Filter:</label>
           <select
@@ -247,9 +247,9 @@ export default function PagesSection({
           </div>
           {paginatedPages.map((page, index) => (
             <div key={page.id || index} className="border border-gray-200 rounded-lg p-4 transition-colors duration-200">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-gray-900 truncate">{page.title || 'Untitled'}</h4>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                <h4 className="font-medium text-gray-900 truncate min-w-0 flex-1">{page.title || 'Untitled'}</h4>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                   page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-green-100 text-green-800' :
                   page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
@@ -257,16 +257,18 @@ export default function PagesSection({
                   {page.status_code || 'N/A'}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-2 truncate">{page.url}</p>
+              <p className="text-sm text-gray-600 mb-2 break-all">{page.url}</p>
               {page.description && (
                 <p className="text-sm text-gray-700 mb-3 line-clamp-2">{page.description}</p>
               )}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>{page.links_count} links</span>
-                  <span>{page.images_count} images</span>
-                  <span>{page.meta_tags_count} meta tags</span>
-                  <span>{page.technologies_count} technologies</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-500">
+                  <span className="hidden sm:inline">{page.links_count} links</span>
+                  <span className="hidden sm:inline">{page.images_count} images</span>
+                  <span className="hidden md:inline">{page.meta_tags_count} meta tags</span>
+                  <span className="hidden md:inline">{page.technologies_count} technologies</span>
+                  {/* Show only essential info on mobile */}
+                  <span className="sm:hidden">{page.links_count} links, {page.images_count} images</span>
                 </div>
                 <button
                   onClick={() => {
@@ -279,7 +281,7 @@ export default function PagesSection({
                       console.warn('No page ID available for analysis')
                     }
                   }}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto flex-shrink-0"
                 >
                   Analyze
                 </button>
@@ -289,21 +291,23 @@ export default function PagesSection({
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-center sm:justify-start space-x-2">
                 <button
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                   className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
-                  First
+                  <span className="hidden sm:inline">First</span>
+                  <span className="sm:hidden">«</span>
                 </button>
                 <button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
                   className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">‹</span>
                 </button>
                 <span className="px-3 py-1 text-sm text-gray-700">
                   Page {currentPage} of {totalPages}
@@ -313,18 +317,20 @@ export default function PagesSection({
                   disabled={currentPage === totalPages}
                   className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">›</span>
                 </button>
                 <button
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                   className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
-                  Last
+                  <span className="hidden sm:inline">Last</span>
+                  <span className="sm:hidden">»</span>
                 </button>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center sm:justify-end space-x-2">
                 <span className="text-sm text-gray-700">Go to page:</span>
                 <select
                   value={currentPage}

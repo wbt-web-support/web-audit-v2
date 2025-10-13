@@ -226,7 +226,7 @@ export default function ProjectsTab({
           <h1 className="text-2xl font-semibold text-black mb-2">Projects</h1>
           <p className="text-gray-600">Manage and monitor your web audit projects</p>
         </div>
-        <div className="flex items-center space-x-4 mt-6 sm:mt-0">
+        {/* <div className="flex items-center space-x-4 mt-6 sm:mt-0">
           <button 
             onClick={() => refreshProjects()} 
             className="text-gray-600 hover:text-blue-600 relative p-2 rounded-lg border border-gray-200 bg-white cursor-pointer transition-colors duration-200" 
@@ -244,7 +244,7 @@ export default function ProjectsTab({
             </svg>
             <span>New Project</span>
           </button>
-        </div>
+        </div> */}
       </motion.div>
 
       {/* Quick Stats Summary */}
@@ -415,28 +415,30 @@ export default function ProjectsTab({
           >
                 {/* Card Header - Always Visible */}
                 <div className="p-4 border-b border-gray-200 cursor-pointer" onClick={() => toggleCardExpansion(project.id)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-2">
-                        <h3 className="text-lg font-semibold text-black">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                        <h3 className="text-lg font-semibold text-black truncate">
                           {getProjectName(project.site_url)}
                         </h3>
-                        <span className={`inline-flex px-3 py-1 text-xs font-medium rounded ${getStatusColor(project.status)}`}>
-                          {getStatusDisplayName(project.status)}
-                        </span>
-                        <div className="flex items-center">
-                          <div className="w-20 bg-gray-200 rounded-full h-1.5 mr-2">
-                            <div className="bg-blue-600 h-1.5 rounded-full" style={{
-                          width: `${project.progress}%`
-                        }}></div>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex px-3 py-1 text-xs font-medium rounded flex-shrink-0 ${getStatusColor(project.status)}`}>
+                            {getStatusDisplayName(project.status)}
+                          </span>
+                          <div className="hidden md:flex items-center">
+                            <div className="w-20 bg-gray-200 rounded-full h-1.5 mr-2">
+                              <div className="bg-blue-600 h-1.5 rounded-full" style={{
+                            width: `${project.progress}%`
+                          }}></div>
+                            </div>
+                            <span className="text-xs font-medium text-gray-600">{project.progress}%</span>
                           </div>
-                          <span className="text-xs font-medium text-gray-600">{project.progress}%</span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500 mb-2">{project.site_url}</p>
+                      <p className="text-sm text-gray-500 mb-2 break-all">{project.site_url}</p>
                       
                       {/* Basic Summary - Only show metrics with data */}
-                      <div className="flex items-center space-x-6 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-6 text-sm text-gray-600">
                         {project.total_pages > 0 && <div className="flex items-center">
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

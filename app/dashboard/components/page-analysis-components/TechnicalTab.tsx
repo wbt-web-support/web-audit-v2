@@ -154,37 +154,37 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
             {/* HTML Structure */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">HTML Structure</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Basic Structure</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">DOCTYPE Declaration</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasDoctype ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasDoctype ? 'Present' : 'Missing'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">HTML Tag</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasHtmlTag ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasHtmlTag ? 'Present' : 'Missing'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">HEAD Tag</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasHeadTag ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasHeadTag ? 'Present' : 'Missing'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">BODY Tag</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasBodyTag ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasBodyTag ? 'Present' : 'Missing'}
@@ -196,25 +196,25 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Meta Information</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">Charset Declaration</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasMetaCharset ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasMetaCharset ? 'Present' : 'Missing'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">Viewport Meta</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasMetaViewport ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasMetaViewport ? 'Present' : 'Missing'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-sm text-gray-600">Language Attribute</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                         hasLang ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {hasLang ? 'Present' : 'Missing'}
@@ -228,22 +228,22 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
             {/* Element Counts */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Element Analysis</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{scriptCount}</div>
-                  <div className="text-sm text-gray-600">Scripts</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{scriptCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Scripts</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{linkCount}</div>
-                  <div className="text-sm text-gray-600">Links</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{linkCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Links</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{metaCount}</div>
-                  <div className="text-sm text-gray-600">Meta Tags</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{metaCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Meta Tags</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{styleCount}</div>
-                  <div className="text-sm text-gray-600">Styles</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{styleCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Styles</div>
                 </div>
               </div>
             </div>
@@ -501,21 +501,23 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
   return (
     <div className="bg-white rounded-lg  border border-gray-200">
       <div className="border-b border-gray-200">
-        <div className="flex">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.icon}
-              <span>{tab.name}</span>
-            </button>
-          ))}
+        <div className="overflow-x-auto">
+          <div className="flex min-w-max">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 sm:px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       

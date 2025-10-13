@@ -11,14 +11,12 @@ interface AnalysisHeaderProps {
   project: AuditProject
   activeSection: string
   onSectionChange: (section: string) => void
-  onRefresh?: () => void
-  isRefreshing?: boolean
   customTabs?: Array<{ id: string; name: string; icon: any }>
   pageTitle?: string
   showUnavailableContent?: boolean // New prop to control showing unavailable content
 }
 
-export default function AnalysisHeader({ project, activeSection, onSectionChange, onRefresh, isRefreshing, customTabs, pageTitle, showUnavailableContent = false }: AnalysisHeaderProps) {
+export default function AnalysisHeader({ project, activeSection, onSectionChange, customTabs, pageTitle, showUnavailableContent = false }: AnalysisHeaderProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentTab = searchParams.get('tab')
@@ -154,8 +152,8 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex flex-col space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div className="flex flex-col space-y-3 min-w-0">
           {currentTab === 'page-analysis' && (
             <button
               onClick={() => router.push(`/dashboard?tab=analysis&projectId=${project.id}`)}
@@ -164,36 +162,23 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
               Back
             </button>
           )}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 truncate">
               {pageTitle || getProjectName(project.site_url)} 
             </h1>
-            <p className="text-gray-600">{project.site_url}</p>
+            <p className="text-gray-600 break-all text-sm sm:text-base">{project.site_url}</p>
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRefreshing ? (
-                <>Refreshing...</>
-              ) : (
-                <>Refresh</>
-              )}
-            </button>
-          )}
-          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(project.status)}`}>
+          {/* <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(project.status)}`}>
             {getStatusDisplayName(project.status)}
-          </span>
-          <div className="text-right">
+          </span> */}
+          {/* <div className="text-right">
             <div className={`text-2xl font-bold ${project.score >= 80 ? 'text-blue-600' : project.score >= 60 ? 'text-blue-500' : 'text-blue-400'}`}>
               {project.score > 0 ? project.score : 'N/A'}
             </div>
             <div className="text-sm text-gray-500">/100</div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -201,9 +186,9 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       <div className="border-b border-gray-200">
         {isLoadingPlan ? (
           <div className="py-4">
-            <div className="flex space-x-8">
+            <div className="flex space-x-4 sm:space-x-8 overflow-x-auto">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex items-center space-x-2">
+                <div key={i} className="flex items-center space-x-2 flex-shrink-0">
                   <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
@@ -211,40 +196,42 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
             </div>
           </div>
         ) : (
-          <nav className="-mb-px flex space-x-8">
-            {(customTabs || [
-              { id: 'overview', name: 'Overview', icon: 'fas fa-chart-bar' },
-              { id: 'pages', name: 'Pages', icon: 'fas fa-file-alt' },
-              { id: 'technologies', name: 'Technical', icon: 'fas fa-cogs' },
-              { id: 'cms', name: 'CMS', icon: 'fas fa-building' },
-              { id: 'performance', name: 'Performance', icon: 'fas fa-tachometer-alt' },
-              { id: 'seo', name: 'SEO', icon: 'fas fa-search' },
-              { id: 'images', name: 'Images', icon: 'fas fa-image' },
-              { id: 'links', name: 'Links', icon: 'fas fa-link' }
-            ])
-            .map((tab) => {
-              const hasAccess = hasAccessToTab(tab.id)
-              const featureId = getFeatureIdForTab(tab.id)
-              const isPremiumFeature = featureId && !hasAccess
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => onSectionChange(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
-                    activeSection === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
-                  } ${isPremiumFeature ? 'opacity-75' : ''}`}
-                >
-                  {tab.name}
-                  {isPremiumFeature && (
-                    <span className="text-blue-500 text-xs">★</span>
-                  )}
-                </button>
-              )
-            })}
-          </nav>
+          <div className="overflow-x-auto">
+            <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
+              {(customTabs || [
+                { id: 'overview', name: 'Overview', icon: 'fas fa-chart-bar' },
+                { id: 'pages', name: 'Pages', icon: 'fas fa-file-alt' },
+                { id: 'technologies', name: 'Technical', icon: 'fas fa-cogs' },
+                { id: 'cms', name: 'CMS', icon: 'fas fa-building' },
+                { id: 'performance', name: 'Performance', icon: 'fas fa-tachometer-alt' },
+                { id: 'seo', name: 'SEO', icon: 'fas fa-search' },
+                { id: 'images', name: 'Images', icon: 'fas fa-image' },
+                { id: 'links', name: 'Links', icon: 'fas fa-link' }
+              ])
+              .map((tab) => {
+                const hasAccess = hasAccessToTab(tab.id)
+                const featureId = getFeatureIdForTab(tab.id)
+                const isPremiumFeature = featureId && !hasAccess
+                
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => onSectionChange(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap flex-shrink-0 ${
+                      activeSection === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
+                    } ${isPremiumFeature ? 'opacity-75' : ''}`}
+                  >
+                    {tab.name}
+                    {isPremiumFeature && (
+                      <span className="text-blue-500 text-xs ml-1">★</span>
+                    )}
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
         )}
       </div>
 

@@ -112,7 +112,7 @@ export default function WhyChooseUsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 1.6 }}
-                className="text-lg font-semibold text-slate-900 mb-2 p-4"
+                className="text-lg font-semibold text-slate-900 mb-1 p-4"
               >
                 Protect Your Site
               </motion.h3>

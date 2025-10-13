@@ -163,23 +163,25 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as AdminTabType)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {tab.label}
-            </motion.button>
-          ))}
-        </nav>
+        <div className="overflow-x-auto">
+          <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
+            {tabs.map((tab) => (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AdminTabType)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {tab.label}
+              </motion.button>
+            ))}
+          </nav>
+        </div>
       </motion.div>
 
       {/* Tab Content */}

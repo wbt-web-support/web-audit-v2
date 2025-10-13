@@ -382,7 +382,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           {/* Search Input */}
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Images</label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={searchQuery}
@@ -392,7 +392,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               />
               <button
                 onClick={handleSearch}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors w-full sm:w-auto"
               >
                 Search
               </button>
@@ -440,45 +440,122 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
       </div>
 
 
-      {/* Images Table */}
+      {/* Images Display */}
       {filteredImages.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Preview
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  URL
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Alt Text
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dimensions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Page
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedImages.map((img, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Preview
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    URL
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Alt Text
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dimensions
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Page
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedImages.map((img, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div 
+                        className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                        onClick={() => handleImageClick(img)}
+                      >
+                        <Image
+                          src={img.url || img.src || ''}
+                          alt={img.alt || 'No alt text'}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget
+                            target.style.display = 'none'
+                            const parent = target.parentElement
+                            if (parent) {
+                              parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">Failed to load</div>'
+                            }
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs truncate">
+                        <a
+                          href={img.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          {img.url}
+                        </a>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        {img.alt && img.alt.trim() !== '' ? (
+                          <span className="text-sm text-gray-900">{img.alt}</span>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">No alt text</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-900 rounded-full">
+                        {img.type || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {img.width && img.height ? `${img.width}×${img.height}` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs truncate">
+                        <a
+                          href={img.page_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          {img.page_url}
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4">
+            {paginatedImages.map((img, index) => (
+              <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Image Preview */}
+                  <div className="flex-shrink-0 mx-auto sm:mx-0">
                     <div 
-                      className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                      className="w-24 h-24 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
                       onClick={() => handleImageClick(img)}
                     >
                       <Image
                         src={img.url || img.src || ''}
                         alt={img.alt || 'No alt text'}
-                        width={64}
-                        height={64}
+                        width={96}
+                        height={96}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.currentTarget
@@ -490,53 +567,75 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                         }}
                       />
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs truncate">
-                      <a
-                        href={img.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        {img.url}
-                      </a>
+                  </div>
+
+                  {/* Image Details */}
+                  <div className="flex-1 min-w-0 space-y-3">
+                    {/* URL */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">URL</label>
+                      <div className="mt-1">
+                        <a
+                          href={img.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                        >
+                          {img.url}
+                        </a>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      {img.alt && img.alt.trim() !== '' ? (
-                        <span className="text-sm text-gray-900">{img.alt}</span>
-                      ) : (
-                        <span className="text-sm text-gray-500 italic">No alt text</span>
-                      )}
+
+                    {/* Alt Text */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Alt Text</label>
+                      <div className="mt-1">
+                        {img.alt && img.alt.trim() !== '' ? (
+                          <span className="text-sm text-gray-900">{img.alt}</span>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">No alt text</span>
+                        )}
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-900 rounded-full">
-                      {img.type || 'Unknown'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {img.width && img.height ? `${img.width}×${img.height}` : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs truncate">
-                      <a
-                        href={img.page_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        {img.page_url}
-                      </a>
+
+                    {/* Type and Dimensions */}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Type</label>
+                        <div className="mt-1">
+                          <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-900 rounded-full">
+                            {img.type || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</label>
+                        <div className="mt-1 text-sm text-gray-500">
+                          {img.width && img.height ? `${img.width}×${img.height}` : 'N/A'}
+                        </div>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+                    {/* Page URL */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Page</label>
+                      <div className="mt-1">
+                        <a
+                          href={img.page_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                        >
+                          {img.page_url}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <div className="text-center py-8">
           <div className="text-gray-400 mb-2">
@@ -550,21 +649,22 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
       {/* Pagination Controls */}
       {filteredImages.length > itemsPerPage && (
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-          <div className="flex items-center text-sm text-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-center sm:justify-start text-sm text-gray-700">
             <span>
               Page {currentPage} of {totalPages}
             </span>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center space-x-2">
             {/* Previous Button */}
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
             >
-              Previous
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">‹</span>
             </button>
 
             {/* Page Numbers */}
@@ -603,7 +703,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               disabled={currentPage === totalPages}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
             >
-              Next
+              <span className="hidden sm:inline">Next</span>
+              <span className="sm:hidden">›</span>
             </button>
           </div>
         </div>

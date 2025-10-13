@@ -149,9 +149,9 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
       <div className="bg-white rounded-lg  border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Preview</h3>
         <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             {/* Image placeholder */}
-            <div className="w-32 h-32 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center relative">
+            <div className="w-full sm:w-32 h-32 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center relative mx-auto sm:mx-0">
               {socialImage ? (
                 <>
                   <Image 
@@ -188,7 +188,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
               </p>
               <a 
                 href={socialUrl} 
-                className="text-blue-600 text-xs hover:underline"
+                className="text-blue-600 text-xs hover:underline break-all"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -204,24 +204,26 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
         <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Image</h3>
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Image 
-                src={socialImage} 
-                alt="Social media preview" 
-                width={128}
-                height={128}
-                className="w-32 h-32 object-cover rounded-lg border border-gray-200"
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement
-                  target.style.display = 'none'
-                  const fallback = target.nextElementSibling as HTMLElement
-                  if (fallback) fallback.classList.remove('hidden')
-                }}
-              />
-              <div className="hidden w-32 h-32 bg-gray-100 rounded-lg border border-gray-200 items-center justify-center">
-                <span className="text-gray-400 text-sm">Image not found</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-shrink-0 mx-auto sm:mx-0">
+                <Image 
+                  src={socialImage} 
+                  alt="Social media preview" 
+                  width={128}
+                  height={128}
+                  className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement
+                    target.style.display = 'none'
+                    const fallback = target.nextElementSibling as HTMLElement
+                    if (fallback) fallback.classList.remove('hidden')
+                  }}
+                />
+                <div className="hidden w-32 h-32 bg-gray-100 rounded-lg border border-gray-200 items-center justify-center">
+                  <span className="text-gray-400 text-sm">Image not found</span>
+                </div>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-600 mb-2">Image URL:</p>
                 <a 
                   href={socialImage} 
@@ -251,7 +253,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
       </div>
 
       {/* Twitter and Open Graph Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Twitter Section */}
         <div className="bg-white rounded-lg  border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -270,7 +272,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 {Object.entries(twitter).map(([key, value]) => (
                   <div key={key} className="text-sm">
                     <span className="font-medium text-gray-600">{key}:</span>
-                    <span className="ml-2 text-gray-900">{String(value)}</span>
+                    <div className="mt-1 text-gray-900 break-all">{String(value)}</div>
                   </div>
                 ))}
                 {Object.keys(twitter).length === 0 && (
@@ -314,7 +316,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                 {Object.entries(openGraph).map(([key, value]) => (
                   <div key={key} className="text-sm">
                     <span className="font-medium text-gray-600">{key}:</span>
-                    <span className="ml-2 text-gray-900 break-all">{String(value)}</span>
+                    <div className="mt-1 text-gray-900 break-all">{String(value)}</div>
                   </div>
                 ))}
                 {Object.keys(openGraph).length === 0 && (

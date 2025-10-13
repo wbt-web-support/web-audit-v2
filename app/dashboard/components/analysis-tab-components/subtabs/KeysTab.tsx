@@ -180,21 +180,21 @@ export default function KeysTab({
         <>
           {/* Summary */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="min-w-0">
                 <h4 className="text-sm font-medium text-blue-800">Analysis Summary</h4>
                 <p className="text-sm text-blue-700 mt-1">
                   Found {keysData.summary.totalKeys} keys across {project.total_pages || 0} pages
                 </p>
               </div>
-              <div className="flex items-center space-x-4 text-sm">
-                <span className="text-blue-600 font-medium">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
+                <span className="text-blue-600 font-medium whitespace-nowrap">
                   {keysData.summary.exposedKeys} Exposed
                 </span>
-                <span className="text-blue-500 font-medium">
+                <span className="text-blue-500 font-medium whitespace-nowrap">
                   {keysData.summary.secureKeys} Secure
                 </span>
-                <span className="text-blue-400 font-medium">
+                <span className="text-blue-400 font-medium whitespace-nowrap">
                   {keysData.summary.criticalKeys} Critical
                 </span>
               </div>
@@ -203,43 +203,45 @@ export default function KeysTab({
 
           {/* Filters */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-gray-700">Status:</label>
-                <select 
-                  value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-sm border border-gray-300 rounded px-3 py-1"
-                >
-                  <option value="all">All Status</option>
-                  <option value="exposed">Exposed</option>
-                  <option value="secure">Secure</option>
-                  <option value="warning">Warning</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-gray-700">Severity:</label>
-                <select 
-                  value={severityFilter} 
-                  onChange={(e) => setSeverityFilter(e.target.value)}
-                  className="text-sm border border-gray-300 rounded px-3 py-1"
-                >
-                  <option value="all">All Severity</option>
-                  <option value="critical">Critical</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Status:</label>
+                  <select 
+                    value={statusFilter} 
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="exposed">Exposed</option>
+                    <option value="secure">Secure</option>
+                    <option value="warning">Warning</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Severity:</label>
+                  <select 
+                    value={severityFilter} 
+                    onChange={(e) => setSeverityFilter(e.target.value)}
+                    className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none"
+                  >
+                    <option value="all">All Severity</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center">
                 <button
                   onClick={() => {
                     setStatusFilter('all');
                     setSeverityFilter('all');
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  className="text-sm text-blue-600 hover:text-blue-800 underline whitespace-nowrap"
                 >
                   Clear Filters
                 </button>
@@ -250,12 +252,12 @@ export default function KeysTab({
           {/* Keys List */}
           {keysData.keys.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h4 className="text-md font-medium text-gray-700">
                   Detected Keys ({keysData.total} total, showing {keysData.keys.length})
                 </h4>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">Items per page:</span>
+                  <span className="text-sm text-gray-500 whitespace-nowrap">Items per page:</span>
                   <select 
                     value={itemsPerPage} 
                     onChange={(e) => setItemsPerPage(Number(e.target.value))}
@@ -271,40 +273,59 @@ export default function KeysTab({
 
               <div className="space-y-3">
                 {keysData.keys.map((key, index) => (
-                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover: ">
+                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h5 className="text-sm font-medium text-gray-900">{key.type}</h5>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(key.severity)}`}>
-                            {key.severity}
-                          </span>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : 
-                            key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 
-                            'bg-blue-200 text-blue-900'
-                          }`}>
-                            {key.status}
-                          </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                          <h5 className="text-sm font-medium text-gray-900 truncate">{key.type}</h5>
+                          <div className="flex flex-wrap gap-2">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(key.severity)}`}>
+                              {key.severity}
+                            </span>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : 
+                              key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 
+                              'bg-blue-200 text-blue-900'
+                            }`}>
+                              {key.status}
+                            </span>
+                          </div>
                         </div>
                         <div className="space-y-2">
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">Key:</span> {key.key}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">Location:</span> {key.location}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">Description:</span> {key.description}
-                          </p>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Key:</span> 
+                            <div className="mt-1 font-mono text-xs break-all">
+                              {key.key}
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Location:</span> 
+                            <div className="mt-1 font-mono text-xs break-all">
+                              {key.location}
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Description:</span> 
+                            <span className="ml-1">{key.description}</span>
+                          </div>
                           {key.context && (
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Context:</span> {key.context}
-                            </p>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Context:</span> 
+                              <div className="mt-1 text-xs break-all">
+                                {key.context}
+                              </div>
+                            </div>
                           )}
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span>Pattern: {key.pattern}</span>
-                            <span>Confidence: {key.confidence}%</span>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium">Pattern:</span>
+                              <div className="mt-1 font-mono text-xs break-all">
+                                {key.pattern}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0">
+                              <span className="font-medium">Confidence: {key.confidence}%</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -315,11 +336,11 @@ export default function KeysTab({
 
               {/* Pagination */}
               {keysData.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+                  <div className="text-sm text-gray-500 text-center sm:text-left">
                     Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, keysData.total)} of {keysData.total} results
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
@@ -327,7 +348,7 @@ export default function KeysTab({
                     >
                       Previous
                     </button>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 px-2">
                       Page {currentPage} of {keysData.totalPages}
                     </span>
                     <button
