@@ -490,10 +490,11 @@ export async function POST(request: NextRequest) {
     }
     
     if (plan.billing_cycle) {
+      const now = new Date();
       userUpdateData.plan_expires_at = plan.billing_cycle === 'monthly' 
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+        ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         : plan.billing_cycle === 'yearly'
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
+        ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
         : null;
     }
 
