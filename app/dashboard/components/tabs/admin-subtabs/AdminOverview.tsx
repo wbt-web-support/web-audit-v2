@@ -131,20 +131,7 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Welcome Section */}
-      <motion.div
-        className="bg-white rounded-lg border border-gray-200 p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <h1 className="text-2xl font-bold text-black mb-2">
-          Welcome back, {userProfile?.first_name || 'Admin'}!
-        </h1>
-        <p className="text-gray-600">
-          Here&apos;s an overview of your system performance and recent activity.
-        </p>
-      </motion.div>
+     
 
       {/* System Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

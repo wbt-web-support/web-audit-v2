@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
+import { supabase } from '@/lib/supabase';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
 
@@ -106,8 +107,15 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     try {
       // Check if user is authenticated
       if (!session?.access_token) {
-        throw new Error('User not authenticated');
+        console.error('❌ No session access token available');
+        throw new Error('User not authenticated. Please log in again.');
       }
+
+      console.log('🔐 Using session token for scraping request:', {
+        hasToken: !!session.access_token,
+        tokenLength: session.access_token?.length,
+        tokenStart: session.access_token?.substring(0, 10) + '...'
+      });
 
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
@@ -147,7 +155,80 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         
         // Handle authentication errors
         if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH') {
-          throw new Error('Authentication required. Please log in again.');
+          console.error('❌ Authentication error:', errorData);
+          console.log('🔄 Attempting to refresh session...');
+          
+          // Try to refresh the session
+          try {
+            const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !newSession) {
+              throw new Error('Session refresh failed. Please log in again.');
+            }
+            
+            console.log('✅ Session refreshed successfully');
+            
+            // Retry the scraping request with the new token
+            const retryResponse = await fetch('/api/scrape', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${newSession.access_token}`
+              },
+              body: JSON.stringify({
+                url: project.site_url,
+                mode: (project as { page_type?: string }).page_type === 'single' ? 'single' : 'multipage',
+                maxPages: 100,
+                extractImagesFlag: true,
+                extractLinksFlag: true,
+                detectTechnologiesFlag: true
+              })
+            });
+            
+            if (!retryResponse.ok) {
+              const retryErrorData = await retryResponse.json().catch(() => ({}));
+              throw new Error(retryErrorData.message || retryErrorData.error || `Scraping failed: ${retryResponse.status}`);
+            }
+            
+            const retryData = await retryResponse.json();
+            
+            // Update project status to completed FIRST (without large data to avoid timeout)
+            const { error: updateError } = await updateAuditProject(project.id, {
+              status: 'completed',
+              progress: 100,
+              scraping_completed_at: new Date().toISOString(),
+              total_pages: retryData.pages?.length || 0,
+              total_links: retryData.summary?.totalLinks || 0,
+              total_images: retryData.summary?.totalImages || 0
+            });
+
+            if (updateError) {
+              throw new Error(`Failed to update project: ${updateError.message}`);
+            }
+
+            // Update the project in state immediately
+            const updatedProject = {
+              ...project,
+              status: 'completed' as const,
+              progress: 100,
+              scraping_completed_at: new Date().toISOString(),
+              total_pages: retryData.pages?.length || 0,
+              total_links: retryData.summary?.totalLinks || 0,
+              total_images: retryData.summary?.totalImages || 0,
+              scraping_data: retryData
+            };
+
+            updateState({
+              project: updatedProject,
+              isScraping: false,
+              dataVersion: state.dataVersion + 1
+            });
+            
+            return; // Success, exit early
+          } catch (refreshError) {
+            console.error('❌ Session refresh failed:', refreshError);
+            throw new Error('Authentication required. Please log in again.');
+          }
         }
         
         throw new Error(errorData.message || errorData.error || `Scraping failed: ${scrapeResponse.status}`);
@@ -189,9 +270,26 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
     } catch (error) {
       console.error('❌ Scraping error:', error);
+      
+      // Provide more user-friendly error messages
+      let errorMessage = 'Scraping failed';
+      if (error instanceof Error) {
+        if (error.message.includes('Authentication required')) {
+          errorMessage = 'Your session has expired. Please refresh the page and try again.';
+        } else if (error.message.includes('SERVICE_UNAVAILABLE')) {
+          errorMessage = 'The scraping service is currently unavailable. Please try again later.';
+        } else if (error.message.includes('PROJECT_LIMIT_REACHED')) {
+          errorMessage = 'You have reached your project limit. Please upgrade your plan to create more projects.';
+        } else if (error.message.includes('FEATURE_NOT_AVAILABLE')) {
+          errorMessage = 'This feature is not available in your current plan. Please upgrade to access this feature.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       updateState({
         isScraping: false,
-        scrapingError: error instanceof Error ? error.message : 'Scraping failed'
+        scrapingError: errorMessage
       });
     }
   }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion, session?.access_token]);

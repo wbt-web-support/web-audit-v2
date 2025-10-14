@@ -153,7 +153,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className=" p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex flex-col space-y-3 min-w-0">
           {currentTab === 'page-analysis' && (

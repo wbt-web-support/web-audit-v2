@@ -162,12 +162,26 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
 
       {/* Tab Navigation */}
       <motion.div
-        className="bg-white rounded-lg border border-gray-200 p-6"
+        className=" "
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <div className="overflow-x-auto">
+         {/* Welcome Section */}
+      <motion.div
+        className="pb-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <h1 className="text-2xl font-bold text-black mb-2">
+          Welcome back, {userProfile?.first_name || 'Admin'}!
+        </h1>
+        <p className="text-gray-600">
+          Here&apos;s an overview of your system performance and recent activity.
+        </p>
+      </motion.div>
+        <div className="overflow-x-auto ">
           <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
             {tabs.map((tab) => (
               <motion.button

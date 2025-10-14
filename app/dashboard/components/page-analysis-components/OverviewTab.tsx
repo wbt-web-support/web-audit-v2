@@ -1,6 +1,7 @@
 'use client'
 
 import { AuditProject } from '@/types/audit'
+import SEOAnalysisSection from '../analysis-tab-components/SEOAnalysisSection'
 
 interface OverviewTabProps {
   page: {
@@ -35,7 +36,7 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      {/* <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{page.title || 'Untitled Page'}</h1>
@@ -60,7 +61,7 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
         {page.description && (
           <p className="text-gray-700 mb-4">{page.description}</p>
         )}
-      </div>
+      </div> */}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -129,6 +130,12 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
           </div>
         </div>
       </div>
+
+      {/* SEO Analysis Section */}
+      <SEOAnalysisSection 
+        page={page}
+        isPageAnalysis={true}
+      />
     </div>
   )
 }

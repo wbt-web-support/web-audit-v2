@@ -24,7 +24,14 @@ export async function POST(request: Request) {
 
     // Get user from Authorization header
     const authHeader = request.headers.get('authorization');
+    console.log('🔐 Auth header received:', {
+      hasHeader: !!authHeader,
+      headerStart: authHeader?.substring(0, 20) + '...',
+      headerLength: authHeader?.length
+    });
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ Missing or invalid authorization header');
       return new Response(JSON.stringify({
         error: 'Authentication required',
         code: 'MISSING_AUTH'
@@ -35,13 +42,28 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('🔐 Token extracted:', {
+      hasToken: !!token,
+      tokenLength: token.length,
+      tokenStart: token.substring(0, 10) + '...'
+    });
     
     // Verify user and get user info
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    console.log('🔐 Auth verification result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      hasError: !!authError,
+      errorMessage: authError?.message
+    });
+
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       return new Response(JSON.stringify({
         error: 'Invalid authentication token',
-        code: 'INVALID_AUTH'
+        code: 'INVALID_AUTH',
+        details: authError?.message || 'Token verification failed'
       }), { 
         status: 401, 
         headers: { 'Content-Type': 'application/json' } 
