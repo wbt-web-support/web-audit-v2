@@ -204,7 +204,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
                 { id: 'overview', name: 'Overview', icon: 'fas fa-chart-bar' },
                 { id: 'pages', name: 'Pages', icon: 'fas fa-file-alt' },
                 { id: 'technologies', name: 'Technical', icon: 'fas fa-cogs' },
-                { id: 'cms', name: 'CMS', icon: 'fas fa-building' },
+                ...(project.cms_detected ? [{ id: 'cms', name: 'CMS', icon: 'fas fa-building' }] : []),
                 { id: 'performance', name: 'Performance', icon: 'fas fa-tachometer-alt' },
                 { id: 'seo', name: 'SEO', icon: 'fas fa-search' },
                 { id: 'images', name: 'Images', icon: 'fas fa-image' },

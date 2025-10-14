@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
 import AnalysisHeader from '../analysis-tab-components/AnalysisHeader'
@@ -61,6 +61,11 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const [project, setProject] = useState<AuditProject | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Memoize cached analysis to prevent unnecessary re-renders
+  const cachedAnalysis = useMemo(() => {
+    return page?.gemini_analysis || undefined
+  }, [page?.gemini_analysis])
 
   useEffect(() => {
     const loadData = async () => {
@@ -251,7 +256,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       case 'images':
         return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'grammar-content':
-        return <GrammarContentTab page={page!} cachedAnalysis={page.gemini_analysis || undefined} />
+        return <GrammarContentTab page={page!} cachedAnalysis={cachedAnalysis} />
       case 'seo-structure':
         return <SEOAnalysisSection page={page!} isPageAnalysis={true} cachedAnalysis={null} />
       case 'ui-quality':

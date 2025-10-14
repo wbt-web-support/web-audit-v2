@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { AuditProject } from '@/types/audit';
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader';
 import EditProjectModal from '../modals/EditProjectModal';
-
 interface BrandConsistencyData {
   companyName: string;
   phoneNumber: string;
@@ -14,7 +13,6 @@ interface BrandConsistencyData {
   address: string;
   additionalInformation: string;
 }
-
 interface HiddenUrl {
   id: string;
   url: string;
@@ -100,12 +98,10 @@ export default function ProjectsTab({
       return newSet;
     });
   };
-
   const handleEditProject = (project: AuditProject) => {
     setSelectedProject(project);
     setEditModalOpen(true);
   };
-
   const handleSaveProject = async (projectId: string, data: {
     siteUrl: string;
     pageType: 'single' | 'multiple';
@@ -115,22 +111,15 @@ export default function ProjectsTab({
     brandData: BrandConsistencyData;
     hiddenUrlsList: HiddenUrl[];
   }) => {
-    console.log('ProjectsTab: handleSaveProject called with:', { projectId, data });
-    
     if (!onUpdateProject) {
-      console.log('ProjectsTab: onUpdateProject is not provided');
       return;
     }
-    
     setIsSubmitting(true);
     try {
-      console.log('ProjectsTab: Calling onUpdateProject...');
       await onUpdateProject(projectId, data);
-      console.log('ProjectsTab: onUpdateProject completed successfully');
       setEditModalOpen(false);
       setSelectedProject(null);
       await refreshProjects();
-      console.log('ProjectsTab: Modal closed and projects refreshed');
     } catch (error) {
       console.error('ProjectsTab: Error updating project:', error);
     } finally {
@@ -144,10 +133,8 @@ export default function ProjectsTab({
     setProjectToDelete(projectId);
     setDeleteConfirmOpen(true);
   };
-
   const confirmDeleteProject = async () => {
     if (!onDeleteProject || !projectToDelete) return;
-    
     try {
       await onDeleteProject(projectToDelete);
       await refreshProjects();
@@ -157,7 +144,6 @@ export default function ProjectsTab({
       console.error('Error deleting project:', error);
     }
   };
-
   const cancelDeleteProject = () => {
     setDeleteConfirmOpen(false);
     setProjectToDelete(null);
@@ -209,19 +195,27 @@ export default function ProjectsTab({
   const completedProjects = projects.filter(p => p.status === 'completed').length;
   const inProgressProjects = projects.filter(p => p.status === 'in_progress').length;
   const totalIssues = projects.reduce((sum, p) => sum + p.issues_count, 0);
-  return <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, ease: "easeOut" }}
-    className="space-y-8"
-  >
+  return <motion.div initial={{
+    opacity: 0,
+    y: 20
+  }} animate={{
+    opacity: 1,
+    y: 0
+  }} transition={{
+    duration: 0.4,
+    ease: "easeOut"
+  }} className="space-y-8">
       {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
-      >
+      <motion.div initial={{
+      opacity: 0,
+      y: -20
+    }} animate={{
+      opacity: 1,
+      y: 0
+    }} transition={{
+      duration: 0.3,
+      ease: "easeOut"
+    }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-black mb-2">Projects</h1>
           <p className="text-gray-600">Manage and monitor your web audit projects</p>
@@ -244,25 +238,34 @@ export default function ProjectsTab({
             </svg>
             <span>New Project</span>
           </button>
-        </div> */}
+         </div> */}
       </motion.div>
 
       {/* Quick Stats Summary */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-6"
-      >
+      <motion.div initial={{
+      opacity: 0,
+      y: 20
+    }} animate={{
+      opacity: 1,
+      y: 0
+    }} transition={{
+      duration: 0.3,
+      ease: "easeOut"
+    }} className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {projectsLoading ? Array.from({
         length: 4
       }).map((_, index) => <StatsCardSkeleton key={index} />) : <>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0 * 0.1, ease: "easeOut" }}
-              className="bg-white border border-gray-200 rounded-lg p-6"
-            >
+            <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.3,
+          delay: 0 * 0.1,
+          ease: "easeOut"
+        }} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,12 +279,17 @@ export default function ProjectsTab({
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 1 * 0.1, ease: "easeOut" }}
-              className="bg-white border border-gray-200 rounded-lg p-6"
-            >
+            <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.3,
+          delay: 1 * 0.1,
+          ease: "easeOut"
+        }} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,12 +303,17 @@ export default function ProjectsTab({
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 2 * 0.1, ease: "easeOut" }}
-              className="bg-white border border-gray-200 rounded-lg p-6"
-            >
+            <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.3,
+          delay: 2 * 0.1,
+          ease: "easeOut"
+        }} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,12 +327,17 @@ export default function ProjectsTab({
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 3 * 0.1, ease: "easeOut" }}
-              className="bg-white border border-gray-200 rounded-lg p-6"
-            >
+            <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.3,
+          delay: 3 * 0.1,
+          ease: "easeOut"
+        }} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,39 +354,55 @@ export default function ProjectsTab({
       </motion.div>
 
       {/* Projects Cards */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="space-y-8"
-      >
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="flex items-center justify-between"
-        >
+      <motion.div initial={{
+      opacity: 0,
+      y: 20
+    }} animate={{
+      opacity: 1,
+      y: 0
+    }} transition={{
+      duration: 0.3,
+      ease: "easeOut"
+    }} className="space-y-8">
+        <motion.div initial={{
+        opacity: 0,
+        y: -20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-black">All Projects</h2>
           <div className="text-sm text-gray-500">
             {projectsLoading ? 'Loading...' : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}
           </div>
         </motion.div>
         
-        {projectsLoading ? <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="space-y-6"
-        >
+        {projectsLoading ? <motion.div initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="space-y-6">
             {Array.from({
           length: 3
         }).map((_, index) => <ProjectCardSkeleton key={index} />)}
-          </motion.div> : projectsError ? <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="text-center py-16"
-          >
+          </motion.div> : projectsError ? <motion.div initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="text-center py-16">
             <div className="text-gray-500 mb-4">
               <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -385,12 +419,16 @@ export default function ProjectsTab({
             <button onClick={() => refreshProjects()} className="mt-6 text-blue-600 text-sm font-medium px-6 py-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer">
               Try again
             </button>
-          </motion.div> : projects.length === 0 ? <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="text-center py-16"
-          >
+          </motion.div> : projects.length === 0 ? <motion.div initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="text-center py-16">
             <div className="text-gray-400 mb-4">
               <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -398,21 +436,29 @@ export default function ProjectsTab({
             </div>
             <p className="text-gray-700 font-medium text-lg mb-2">No projects yet</p>
             <p className="text-gray-500">Create your first audit project to get started</p>
-          </motion.div> : <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="space-y-6"
-          >
+          </motion.div> : <motion.div initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="space-y-6">
             {projects.map((project, index) => {
           const isExpanded = expandedCards.has(project.id);
-          return <motion.div 
-            key={project.id} 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
-            className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-          >
+          return <motion.div key={project.id} initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            duration: 0.3,
+            delay: index * 0.1,
+            ease: "easeOut"
+          }} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 {/* Card Header - Always Visible */}
                 <div className="p-4 border-b border-gray-200 cursor-pointer" onClick={() => toggleCardExpansion(project.id)}>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -880,16 +926,10 @@ export default function ProjectsTab({
                       {project.status === 'pending' && <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-xs font-medium px-3 py-2 bg-blue-50 border border-blue-200 rounded cursor-pointer">
                           View Details
                         </button>}
-                      <button 
-                        onClick={() => handleEditProject(project)}
-                        className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer"
-                      >
+                      <button onClick={() => handleEditProject(project)} className="text-gray-600 text-xs font-medium px-3 py-1 bg-white border border-gray-200 rounded cursor-pointer">
                         Edit
                       </button>
-                      <button 
-                        onClick={() => handleDeleteProject(project.id)}
-                        className="text-red-600 text-xs font-medium px-3 py-1 bg-red-50 border border-red-200 rounded cursor-pointer"
-                      >
+                      <button onClick={() => handleDeleteProject(project.id)} className="text-red-600 text-xs font-medium px-3 py-1 bg-red-50 border border-red-200 rounded cursor-pointer">
                         Delete
                       </button>
                     </div>
@@ -901,21 +941,13 @@ export default function ProjectsTab({
       </motion.div>
 
       {/* Edit Project Modal */}
-      <EditProjectModal
-        isOpen={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setSelectedProject(null);
-        }}
-        project={selectedProject}
-        onSave={handleSaveProject}
-        onDelete={handleDeleteProject}
-        isSubmitting={isSubmitting}
-      />
+      <EditProjectModal isOpen={editModalOpen} onClose={() => {
+      setEditModalOpen(false);
+      setSelectedProject(null);
+    }} project={selectedProject} onSave={handleSaveProject} onDelete={handleDeleteProject} isSubmitting={isSubmitting} />
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {deleteConfirmOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full border border-gray-300 ">
             <div className="p-6">
               <div className="flex items-center mb-4">
@@ -942,22 +974,15 @@ export default function ProjectsTab({
               </div>
               
               <div className="flex justify-end space-x-3">
-                <button
-                  onClick={cancelDeleteProject}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={cancelDeleteProject} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button
-                  onClick={confirmDeleteProject}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 transition-colors"
-                >
+                <button onClick={confirmDeleteProject} className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 transition-colors">
                   Delete Project
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
     </motion.div>;
 }

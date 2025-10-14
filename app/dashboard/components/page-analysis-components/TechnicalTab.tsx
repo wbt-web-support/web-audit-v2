@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import TechnologiesTab from '../analysis-tab-components/subtabs/TechnologiesTab'
+import { KeysTab } from '../analysis-tab-components/subtabs'
 
 interface TechnicalTabProps {
   page: {
@@ -18,25 +18,6 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
   const [activeTab, setActiveTab] = useState('structure')
   const content = page.html_content || ''
   
-  // Convert string array to technology objects if needed
-  const rawTechnologies = page.technologies || []
-  const technologies = Array.isArray(rawTechnologies) 
-    ? rawTechnologies.map((tech: string | { name: string; version?: string | null; category?: string; confidence?: number; detection_method?: string; description?: string | null; website?: string | null; icon?: string | null }) => {
-        if (typeof tech === 'string') {
-          return {
-            name: tech,
-            version: null,
-            category: 'detected',
-            confidence: 0.9,
-            detection_method: 'page_analysis',
-            description: null,
-            website: null,
-            icon: null
-          }
-        }
-        return tech
-      })
-    : []
   
   // Technical Analysis
   const hasDoctype = content.includes('<!DOCTYPE')
@@ -80,15 +61,6 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      )
-    },
-    {
-      id: 'technologies',
-      name: 'Technologies',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
       )
     },
@@ -249,9 +221,9 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
             </div>
           </div>
         )
-      case 'technologies':
+      case 'keys':
         return (
-          <TechnologiesTab 
+          <KeysTab 
             project={{
               id: page.id,
               site_url: page.url,
@@ -266,7 +238,7 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               total_links: 0,
               total_images: 0,
               total_meta_tags: 0,
-              technologies_found: technologies.length,
+              technologies_found: 0,
               cms_detected: false,
               cms_type: null,
               cms_version: null,
@@ -276,10 +248,10 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               cms_confidence: 0,
               cms_detection_method: null,
               cms_metadata: null,
-              technologies: technologies,
+              technologies: null,
               technologies_confidence: 0,
               technologies_detection_method: null,
-              technologies_metadata: page.technologies_metadata || null,
+              technologies_metadata: null,
               total_html_content: 0,
               average_html_per_page: 0,
               pagespeed_insights_data: null,
@@ -291,54 +263,10 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               social_meta_tags_data: null,
               detected_keys: null
             }} 
+            pageHtml={content}
+            pageUrl={page.url}
+            pageName={page.page_url || 'Current Page'}
           />
-        )
-      case 'keys':
-        return (
-          // <KeysTab 
-          //   project={{
-          //     id: page.id,
-          //     site_url: page.url,
-          //     status: 'completed' as const,
-          //     progress: 100,
-          //     last_audit_at: new Date().toISOString(),
-          //     issues_count: 0,
-          //     score: 0,
-          //     created_at: new Date().toISOString(),
-          //     updated_at: new Date().toISOString(),
-          //     total_pages: 1,
-          //     total_links: 0,
-          //     total_images: 0,
-          //     total_meta_tags: 0,
-          //     technologies_found: 0,
-          //     cms_detected: false,
-          //     cms_type: null,
-          //     cms_version: null,
-          //     cms_plugins: null,
-          //     cms_themes: null,
-          //     cms_components: null,
-          //     cms_confidence: 0,
-          //     cms_detection_method: null,
-          //     cms_metadata: null,
-          //     technologies: null,
-          //     technologies_confidence: 0,
-          //     technologies_detection_method: null,
-          //     technologies_metadata: null,
-          //     total_html_content: 0,
-          //     average_html_per_page: 0,
-          //     pagespeed_insights_data: null,
-          //     pagespeed_insights_loading: false,
-          //     pagespeed_insights_error: null,
-          //     scraping_data: null,
-          //     seo_analysis: null,
-          //     meta_tags_data: null,
-          //     social_meta_tags_data: null,
-            
-          //     images: null,
-          //     links: null
-          //   }} 
-          <>sdfsdf</>
-          // />
         )
       case 'standards':
         return (

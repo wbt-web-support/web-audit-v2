@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { PageSpeedInsightsData } from '@/types/audit'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserPlan } from '@/hooks/useUserPlan'
+import SkeletonLoader from '@/app/dashboard/components/SkeletonLoader'
+import { featureCache, createCacheKey } from '@/lib/feature-cache'
 
 interface ImageData {
   size?: number
@@ -12,6 +14,8 @@ interface ImageData {
 }
 
 interface PageData {
+  id?: string
+  user_id?: string
   url?: string
   html_content?: string
   images?: ImageData[]
@@ -30,11 +34,37 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   const [performanceData, setPerformanceData] = useState<PageSpeedInsightsData | null>(cachedAnalysis || null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true)
   const { user } = useAuth()
-  const { hasFeature } = useUserPlan()
+  const { hasFeature, loading: planLoading } = useUserPlan()
   
-  // Check if user has access to performance metrics
-  const hasFeatureAccess = hasFeature('performance_metrics')
+  // Check if user has access to performance metrics with caching
+  const hasFeatureAccess = useMemo(() => {
+    const cacheKey = createCacheKey('performance_metrics', user?.id);
+    
+    // Return cached result if available
+    const cachedResult = featureCache.get(cacheKey);
+    if (cachedResult !== undefined) {
+      return cachedResult;
+    }
+    
+    // If still loading, return null to show skeleton
+    if (planLoading) {
+      return null;
+    }
+    
+    // Get fresh result and cache it
+    const result = hasFeature('performance_metrics');
+    featureCache.set(cacheKey, result);
+    return result;
+  }, [hasFeature, user?.id, planLoading]);
+
+  // Update checking access state when feature access is determined
+  useEffect(() => {
+    if (hasFeatureAccess !== null) {
+      setIsCheckingAccess(false);
+    }
+  }, [hasFeatureAccess]);
 
 
   const content = page.html_content || ''
@@ -82,25 +112,32 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     }
   }, [cachedAnalysis, page.performance_analysis])
 
-  const performPerformanceAnalysis = async () => {
+  // Clean up expired cache entries on mount
+  useEffect(() => {
+    featureCache.clearExpired();
+  }, [])
+
+  const performPerformanceAnalysis = useCallback(async () => {
     try {
       setIsAnalyzing(true)
       setError(null)
-      
+      // alert('Performing performance analysis...')
       // Call performance analysis API
       const response = await fetch('/api/performance-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pageId: page.url, // Use URL as pageId for now
-          url: page.url
+          pageId: page.id,
+          url: page.url,
+          userId: page.user_id
         })
       })
 
       if (!response.ok) {
-        throw new Error(`Performance analysis API error: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Performance analysis API error: ${response.status}`)
       }
-
+      // alert('Performing performance success')/
       const result = await response.json()
       if (result.success) {
         setPerformanceData(result.analysis)
@@ -113,14 +150,18 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     } finally {
       setIsAnalyzing(false)
     }
-  }
+  }, [page.url])
 
-  // Show loading state while checking feature access
-  if (hasFeatureAccess === null) {
-    return <div className="p-6 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-500 mt-2">Checking feature access...</p>
-      </div>;
+  // Automatically perform analysis when component loads (if no cached data and user has access)
+  useEffect(() => {
+    if (hasFeatureAccess && !performanceData && !isAnalyzing && !error) {
+      performPerformanceAnalysis();
+    }
+  }, [hasFeatureAccess, performanceData, isAnalyzing, error, performPerformanceAnalysis])
+
+  // Show skeleton loading while checking feature access
+  if (isCheckingAccess || hasFeatureAccess === null) {
+    return <SkeletonLoader type="performance" />;
   }
 
   // Show upgrade card if user doesn't have access to performance metrics

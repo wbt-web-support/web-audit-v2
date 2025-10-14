@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { AuditProject } from '@/types/audit';
 import EditProjectForm from '../forms/EditProjectForm';
-
 interface BrandConsistencyData {
   companyName: string;
   phoneNumber: string;
@@ -12,12 +11,10 @@ interface BrandConsistencyData {
   address: string;
   additionalInformation: string;
 }
-
 interface HiddenUrl {
   id: string;
   url: string;
 }
-
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,7 +31,6 @@ interface EditProjectModalProps {
   onDelete: (projectId: string) => void;
   isSubmitting: boolean;
 }
-
 export default function EditProjectModal({
   isOpen,
   onClose,
@@ -44,7 +40,6 @@ export default function EditProjectModal({
   isSubmitting
 }: EditProjectModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   const handleFormSubmit = (formData: {
     siteUrl: string;
     pageType: 'single' | 'multiple';
@@ -54,16 +49,10 @@ export default function EditProjectModal({
     brandData: BrandConsistencyData;
     hiddenUrlsList: HiddenUrl[];
   }) => {
-    console.log('EditProjectModal: Form submitted with data:', formData);
     if (project) {
-      console.log('EditProjectModal: Calling onSave for project:', project.id);
       onSave(project.id, formData);
-    } else {
-      console.log('EditProjectModal: No project found');
-    }
+    } else {}
   };
-
-
   const handleDelete = () => {
     if (project) {
       onDelete(project.id);
@@ -71,27 +60,31 @@ export default function EditProjectModal({
       onClose();
     }
   };
-
   if (!project) return null;
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+  return <AnimatePresence>
+      {isOpen && <motion.div initial={{
+      opacity: 0
+    }} animate={{
+      opacity: 1
+    }} exit={{
+      opacity: 0
+    }} className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+          <motion.div initial={{
+        opacity: 0,
+        scale: 0.95,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        scale: 1,
+        y: 0
+      }} exit={{
+        opacity: 0,
+        scale: 0.95,
+        y: 20
+      }} transition={{
+        duration: 0.3,
+        ease: "easeOut"
+      }} className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -99,10 +92,7 @@ export default function EditProjectModal({
                   <h2 className="text-xl font-semibold text-black">Edit Project</h2>
                   <p className="text-gray-600 text-sm">Update project settings and configuration</p>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded cursor-pointer"
-                >
+                <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded cursor-pointer">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -112,12 +102,7 @@ export default function EditProjectModal({
 
             {/* EditProjectForm */}
             <div className="p-0">
-              <EditProjectForm
-                project={project}
-                onSubmit={handleFormSubmit}
-                isSubmitting={isSubmitting}
-                submitStatus={isSubmitting ? 'submitting' : 'idle'}
-              />
+              <EditProjectForm project={project} onSubmit={handleFormSubmit} isSubmitting={isSubmitting} submitStatus={isSubmitting ? 'submitting' : 'idle'} />
             </div>
 
         
@@ -125,21 +110,23 @@ export default function EditProjectModal({
 
           {/* Delete Confirmation Modal */}
           <AnimatePresence>
-            {showDeleteConfirm && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-white rounded-lg  max-w-md w-full mx-4"
-                  onClick={(e) => e.stopPropagation()}
-                >
+            {showDeleteConfirm && <motion.div initial={{
+          opacity: 0
+        }} animate={{
+          opacity: 1
+        }} exit={{
+          opacity: 0
+        }} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60" onClick={() => setShowDeleteConfirm(false)}>
+                <motion.div initial={{
+            opacity: 0,
+            scale: 0.95
+          }} animate={{
+            opacity: 1,
+            scale: 1
+          }} exit={{
+            opacity: 0,
+            scale: 0.95
+          }} className="bg-white rounded-lg  max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
                   <div className="p-6">
                     <div className="flex items-center mb-4">
                       <div className="flex-shrink-0">
@@ -156,26 +143,17 @@ export default function EditProjectModal({
                       Are you sure you want to delete this project? All associated data will be permanently removed.
                     </p>
                     <div className="flex justify-end space-x-3">
-                      <button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        className="px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded cursor-pointer"
-                      >
+                      <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded cursor-pointer">
                         Cancel
                       </button>
-                      <button
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-600 text-white rounded cursor-pointer"
-                      >
+                      <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded cursor-pointer">
                         Delete Project
                       </button>
                     </div>
                   </div>
                 </motion.div>
-              </motion.div>
-            )}
+              </motion.div>}
           </AnimatePresence>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+        </motion.div>}
+    </AnimatePresence>;
 }

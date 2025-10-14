@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-
 interface RazorpayPlan {
   id: string;
   amount: number;
@@ -21,8 +20,6 @@ interface RazorpayPlan {
     };
   };
 }
-
-
 interface RazorpaySubscription {
   id: string;
   plan_id: string;
@@ -32,30 +29,24 @@ interface RazorpaySubscription {
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!
 });
-
 export async function GET(_request: NextRequest) {
   try {
     // Check if Razorpay keys are configured
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.log('Razorpay keys not configured, returning empty plans');
       return NextResponse.json({
         plans: [],
         total: 0,
         error: 'Razorpay keys not configured'
       });
     }
-
-    console.log('Fetching Razorpay plans...');
-    
     // Fetch all plans from Razorpay
     let plans;
     try {
       plans = await razorpay.plans.all({
         count: 100 // Get up to 100 plans
       });
-      console.log('Razorpay plans fetched successfully:', plans.items?.length || 0);
     } catch (planError) {
       console.error('Error fetching Razorpay plans:', planError);
       return NextResponse.json({
@@ -72,11 +63,12 @@ export async function GET(_request: NextRequest) {
       subscriptions = await razorpay.subscriptions.all({
         count: 100
       });
-      console.log('Razorpay subscriptions fetched successfully:', subscriptions.items?.length || 0);
     } catch (subscriptionError) {
       console.error('Error fetching Razorpay subscriptions:', subscriptionError);
       // Continue without subscriptions data
-      subscriptions = { items: [] };
+      subscriptions = {
+        items: []
+      };
     }
 
     // Process and format the plans data
@@ -84,24 +76,11 @@ export async function GET(_request: NextRequest) {
       // Get amount and currency from plan.item (the actual data structure)
       const amount = plan.item?.amount || plan.amount || 0;
       const currency = plan.item?.currency || plan.currency || 'INR';
-      
+
       // Debug logging
-      console.log('Processing plan:', {
-        id: plan.id,
-        plan_amount: plan.amount,
-        plan_currency: plan.currency,
-        item_amount: plan.item?.amount,
-        item_currency: plan.item?.currency,
-        item_name: plan.item?.name,
-        final_amount: amount,
-        final_currency: currency
-      });
-      
+
       // Find corresponding subscription if exists
-      const subscription = subscriptions.items.find((sub: RazorpaySubscription) => 
-        sub.plan_id === plan.id
-      );
-      
+      const subscription = subscriptions.items.find((sub: RazorpaySubscription) => sub.plan_id === plan.id);
       return {
         id: plan.id,
         name: plan.item?.name || 'Plan',
@@ -110,17 +89,15 @@ export async function GET(_request: NextRequest) {
         currency: currency,
         interval: plan.interval,
         interval_count: plan.interval_count,
-        period: plan.interval === 'monthly' ? 'per month' : 
-                plan.interval === 'yearly' ? 'per year' : 
-                plan.interval === 'weekly' ? 'per week' : 'per ' + plan.interval,
-        price: currency === 'INR' ? 
-               `₹${(amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 
-               `$${(amount / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        features: plan.item?.notes?.features || [
-          'Unlimited audits',
-          'Advanced analytics',
-          'Priority support'
-        ],
+        period: plan.interval === 'monthly' ? 'per month' : plan.interval === 'yearly' ? 'per year' : plan.interval === 'weekly' ? 'per week' : 'per ' + plan.interval,
+        price: currency === 'INR' ? `₹${(amount / 100).toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })}` : `$${(amount / 100).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })}`,
+        features: plan.item?.notes?.features || ['Unlimited audits', 'Advanced analytics', 'Priority support'],
         popular: plan.item?.notes?.popular === 'true' || false,
         color: plan.item?.notes?.color || 'gray',
         status: plan.status,
@@ -134,27 +111,23 @@ export async function GET(_request: NextRequest) {
 
     // If no plans found, return empty array
     if (formattedPlans.length === 0) {
-      console.log('No Razorpay plans found');
       return NextResponse.json({
         plans: [],
         total: 0
       });
     }
-
     return NextResponse.json({
       plans: formattedPlans,
       total: formattedPlans.length
     });
-
   } catch (error) {
     console.error('Error fetching Razorpay plans:', error);
-    
+
     // Handle Razorpay-specific errors
     const err = error as any;
     const statusCode = typeof err?.statusCode === 'number' ? err.statusCode : 500;
     const description = err?.error?.description || err?.message || err?.error || 'Unknown error';
     const raw = err?.response?.body || err?.response || undefined;
-    
     console.error('Razorpay plans error details:', {
       statusCode,
       message: err?.message,
@@ -162,15 +135,13 @@ export async function GET(_request: NextRequest) {
       razorpay_error: err?.error,
       raw
     });
-    
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch plans',
-        details: description,
-        razorpay_error: err?.error,
-        raw
-      },
-      { status: statusCode }
-    );
+    return NextResponse.json({
+      error: 'Failed to fetch plans',
+      details: description,
+      razorpay_error: err?.error,
+      raw
+    }, {
+      status: statusCode
+    });
   }
 }

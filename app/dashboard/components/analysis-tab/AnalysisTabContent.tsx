@@ -148,6 +148,12 @@ export default function AnalysisTabContent({
     return null
   }
 
+  // Guard: if CMS not detected and active section is 'cms', switch to 'overview'
+  if (state.activeSection === 'cms' && state.project && !state.project.cms_detected) {
+    handleSectionChange('overview')
+    return null
+  }
+
   return (
     <div className="space-y-6">
       {/* ScrapingService component to handle data processing */}

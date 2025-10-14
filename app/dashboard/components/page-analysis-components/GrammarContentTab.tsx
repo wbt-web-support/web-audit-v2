@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { filterHtmlContent } from "@/lib/html-content-filter";
 import { GeminiAnalysisResult } from "@/lib/gemini";
 import { useGeminiStream } from "@/hooks/useGeminiStream";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPlan } from "@/hooks/useUserPlan";
+import SkeletonLoader from "@/app/dashboard/components/SkeletonLoader";
+import { featureCache, createCacheKey } from "@/lib/feature-cache";
 
 // Define proper interfaces for the page data
 interface ScrapedPageData {
@@ -27,6 +29,7 @@ export default function GrammarContentTab({
   const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page?.gemini_analysis || null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('grammar');
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const { user } = useAuth();
   const { hasFeature, loading: planLoading } = useUserPlan();
   const {
@@ -36,8 +39,33 @@ export default function GrammarContentTab({
     reset
   } = useGeminiStream();
 
-  // Check if user has access to grammar content analysis
-  const hasFeatureAccess = hasFeature('grammar_content_analysis');
+  // Check if user has access to grammar content analysis with caching
+  const hasFeatureAccess = useMemo(() => {
+    const cacheKey = createCacheKey('grammar_content_analysis', user?.id);
+    
+    // Return cached result if available
+    const cachedResult = featureCache.get(cacheKey);
+    if (cachedResult !== undefined) {
+      return cachedResult;
+    }
+    
+    // If still loading, return null to show skeleton
+    if (planLoading) {
+      return null;
+    }
+    
+    // Get fresh result and cache it
+    const result = hasFeature('grammar_content_analysis');
+    featureCache.set(cacheKey, result);
+    return result;
+  }, [hasFeature, user?.id, planLoading]);
+
+  // Update checking access state when feature access is determined
+  useEffect(() => {
+    if (hasFeatureAccess !== null) {
+      setIsCheckingAccess(false);
+    }
+  }, [hasFeatureAccess]);
 
 
   // Use filtered content if available, otherwise filter HTML content
@@ -53,6 +81,11 @@ export default function GrammarContentTab({
       setAnalysisError(streamStatus.error || 'Analysis failed');
     }
   }, [streamStatus]);
+
+  // Clean up expired cache entries on mount
+  useEffect(() => {
+    featureCache.clearExpired();
+  }, []);
 
   // Function to trigger Gemini analysis
   const handleReAnalyze = useCallback(async () => {
@@ -82,12 +115,9 @@ export default function GrammarContentTab({
 
   // Removed auto-trigger analysis for security - user must manually start analysis
 
-  // Show loading state while checking feature access
-  if (hasFeatureAccess === null) {
-    return <div className="p-6 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-500 mt-2">Checking feature access...</p>
-      </div>;
+  // Show skeleton loading while checking feature access
+  if (isCheckingAccess || hasFeatureAccess === null) {
+    return <SkeletonLoader type="grammar" />;
   }
 
   // Show upgrade card if user doesn't have access to grammar content analysis

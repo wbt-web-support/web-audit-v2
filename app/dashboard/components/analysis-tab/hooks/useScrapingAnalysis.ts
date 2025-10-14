@@ -3,13 +3,11 @@ import { useSupabase } from '@/contexts/SupabaseContext';
 import { supabase } from '@/lib/supabase';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
-
 interface CachedData {
   project: AuditProject | null;
   scrapedPages: ScrapedPage[];
   lastFetchTime: number;
 }
-
 export function useScrapingAnalysis(projectId: string, cachedData?: CachedData | null) {
   const {
     getAuditProject,
@@ -17,7 +15,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     updateAuditProject,
     session
   } = useSupabase();
-  
   const [state, setState] = useState<AnalysisTabState>({
     project: null,
     scrapedPages: [],
@@ -49,19 +46,19 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     }));
   }, []);
 
-
   // Load scraped pages
   const loadScrapedPages = useCallback(async () => {
     if (!projectId) return;
     try {
-      const { data: pages, error: pagesError } = await getScrapedPages(projectId);
+      const {
+        data: pages,
+        error: pagesError
+      } = await getScrapedPages(projectId);
       if (pagesError) {
         // Handle "Request already in progress" as a non-error case
         if (pagesError.message === 'Request already in progress') {
-          console.log('Request already in progress, waiting for existing request to complete');
           return; // Don't treat this as an error
         }
-        
         console.error('Error loading scraped pages:', pagesError);
         console.error('Error details:', JSON.stringify(pagesError, null, 2));
         // Don't return early - still try to update state to show error
@@ -97,26 +94,17 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     if (initializationRef.current === false) {
       return;
     }
-    
     setScrapingInitiated(true);
     updateState({
       isScraping: true,
       scrapingError: null
     });
-
     try {
       // Check if user is authenticated
       if (!session?.access_token) {
         console.error('❌ No session access token available');
         throw new Error('User not authenticated. Please log in again.');
       }
-
-      console.log('🔐 Using session token for scraping request:', {
-        hasToken: !!session.access_token,
-        tokenLength: session.access_token?.length,
-        tokenStart: session.access_token?.substring(0, 10) + '...'
-      });
-
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
         method: 'POST',
@@ -127,46 +115,47 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         },
         body: JSON.stringify({
           url: project.site_url,
-          mode: (project as { page_type?: string }).page_type === 'single' ? 'single' : 'multipage',
+          mode: (project as {
+            page_type?: string;
+          }).page_type === 'single' ? 'single' : 'multipage',
           maxPages: 100,
           extractImagesFlag: true,
           extractLinksFlag: true,
           detectTechnologiesFlag: true
         })
       });
-
       if (!scrapeResponse.ok) {
         const errorData = await scrapeResponse.json().catch(() => ({}));
-        
+
         // Handle specific error cases
         if (errorData.code === 'SERVICE_UNAVAILABLE') {
           throw new Error('Scraping service is not running. Please start the scraping service or contact support.');
         }
-        
+
         // Handle plan limit errors
         if (errorData.code === 'PROJECT_LIMIT_REACHED') {
           throw new Error(`Project limit reached: ${errorData.message}`);
         }
-        
+
         // Handle feature not available errors
         if (errorData.code === 'FEATURE_NOT_AVAILABLE') {
           throw new Error(`Feature not available: ${errorData.message}`);
         }
-        
+
         // Handle authentication errors
         if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH') {
           console.error('❌ Authentication error:', errorData);
-          console.log('🔄 Attempting to refresh session...');
-          
           // Try to refresh the session
           try {
-            const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
+            const {
+              data: {
+                session: newSession
+              },
+              error: refreshError
+            } = await supabase.auth.refreshSession();
             if (refreshError || !newSession) {
               throw new Error('Session refresh failed. Please log in again.');
             }
-            
-            console.log('✅ Session refreshed successfully');
-            
             // Retry the scraping request with the new token
             const retryResponse = await fetch('/api/scrape', {
               method: 'POST',
@@ -177,23 +166,25 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               },
               body: JSON.stringify({
                 url: project.site_url,
-                mode: (project as { page_type?: string }).page_type === 'single' ? 'single' : 'multipage',
+                mode: (project as {
+                  page_type?: string;
+                }).page_type === 'single' ? 'single' : 'multipage',
                 maxPages: 100,
                 extractImagesFlag: true,
                 extractLinksFlag: true,
                 detectTechnologiesFlag: true
               })
             });
-            
             if (!retryResponse.ok) {
               const retryErrorData = await retryResponse.json().catch(() => ({}));
               throw new Error(retryErrorData.message || retryErrorData.error || `Scraping failed: ${retryResponse.status}`);
             }
-            
             const retryData = await retryResponse.json();
-            
+
             // Update project status to completed FIRST (without large data to avoid timeout)
-            const { error: updateError } = await updateAuditProject(project.id, {
+            const {
+              error: updateError
+            } = await updateAuditProject(project.id, {
               status: 'completed',
               progress: 100,
               scraping_completed_at: new Date().toISOString(),
@@ -201,7 +192,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               total_links: retryData.summary?.totalLinks || 0,
               total_images: retryData.summary?.totalImages || 0
             });
-
             if (updateError) {
               throw new Error(`Failed to update project: ${updateError.message}`);
             }
@@ -217,27 +207,25 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               total_images: retryData.summary?.totalImages || 0,
               scraping_data: retryData
             };
-
             updateState({
               project: updatedProject,
               isScraping: false,
               dataVersion: state.dataVersion + 1
             });
-            
             return; // Success, exit early
           } catch (refreshError) {
             console.error('❌ Session refresh failed:', refreshError);
             throw new Error('Authentication required. Please log in again.');
           }
         }
-        
         throw new Error(errorData.message || errorData.error || `Scraping failed: ${scrapeResponse.status}`);
       }
-
       const scrapeData = await scrapeResponse.json();
-      
+
       // Update project status to completed FIRST (without large data to avoid timeout)
-      const { error: updateError } = await updateAuditProject(project.id, {
+      const {
+        error: updateError
+      } = await updateAuditProject(project.id, {
         status: 'completed',
         progress: 100,
         scraping_completed_at: new Date().toISOString(),
@@ -245,7 +233,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         total_links: scrapeData.summary?.totalLinks || 0,
         total_images: scrapeData.summary?.totalImages || 0
       });
-
       if (updateError) {
         throw new Error(`Failed to update project: ${updateError.message}`);
       }
@@ -261,16 +248,14 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         total_images: scrapeData.summary?.totalImages || 0,
         scraping_data: scrapeData
       };
-
       updateState({
         project: updatedProject,
         isScraping: false,
         dataVersion: state.dataVersion + 1
       });
-
     } catch (error) {
       console.error('❌ Scraping error:', error);
-      
+
       // Provide more user-friendly error messages
       let errorMessage = 'Scraping failed';
       if (error instanceof Error) {
@@ -286,7 +271,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
           errorMessage = error.message;
         }
       }
-      
       updateState({
         isScraping: false,
         scrapingError: errorMessage
@@ -303,22 +287,22 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       });
       return;
     }
-
     updateState({
       loading: true,
       error: null
     });
-
     try {
       // Get project data
-      const { data: projectData, error: projectError } = await getAuditProject(projectId);
+      const {
+        data: projectData,
+        error: projectError
+      } = await getAuditProject(projectId);
       if (projectError) {
         throw new Error(`Failed to load project: ${projectError.message}`);
       }
       if (!projectData) {
         throw new Error('Project not found');
       }
-
       updateState({
         project: projectData,
         dataFetched: true,
@@ -361,7 +345,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     if (!forceRefresh && timeSinceLastFetch < REFRESH_THRESHOLD) {
       return;
     }
-
     updateState({
       isRefreshing: true
     });
@@ -400,7 +383,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       initializationRef.current = false;
     };
   }, []);
-
   return {
     state,
     updateState,

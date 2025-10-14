@@ -5,40 +5,33 @@ import { supabase } from '@/lib/supabase';
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!
 });
-
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== CREATE ORDER API CALLED ===');
-    console.log('Environment check:', {
-      RAZORPAY_KEY_ID: !!process.env.RAZORPAY_KEY_ID,
-      RAZORPAY_KEY_SECRET: !!process.env.RAZORPAY_KEY_SECRET,
-      NEXT_PUBLIC_RAZORPAY_KEY_ID: !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-    });
-    
     // Check Razorpay configuration
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       console.error('Razorpay keys not configured');
-      return NextResponse.json(
-        {
-          error: 'Razorpay keys not configured',
-          details: 'Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your environment.'
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        error: 'Razorpay keys not configured',
+        details: 'Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your environment.'
+      }, {
+        status: 500
+      });
     }
-
-    const { amount, currency = 'INR', receipt, plan_id } = await request.json();
-
-    console.log('Received request:', { amount, currency, receipt, plan_id });
-
+    const {
+      amount,
+      currency = 'INR',
+      receipt,
+      plan_id
+    } = await request.json();
     // Validate required fields
     if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Valid amount is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        error: 'Valid amount is required'
+      }, {
+        status: 400
+      });
     }
 
     // Validate receipt length
@@ -50,9 +43,9 @@ export async function POST(request: NextRequest) {
     // Ensure receipt is max 40 characters
     const receiptId = receipt || `rec_${Date.now()}`;
     const finalReceipt = receiptId.length > 40 ? receiptId.substring(0, 40) : receiptId;
-    
     const options = {
-      amount: Math.round(amount), // Ensure amount is an integer
+      amount: Math.round(amount),
+      // Ensure amount is an integer
       currency: currency,
       receipt: finalReceipt,
       notes: {
@@ -61,33 +54,21 @@ export async function POST(request: NextRequest) {
         payment_type: 'one_time_payment'
       }
     };
-
-    console.log('Creating Razorpay order with options:', options);
-    
     const order = await razorpay.orders.create(options);
-    console.log('Order created successfully:', {
-      id: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      status: order.status
-    });
-
     return NextResponse.json({
       id: order.id,
       amount: order.amount,
       currency: order.currency,
       receipt: order.receipt
     });
-
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
-    
+
     // Handle Razorpay-specific errors
     const err = error as any;
     const statusCode = typeof err?.statusCode === 'number' ? err.statusCode : 500;
     const description = err?.error?.description || err?.message || err?.error || 'Unknown error';
     const raw = err?.response?.body || err?.response || undefined;
-    
     console.error('Razorpay error details:', {
       statusCode,
       message: err?.message,
@@ -95,15 +76,13 @@ export async function POST(request: NextRequest) {
       razorpay_error: err?.error,
       raw
     });
-    
-    return NextResponse.json(
-      { 
-        error: 'Failed to create order',
-        details: description,
-        razorpay_error: err?.error,
-        raw
-      },
-      { status: statusCode }
-    );
+    return NextResponse.json({
+      error: 'Failed to create order',
+      details: description,
+      razorpay_error: err?.error,
+      raw
+    }, {
+      status: statusCode
+    });
   }
 }

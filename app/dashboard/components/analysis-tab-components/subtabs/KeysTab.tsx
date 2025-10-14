@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuditProject } from '@/types/audit';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { DetectedKey } from '@/lib/key-detection';
-
+import { DetectedKey, detectKeysInHtml } from '@/lib/key-detection';
 interface KeysTabProps {
   project: AuditProject;
+  pageHtml?: string;
+  pageUrl?: string;
+  pageName?: string;
 }
-
 interface KeysData {
   keys: DetectedKey[];
   total: number;
@@ -29,11 +30,15 @@ interface KeysData {
     processingTime: number;
   };
 }
-
 export default function KeysTab({
-  project
+  project,
+  pageHtml,
+  pageUrl,
+  pageName
 }: KeysTabProps) {
-  const { getDetectedKeys } = useSupabase();
+  const {
+    getDetectedKeys
+  } = useSupabase();
   const [keysData, setKeysData] = useState<KeysData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,30 +50,110 @@ export default function KeysTab({
   // Load keys data from database with pagination and filtering
   const loadKeysData = useCallback(async (page = 1, limit = 20, status = 'all', severity = 'all') => {
     if (!project?.id) return;
-    
     setIsLoading(true);
     setError(null);
-    
     try {
-      const { data, error } = await getDetectedKeys(project.id, page, limit, status, severity);
-      
+      const {
+        data,
+        error
+      } = await getDetectedKeys(project.id, page, limit, status, severity);
       if (error) {
+        // Try fallback to client-side detection if HTML is available
+        if (pageHtml && pageHtml.length > 0) {
+          console.log('Database query failed, falling back to client-side detection');
+          const result = await detectKeysInHtml(pageHtml);
+          setKeysData({
+            keys: result.keys,
+            total: result.totalKeys,
+            page,
+            limit,
+            totalPages: Math.max(1, Math.ceil(result.totalKeys / limit)),
+            filters: {
+              status,
+              severity
+            },
+            summary: {
+              totalKeys: result.totalKeys,
+              exposedKeys: result.exposedKeys,
+              secureKeys: result.secureKeys,
+              criticalKeys: result.criticalKeys,
+              highRiskKeys: result.highRiskKeys,
+              analysisComplete: result.analysisComplete,
+              processingTime: result.processingTime
+            }
+          });
+          return;
+        }
         console.error('Error loading keys data:', error);
         setError(`Failed to load keys data: ${error.message || 'Unknown error'}`);
         return;
       }
-      
       if (data) {
-        console.log('🔑 Loaded keys data from database:', data);
-        setKeysData(data);
+        // If DB has no keys, try client-side detection as a convenience
+        if ((data.total ?? 0) === 0 && pageHtml && pageHtml.length > 0) {
+          const result = await detectKeysInHtml(pageHtml);
+          setKeysData({
+            keys: result.keys,
+            total: result.totalKeys,
+            page,
+            limit,
+            totalPages: Math.max(1, Math.ceil(result.totalKeys / limit)),
+            filters: {
+              status,
+              severity
+            },
+            summary: {
+              totalKeys: result.totalKeys,
+              exposedKeys: result.exposedKeys,
+              secureKeys: result.secureKeys,
+              criticalKeys: result.criticalKeys,
+              highRiskKeys: result.highRiskKeys,
+              analysisComplete: result.analysisComplete,
+              processingTime: result.processingTime
+            }
+          });
+        } else {
+          setKeysData(data);
+        }
       }
     } catch (err) {
-      console.error('Unexpected error loading keys data:', err);
-      setError('Unexpected error occurred while loading keys data');
+      // Fallback to client-side detection if HTML is available
+      if (pageHtml && pageHtml.length > 0) {
+        console.log('Unexpected error occurred, falling back to client-side detection');
+        try {
+          const result = await detectKeysInHtml(pageHtml);
+          setKeysData({
+            keys: result.keys,
+            total: result.totalKeys,
+            page,
+            limit,
+            totalPages: Math.max(1, Math.ceil(result.totalKeys / limit)),
+            filters: {
+              status,
+              severity
+            },
+            summary: {
+              totalKeys: result.totalKeys,
+              exposedKeys: result.exposedKeys,
+              secureKeys: result.secureKeys,
+              criticalKeys: result.criticalKeys,
+              highRiskKeys: result.highRiskKeys,
+              analysisComplete: result.analysisComplete,
+              processingTime: result.processingTime
+            }
+          });
+        } catch (fallbackErr) {
+          console.error('Fallback detection also failed:', fallbackErr);
+          setError('Failed to analyze keys data');
+        }
+      } else {
+        console.error('Unexpected error loading keys data:', err);
+        setError('Unexpected error occurred while loading keys data');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [project?.id, getDetectedKeys]);
+  }, [project?.id, getDetectedKeys, pageHtml]);
 
   // Load data when component mounts or project changes
   useEffect(() => {
@@ -93,7 +178,6 @@ export default function KeysTab({
       setCurrentPage(1);
     }
   }, [statusFilter, severityFilter, project?.id, currentPage]);
-
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -108,9 +192,7 @@ export default function KeysTab({
         return 'bg-blue-100 text-blue-800 border-blue-100';
     }
   };
-
-  const LoadingSkeleton = () => (
-    <div className="space-y-3">
+  const LoadingSkeleton = () => <div className="space-y-3">
       {[1, 2, 3].map(i => <div key={i} className="bg-gray-100 rounded-lg p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -127,11 +209,8 @@ export default function KeysTab({
             </div>
           </div>
         </div>)}
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
+    </div>;
+  return <div className="space-y-6">
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start">
           <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
@@ -147,8 +226,7 @@ export default function KeysTab({
       </div>
 
       {/* Loading State */}
-      {isLoading && (
-        <div className="space-y-4">
+      {isLoading && <div className="space-y-4">
           <div className="flex items-center space-x-2 text-blue-600">
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -157,12 +235,10 @@ export default function KeysTab({
             <span className="text-sm font-medium">Loading keys data...</span>
           </div>
           <LoadingSkeleton />
-        </div>
-      )}
+        </div>}
 
       {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
               <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
                 <span className="text-sm">❌</span>
@@ -172,19 +248,20 @@ export default function KeysTab({
               <p className="text-sm text-red-700 mt-1">{error}</p>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Analysis Results */}
-      {!isLoading && !error && keysData && (
-        <>
+      {!isLoading && !error && keysData && <>
           {/* Summary */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0">
                 <h4 className="text-sm font-medium text-blue-800">Analysis Summary</h4>
                 <p className="text-sm text-blue-700 mt-1">
-                  Found {keysData.summary.totalKeys} keys across {project.total_pages || 0} pages
+                  Found {keysData.summary.totalKeys} keys across {project.total_pages || 1} pages
+                  {pageHtml && keysData.summary.totalKeys > 0 && (
+                    <span className="text-xs text-blue-600 ml-2">(analyzed from current page)</span>
+                  )}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
@@ -207,11 +284,7 @@ export default function KeysTab({
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="flex items-center space-x-2">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Status:</label>
-                  <select 
-                    value={statusFilter} 
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none"
-                  >
+                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none">
                     <option value="all">All Status</option>
                     <option value="exposed">Exposed</option>
                     <option value="secure">Secure</option>
@@ -221,11 +294,7 @@ export default function KeysTab({
                 
                 <div className="flex items-center space-x-2">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Severity:</label>
-                  <select 
-                    value={severityFilter} 
-                    onChange={(e) => setSeverityFilter(e.target.value)}
-                    className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none"
-                  >
+                  <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)} className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none">
                     <option value="all">All Severity</option>
                     <option value="critical">Critical</option>
                     <option value="high">High</option>
@@ -236,13 +305,10 @@ export default function KeysTab({
               </div>
 
               <div className="flex items-center">
-                <button
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setSeverityFilter('all');
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-800 underline whitespace-nowrap"
-                >
+                <button onClick={() => {
+              setStatusFilter('all');
+              setSeverityFilter('all');
+            }} className="text-sm text-blue-600 hover:text-blue-800 underline whitespace-nowrap">
                   Clear Filters
                 </button>
               </div>
@@ -250,19 +316,14 @@ export default function KeysTab({
           </div>
 
           {/* Keys List */}
-          {keysData.keys.length > 0 ? (
-            <div className="space-y-4">
+          {keysData.keys.length > 0 ? <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h4 className="text-md font-medium text-gray-700">
                   Detected Keys ({keysData.total} total, showing {keysData.keys.length})
                 </h4>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500 whitespace-nowrap">Items per page:</span>
-                  <select 
-                    value={itemsPerPage} 
-                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                    className="text-sm border border-gray-300 rounded px-2 py-1"
-                  >
+                  <select value={itemsPerPage} onChange={e => setItemsPerPage(Number(e.target.value))} className="text-sm border border-gray-300 rounded px-2 py-1">
                     <option value={10}>10</option>
                     <option value={20}>20</option>
                     <option value={50}>50</option>
@@ -272,8 +333,7 @@ export default function KeysTab({
               </div>
 
               <div className="space-y-3">
-                {keysData.keys.map((key, index) => (
-                  <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                {keysData.keys.map((key, index) => <div key={key.id || index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
@@ -282,11 +342,7 @@ export default function KeysTab({
                             <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(key.severity)}`}>
                               {key.severity}
                             </span>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : 
-                              key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 
-                              'bg-blue-200 text-blue-900'
-                            }`}>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 'bg-blue-200 text-blue-900'}`}>
                               {key.status}
                             </span>
                           </div>
@@ -308,14 +364,12 @@ export default function KeysTab({
                             <span className="font-medium">Description:</span> 
                             <span className="ml-1">{key.description}</span>
                           </div>
-                          {key.context && (
-                            <div className="text-sm text-gray-600">
+                          {key.context && <div className="text-sm text-gray-600">
                               <span className="font-medium">Context:</span> 
                               <div className="mt-1 text-xs break-all">
                                 {key.context}
                               </div>
-                            </div>
-                          )}
+                            </div>}
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                             <div className="flex-1 min-w-0">
                               <span className="font-medium">Pattern:</span>
@@ -330,40 +384,27 @@ export default function KeysTab({
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
 
               {/* Pagination */}
-              {keysData.totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+              {keysData.totalPages > 1 && <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
                   <div className="text-sm text-gray-500 text-center sm:text-left">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, keysData.total)} of {keysData.total} results
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, keysData.total)} of {keysData.total} results
                   </div>
                   <div className="flex items-center justify-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
+                    <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
                       Previous
                     </button>
                     <span className="text-sm text-gray-600 px-2">
                       Page {currentPage} of {keysData.totalPages}
                     </span>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(keysData.totalPages, prev + 1))}
-                      disabled={currentPage === keysData.totalPages}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
+                    <button onClick={() => setCurrentPage(prev => Math.min(keysData.totalPages, prev + 1))} disabled={currentPage === keysData.totalPages} className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
                       Next
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8">
+                </div>}
+            </div> : <div className="text-center py-8">
               <div className="text-gray-500">
                 <div className="w-12 h-12 mx-auto mb-4 text-gray-300 flex items-center justify-center">
                   <span className="text-3xl">🔒</span>
@@ -371,10 +412,7 @@ export default function KeysTab({
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No Keys Detected</h4>
                 <p className="text-gray-600">No security keys or credentials were found in the analyzed pages.</p>
               </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+            </div>}
+        </>}
+    </div>;
 }

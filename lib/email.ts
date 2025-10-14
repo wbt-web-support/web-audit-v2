@@ -24,21 +24,20 @@ interface EmailTemplate {
 // Email service class
 export class EmailService {
   private transporter: nodemailer.Transporter;
-
   constructor() {
     const config: EmailConfig = {
       host: process.env.MAIL_HOST || 'smtp.eu.mailgun.org',
       port: parseInt(process.env.MAIL_PORT || '587'),
-      secure: false, // Use TLS, not SSL
+      secure: false,
+      // Use TLS, not SSL
       auth: {
         user: process.env.MAIL_USERNAME || '',
-        pass: process.env.MAIL_PASSWORD || '',
+        pass: process.env.MAIL_PASSWORD || ''
       },
       tls: {
         rejectUnauthorized: false
       }
     };
-
     this.transporter = nodemailer.createTransport(config);
   }
 
@@ -54,32 +53,30 @@ export class EmailService {
   }
 
   // Send email method
-  async sendEmail(
-    to: string,
-    subject: string,
-    html: string,
-    text?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendEmail(to: string, subject: string, html: string, text?: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     try {
       const mailOptions = {
         from: {
           name: process.env.MAIL_FROM_NAME || 'Web Audit Pro',
-          address: process.env.MAIL_FROM_ADDRESS || 'leads@mg.quotebuilderpro.com',
+          address: process.env.MAIL_FROM_ADDRESS || 'leads@mg.quotebuilderpro.com'
         },
         to,
         subject,
         html,
-        text: text || this.stripHtml(html),
+        text: text || this.stripHtml(html)
       };
-
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
-      return { success: true };
+      return {
+        success: true
+      };
     } catch (error) {
       console.error('Failed to send email:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -90,60 +87,52 @@ export class EmailService {
   }
 
   // Send welcome email after signup
-  async sendWelcomeEmail(
-    email: string,
-    firstName: string,
-    lastName: string
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendWelcomeEmail(email: string, firstName: string, lastName: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     const template = this.getWelcomeTemplate(firstName, lastName);
     return this.sendEmail(email, template.subject, template.html, template.text);
   }
 
   // Send email confirmation reminder
-  async sendConfirmationReminder(
-    email: string,
-    firstName: string,
-    confirmationUrl: string
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendConfirmationReminder(email: string, firstName: string, confirmationUrl: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     const template = this.getConfirmationTemplate(firstName, confirmationUrl);
     return this.sendEmail(email, template.subject, template.html, template.text);
   }
 
   // Send password reset email
-  async sendPasswordResetEmail(
-    email: string,
-    firstName: string,
-    resetUrl: string
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendPasswordResetEmail(email: string, firstName: string, resetUrl: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     const template = this.getPasswordResetTemplate(firstName, resetUrl);
     return this.sendEmail(email, template.subject, template.html, template.text);
   }
 
   // Send plan expiry notification
-  async sendPlanExpiryNotification(
-    email: string,
-    firstName: string,
-    planName: string,
-    expiryDate: string
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendPlanExpiryNotification(email: string, firstName: string, planName: string, expiryDate: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     const template = this.getPlanExpiryTemplate(firstName, planName, expiryDate);
     return this.sendEmail(email, template.subject, template.html, template.text);
   }
 
   // Send custom email with provided content
-  async sendCustomEmail(
-    email: string,
-    subject: string,
-    html: string,
-    text: string = ''
-  ): Promise<{ success: boolean; error?: string }> {
+  async sendCustomEmail(email: string, subject: string, html: string, text: string = ''): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     return this.sendEmail(email, subject, html, text);
   }
 
   // Welcome email template
   private getWelcomeTemplate(firstName: string, lastName: string): EmailTemplate {
     const fullName = `${firstName} ${lastName}`.trim();
-    
     return {
       subject: 'Welcome to Web Audit Pro! 🎉',
       html: `
