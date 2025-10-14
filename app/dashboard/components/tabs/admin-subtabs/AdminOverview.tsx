@@ -284,7 +284,7 @@ export default function AdminOverview({ userProfile }: AdminOverviewProps) {
         className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
+        transition={{ duration: 0.5, delay: 0.7 }}
       >
         <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

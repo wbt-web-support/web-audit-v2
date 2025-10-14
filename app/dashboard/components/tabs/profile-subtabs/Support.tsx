@@ -155,21 +155,21 @@ export default function Support({ userProfile }: SupportProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-blue-100 text-blue-700'
-      case 'resolved': return 'bg-blue-100 text-blue-600'
-      case 'closed': return 'bg-blue-100 text-blue-500'
-      default: return 'bg-blue-100 text-blue-600'
+      case 'open': return 'bg-gray-100 text-gray-800'
+      case 'in_progress': return 'bg-gray-100 text-gray-700'
+      case 'resolved': return 'bg-gray-100 text-gray-600'
+      case 'closed': return 'bg-gray-100 text-gray-500'
+      default: return 'bg-gray-100 text-gray-600'
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-blue-100 text-blue-600'
-      case 'medium': return 'bg-blue-100 text-blue-700'
-      case 'high': return 'bg-blue-100 text-blue-800'
-      case 'urgent': return 'bg-blue-100 text-blue-900'
-      default: return 'bg-blue-100 text-blue-600'
+      case 'low': return 'bg-gray-100 text-gray-600'
+      case 'medium': return 'bg-gray-100 text-gray-700'
+      case 'high': return 'bg-gray-100 text-gray-800'
+      case 'urgent': return 'bg-gray-100 text-gray-900'
+      default: return 'bg-gray-100 text-gray-600'
     }
   }
 
@@ -192,8 +192,8 @@ export default function Support({ userProfile }: SupportProps) {
             onClick={() => setActiveTab('tickets')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'tickets'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
+                ? 'border-blue-600 text-gray-900'
+                : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
             }`}
           >
             <i className="fas fa-ticket-alt mr-2"></i>My Tickets ({tickets.length})
@@ -202,8 +202,8 @@ export default function Support({ userProfile }: SupportProps) {
             onClick={() => setActiveTab('new')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
               activeTab === 'new'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
+                ? 'border-blue-600 text-gray-900'
+                : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
             }`}
           >
             <i className="fas fa-plus mr-2"></i>Create New Ticket
@@ -221,7 +221,7 @@ export default function Support({ userProfile }: SupportProps) {
         >
           {ticketsLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
             </div>
           ) : ticketsError ? (
             <div className="text-center py-8">
@@ -273,12 +273,12 @@ export default function Support({ userProfile }: SupportProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="mx-auto h-12 w-12 text-blue-400"
+                className="mx-auto h-12 w-12 text-gray-400"
               >
                 <i className="fas fa-ticket-alt text-4xl"></i>
               </motion.div>
-              <h3 className="mt-2 text-sm font-medium text-blue-900">No tickets yet</h3>
-              <p className="mt-1 text-sm text-blue-600">Create your first support ticket to get help.</p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No tickets yet</h3>
+              <p className="mt-1 text-sm text-gray-600">Create your first support ticket to get help.</p>
             </motion.div>
           ) : (
             tickets.map((ticket, index) => (
@@ -306,7 +306,7 @@ export default function Support({ userProfile }: SupportProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <h2 className="text-lg font-semibold text-blue-900 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">
             <i className="fas fa-plus-circle mr-2"></i>Create New Support Ticket
           </h2>
           <motion.form 
@@ -321,7 +321,7 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
             >
-              <label className="block text-sm font-medium text-blue-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-heading mr-1"></i>Ticket Title
               </label>
               <input
@@ -340,7 +340,7 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.5 }}
             >
-              <label className="block text-sm font-medium text-blue-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-flag mr-1"></i>Priority
               </label>
               <select
@@ -361,7 +361,7 @@ export default function Support({ userProfile }: SupportProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.6 }}
             >
-              <label className="block text-sm font-medium text-blue-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-align-left mr-1"></i>Description
               </label>
               <textarea
@@ -408,7 +408,7 @@ export default function Support({ userProfile }: SupportProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           <i className="fas fa-life-ring mr-2"></i>Support Resources
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,12 +418,12 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <i className="fas fa-book text-blue-600 text-sm"></i>
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <i className="fas fa-book text-gray-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-blue-900">Documentation</h4>
-              <p className="text-sm text-blue-600">Browse our comprehensive guides and tutorials</p>
+              <h4 className="font-medium text-gray-900">Documentation</h4>
+              <p className="text-sm text-gray-600">Browse our comprehensive guides and tutorials</p>
             </div>
           </motion.div>
           <motion.div 
@@ -432,12 +432,12 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.5 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <i className="fas fa-comments text-blue-600 text-sm"></i>
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <i className="fas fa-comments text-gray-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-blue-900">Live Chat</h4>
-              <p className="text-sm text-blue-600">Get instant help from our support team</p>
+              <h4 className="font-medium text-gray-900">Live Chat</h4>
+              <p className="text-sm text-gray-600">Get instant help from our support team</p>
             </div>
           </motion.div>
           <motion.div 
@@ -446,12 +446,12 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <i className="fas fa-play-circle text-blue-600 text-sm"></i>
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <i className="fas fa-play-circle text-gray-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-blue-900">Video Tutorials</h4>
-              <p className="text-sm text-blue-600">Watch step-by-step video guides</p>
+              <h4 className="font-medium text-gray-900">Video Tutorials</h4>
+              <p className="text-sm text-gray-600">Watch step-by-step video guides</p>
             </div>
           </motion.div>
           <motion.div 
@@ -460,12 +460,12 @@ export default function Support({ userProfile }: SupportProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.7 }}
           >
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <i className="fas fa-question-circle text-blue-600 text-sm"></i>
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <i className="fas fa-question-circle text-gray-600 text-sm"></i>
             </div>
             <div>
-              <h4 className="font-medium text-blue-900">FAQ</h4>
-              <p className="text-sm text-blue-600">Find answers to common questions</p>
+              <h4 className="font-medium text-gray-900">FAQ</h4>
+              <p className="text-sm text-gray-600">Find answers to common questions</p>
             </div>
           </motion.div>
         </div>

@@ -14,9 +14,11 @@ interface AnalysisHeaderProps {
   customTabs?: Array<{ id: string; name: string; icon: any }>
   pageTitle?: string
   showUnavailableContent?: boolean // New prop to control showing unavailable content
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
-export default function AnalysisHeader({ project, activeSection, onSectionChange, customTabs, pageTitle, showUnavailableContent = false }: AnalysisHeaderProps) {
+export default function AnalysisHeader({ project, activeSection, onSectionChange, customTabs, pageTitle, showUnavailableContent = false, onRefresh, isRefreshing }: AnalysisHeaderProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentTab = searchParams.get('tab')

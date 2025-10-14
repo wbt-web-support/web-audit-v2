@@ -41,15 +41,18 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching recent payments:', paymentsError)
     }
 
-    // Get recent tickets
-    const { data: recentTickets, error: ticketsError } = await supabase
+    // Get recent tickets (if table exists)
+    let recentTickets = null
+    const { data: ticketsData, error: ticketsError } = await supabase
       .from('tickets')
       .select('id, title, status, priority, created_at, updated_at, users!inner(email)')
       .order('created_at', { ascending: false })
       .limit(5)
 
     if (ticketsError) {
-      console.error('Error fetching recent tickets:', ticketsError)
+      console.warn('Tickets table not found or error occurred. Skipping tickets data.')
+    } else {
+      recentTickets = ticketsData
     }
 
     // Format activity data
@@ -93,20 +96,22 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Add tickets
-    recentTickets?.forEach((ticket, index) => {
-      const status = ticket.status === 'resolved' ? 'success' : 
-                    ticket.status === 'closed' ? 'info' : 
-                    ticket.priority === 'urgent' || ticket.priority === 'high' ? 'error' : 'warning'
-      activities.push({
-        id: `ticket-${ticket.id}`,
-        type: 'ticket_created',
-        message: `New ticket: ${ticket.title} (${ticket.priority} priority)`,
-        timestamp: formatTimestamp(ticket.created_at),
-        status,
-        priority: ticket.priority === 'urgent' ? 1 : ticket.priority === 'high' ? 2 : 4
+    // Add tickets (if available)
+    if (recentTickets) {
+      recentTickets.forEach((ticket, index) => {
+        const status = ticket.status === 'resolved' ? 'success' : 
+                      ticket.status === 'closed' ? 'info' : 
+                      ticket.priority === 'urgent' || ticket.priority === 'high' ? 'error' : 'warning'
+        activities.push({
+          id: `ticket-${ticket.id}`,
+          type: 'ticket_created',
+          message: `New ticket: ${ticket.title} (${ticket.priority} priority)`,
+          timestamp: formatTimestamp(ticket.created_at),
+          status,
+          priority: ticket.priority === 'urgent' ? 1 : ticket.priority === 'high' ? 2 : 4
+        })
       })
-    })
+    }
 
     // Sort by timestamp and limit
     const sortedActivities = activities
