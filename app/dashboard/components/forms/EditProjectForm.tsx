@@ -59,18 +59,18 @@ export default function EditProjectForm({
     if (project) {
       setFormData({
         siteUrl: project.site_url || '',
-        pageType: 'single', // Default to single page
-        brandConsistency: false, // These fields don't exist in current AuditProject type
-        hiddenUrls: false,
-        keysCheck: false,
-        brandData: {
+        pageType: (project as any).page_type || 'single',
+        brandConsistency: (project as any).brand_consistency || false,
+        hiddenUrls: (project as any).hidden_urls || false,
+        keysCheck: (project as any).keys_check || false,
+        brandData: (project as any).brand_data || {
           companyName: '',
           phoneNumber: '',
           emailAddress: '',
           address: '',
           additionalInformation: ''
         },
-        hiddenUrlsList: [{ id: '1', url: '' }]
+        hiddenUrlsList: (project as any).hidden_urls_data || [{ id: '1', url: '' }]
       });
     }
   }, [project]);

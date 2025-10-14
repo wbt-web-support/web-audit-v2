@@ -51,7 +51,7 @@ export default function SiteCrawlForm({
   // Form States
   const [siteUrl, setSiteUrl] = useState<string>('');
   const [pageType, setPageType] = useState<CrawlType>('single');
-  const [brandConsistency, setBrandConsistency] = useState<boolean>(true);
+  const [brandConsistency, setBrandConsistency] = useState<boolean>(false);
   const [hiddenUrls, setHiddenUrls] = useState<boolean>(false);
   const [keysCheck, setKeysCheck] = useState<boolean>(false);
   const [brandData, setBrandData] = useState<BrandConsistencyData>({
@@ -371,8 +371,21 @@ export default function SiteCrawlForm({
             </div>
            </div> */}
 
+          {/* Brand Consistency Checkbox */}
+          <div>
+            <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                checked={brandConsistency}
+                onChange={(e) => setBrandConsistency(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm font-medium text-black pl-2">Brand Consistency Check</span>
+            </label>
+          </div>
+
           {/* Brand Consistency Fields */}
-          <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
+          {brandConsistency && <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
               <h3 className="text-base font-semibold text-black">
                 Brand Consistency Information
               </h3>
@@ -410,7 +423,7 @@ export default function SiteCrawlForm({
                   <textarea id="additionalInformation" value={brandData.additionalInformation} onChange={e => handleBrandDataChange('additionalInformation', e.target.value)} rows={3} className="w-full px-3 py-2 text-black border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 </div>
               </div>
-            </div>
+            </div>}
 
           {/* Hidden URLs Fields */}
           {hiddenUrls && <div className="bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">

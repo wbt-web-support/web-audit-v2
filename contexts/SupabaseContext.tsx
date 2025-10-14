@@ -927,7 +927,9 @@ export function SupabaseProvider({
         page_type: projectData.page_type || 'single',
         brand_consistency: projectData.brand_consistency || false,
         hidden_urls: projectData.hidden_urls || false,
-        keys_check: projectData.keys_check || false
+        keys_check: projectData.keys_check || false,
+        brand_data: projectData.brand_data || null,
+        hidden_urls_data: projectData.hidden_urls_data || null
       };
       const {
         data,
