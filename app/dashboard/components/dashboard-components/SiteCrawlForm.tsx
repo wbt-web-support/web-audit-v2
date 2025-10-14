@@ -46,7 +46,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
   // Form States
   const [siteUrl, setSiteUrl] = useState<string>('')
   const [pageType, setPageType] = useState<CrawlType>('single')
-  const [brandConsistency, setBrandConsistency] = useState<boolean>(false)
+  const [brandConsistency, setBrandConsistency] = useState<boolean>(true)
   const [hiddenUrls, setHiddenUrls] = useState<boolean>(false)
   const [keysCheck, setKeysCheck] = useState<boolean>(false)
   
@@ -195,10 +195,65 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
+        {!isEditMode && (
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div>
+              <div className="h-6 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+            </div>
+          </div>
+        )}
+        
         <div className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading plan information...</span>
+          <div className="space-y-6">
+            {/* URL Input Skeleton */}
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+
+            {/* Page Type Selection Skeleton */}
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-20 mb-3 animate-pulse"></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Brand Consistency Skeleton */}
+            <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
+              <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                  <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button Skeleton */}
+            <div className="pt-4">
+              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -364,8 +419,7 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
           </div> */}
 
           {/* Brand Consistency Fields */}
-          {brandConsistency && (
-            <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
+          <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
               <h3 className="text-base font-semibold text-black">
                 Brand Consistency Information
               </h3>
@@ -434,7 +488,6 @@ export default function SiteCrawlForm({ onSubmit, isSubmitting, submitStatus, is
                 </div>
               </div>
             </div>
-          )}
 
           {/* Hidden URLs Fields */}
           {hiddenUrls && (
