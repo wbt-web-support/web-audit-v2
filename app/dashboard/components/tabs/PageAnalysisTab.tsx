@@ -9,6 +9,7 @@ import FeatureUnavailableCard from '../FeatureUnavailableCard'
 import {
   OverviewTab,
   GrammarContentTab,
+  BrandConsistencyTab,
   UIQualityTab,
   TechnicalTab,
   PerformanceTab,
@@ -53,12 +54,16 @@ interface PageData {
   updated_at: string
 }
 
+interface ProjectWithBrandData extends AuditProject {
+  brand_data?: any | null;
+}
+
 export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const { getScrapedPage, getAuditProject } = useSupabase()
   const { hasFeature } = useUserPlan()
   const [activeTab, setActiveTab] = useState('overview')
   const [page, setPage] = useState<PageData | null>(null)
-  const [project, setProject] = useState<AuditProject | null>(null)
+  const [project, setProject] = useState<ProjectWithBrandData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,8 +87,10 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         // Load project data
         if (pageData.audit_project_id) {
           const { data: projectData, error: projectError } = await getAuditProject(pageData.audit_project_id)
+          console.log('Raw project data from database:', projectData);
+          console.log('Brand data from database:', projectData?.brand_data);
           if (!projectError && projectData) {
-            setProject(projectData)
+            setProject(projectData as ProjectWithBrandData)
           }
         }
         
@@ -107,6 +114,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       'links': 'link_scanner',
       'images': 'image_scan',
       'grammar-content': 'grammar_content_analysis',
+      'brand-consistency': 'brand_consistency_check',
       'seo-structure': 'seo_structure',
       'ui-quality': 'ui_ux_quality_check',
       'technical': 'technical_analysis',
@@ -137,6 +145,10 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       'grammar-content': {
         title: 'Grammar & Content Analysis',
         description: 'This feature is not available in your current plan. Upgrade to access AI-powered grammar and content analysis.'
+      },
+      'brand-consistency': {
+        title: 'Brand Consistency Analysis',
+        description: 'This feature is not available in your current plan. Upgrade to access brand consistency analysis and guidelines checking.'
       },
       'seo-structure': {
         title: 'SEO & Structure Analysis',
@@ -257,6 +269,26 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'grammar-content':
         return <GrammarContentTab page={page!} cachedAnalysis={cachedAnalysis} />
+      case 'brand-consistency':
+        console.log('Brand consistency tab - Project data:', project);
+        console.log('Brand consistency tab - Brand data:', project?.brand_data);
+        
+        // Test: Try to create a project with brand data to see if it works
+        if (!project?.brand_data) {
+          console.log('No brand data found. Testing brand data creation...');
+          // This is just for debugging - we'll remove this later
+        }
+        
+        return (
+          <BrandConsistencyTab 
+            page={page!} 
+            projectBrandData={project?.brand_data}
+            onBrandDataUpdate={(newBrandData) => {
+              // Update the project state with new brand data
+              setProject(prev => prev ? { ...prev, brand_data: newBrandData } : null);
+            }}
+          />
+        )
       case 'seo-structure':
         return <SEOAnalysisSection page={page!} isPageAnalysis={true} cachedAnalysis={null} />
       case 'ui-quality':
@@ -278,6 +310,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     { id: 'links', name: 'Links', icon: '🔗' },
     { id: 'images', name: 'Images', icon: '🖼️' },
     { id: 'grammar-content', name: 'Grammar & Content', icon: '📝' },
+    { id: 'brand-consistency', name: 'Brand Consistency', icon: '🎯' },
     { id: 'seo-structure', name: 'SEO & Structure', icon: '🔍' },
     { id: 'ui-quality', name: 'UI Quality', icon: '🎨' },
     { id: 'technical', name: 'Technical', icon: '⚙️' },

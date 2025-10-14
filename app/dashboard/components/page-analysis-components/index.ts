@@ -1,5 +1,6 @@
 export { default as OverviewTab } from './OverviewTab'
 export { default as GrammarContentTab } from './GrammarContentTab'
+export { default as BrandConsistencyTab } from './BrandConsistencyTab'
 export { default as UIQualityTab } from './UIQualityTab'
 export { default as TechnicalTab } from './TechnicalTab'
 export { default as PerformanceTab } from './PerformanceTab'
