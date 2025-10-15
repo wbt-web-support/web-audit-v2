@@ -150,8 +150,8 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
   }, [htmlContent, headers, cookies])
 
   // Get technologies from the processed project data first, then fallback to raw data
-  let technologies = null
-  let isSummaryData = false
+  const technologies = null
+  const isSummaryData = false
 
   // Get technology statistics
   const stats = getTechnologyStats(detectedTechnologies)

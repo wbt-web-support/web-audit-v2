@@ -312,7 +312,7 @@ export default function DashboardOverview({
       <UserAlerts userPlan={planInfo?.plan_type || 'free'} />
 
       {/* Welcome Section */}
-      <div className="bg-white  rounded-lg ">
+      <div className="   ">
         <h1 className="text-2xl font-bold text-black  mb-2">
           Welcome back, {userProfile?.first_name || 'User'}!
         </h1>
