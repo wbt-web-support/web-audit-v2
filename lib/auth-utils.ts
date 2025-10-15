@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from './supabase-client';
 
 /**
  * Handles authentication errors by logging out the user and clearing session

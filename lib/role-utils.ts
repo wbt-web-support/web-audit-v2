@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from './supabase';
+import { supabase } from './supabase-client';
 export type UserRole = 'user' | 'admin';
 export interface RoleVerificationResult {
   isAdmin: boolean;
