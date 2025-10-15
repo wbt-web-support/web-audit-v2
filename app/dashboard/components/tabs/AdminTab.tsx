@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { roleVerifier, roleTester, RoleVerificationResult } from '@/lib/role-utils'
 import AdminOverview from './admin-subtabs/AdminOverview'
 import AdminUsers from './admin-subtabs/AdminUsers'

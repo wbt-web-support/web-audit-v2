@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { AdminAlert } from '@/types/audit';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 interface UserAlertsProps {
   userPlan?: string;
 }

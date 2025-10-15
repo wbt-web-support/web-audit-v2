@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import PricingSection from '@/app/home-page-components/PricingSection';
 import { useUserPlan } from '@/hooks/useUserPlan';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { handleAuthError } from '@/lib/auth-utils';
 interface PaymentHistory {
   id: string;

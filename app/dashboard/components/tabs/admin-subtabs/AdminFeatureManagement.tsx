@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { FEATURES, FEATURE_CATEGORIES, getFeaturesByCategory, getCoreFeatures } from '@/lib/features';
 interface AdminFeatureManagementProps {
   userProfile: {

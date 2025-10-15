@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { handleAuthError } from '@/lib/auth-utils';
 export type PlanType = 'Starter' | 'Growth' | 'Scale';
 export interface UserPlanInfo {

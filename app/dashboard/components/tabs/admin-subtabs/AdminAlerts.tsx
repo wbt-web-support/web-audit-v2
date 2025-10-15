@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { AdminAlert, AdminAlertStats, CreateAdminAlertRequest } from '@/types/audit'
-import { supabaseAdmin } from '@/lib/supabase'
+// Removed direct supabaseAdmin import for security
 
 interface AdminAlertsProps {
   userProfile: {
@@ -51,32 +51,19 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     try {
       setLoading(true)
       
-      let query = supabaseAdmin
-        .from('admin_alerts')
-        .select(`
-          *,
-          created_by_user:users!admin_alerts_created_by_fkey(first_name, last_name, email)
-        `)
-        .order('created_at', { ascending: false })
+      const params = new URLSearchParams()
+      if (filterStatus !== 'all') params.append('status', filterStatus)
+      if (filterType !== 'all') params.append('type', filterType)
+      if (filterSeverity !== 'all') params.append('severity', filterSeverity)
 
-      // Apply filters
-      if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus)
-      }
-      if (filterType !== 'all') {
-        query = query.eq('alert_type', filterType)
-      }
-      if (filterSeverity !== 'all') {
-        query = query.eq('severity', filterSeverity)
-      }
-
-      const { data: alerts, error } = await query
+      const response = await fetch(`/api/admin/alerts?${params.toString()}`)
+      const data = await response.json()
       
-      if (error) {
-        console.error('Error fetching alerts:', error)
+      if (!response.ok) {
+        console.error('Error fetching alerts:', data.error)
         setAlerts([])
       } else {
-        setAlerts(alerts || [])
+        setAlerts(data.alerts || [])
       }
     } catch (error) {
       console.error('Error fetching alerts:', error)
@@ -88,93 +75,14 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
   const fetchStats = async () => {
     try {
-      // Get total counts
-      const { count: totalAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: activeAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
-
-      const { count: inactiveAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'inactive')
-
-      const { count: draftAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'draft')
-
-      const { count: criticalAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('severity', 'critical')
-        .eq('status', 'active')
-
-      const { count: highPriorityAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('*', { count: 'exact', head: true })
-        .gte('priority', 8)
-        .eq('status', 'active')
-
-      // Get alerts by type
-      const { data: alertsByType } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('alert_type')
-        .eq('status', 'active')
-
-      const typeCounts = alertsByType?.reduce((acc: any, alert) => {
-        acc[alert.alert_type] = (acc[alert.alert_type] || 0) + 1
-        return acc
-      }, {}) || {}
-
-      const alertsByTypeArray = Object.entries(typeCounts).map(([type, count]) => ({
-        type,
-        count: count as number
-      }))
-
-      // Get alerts by severity
-      const { data: alertsBySeverity } = await supabaseAdmin
-        .from('admin_alerts')
-        .select('severity')
-        .eq('status', 'active')
-
-      const severityCounts = alertsBySeverity?.reduce((acc: any, alert) => {
-        acc[alert.severity] = (acc[alert.severity] || 0) + 1
-        return acc
-      }, {}) || {}
-
-      const alertsBySeverityArray = Object.entries(severityCounts).map(([severity, count]) => ({
-        severity,
-        count: count as number
-      }))
-
-      // Get recent alerts
-      const { data: recentAlerts } = await supabaseAdmin
-        .from('admin_alerts')
-        .select(`
-          *,
-          created_by_user:users!admin_alerts_created_by_fkey(first_name, last_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      const stats: AdminAlertStats = {
-        totalAlerts: totalAlerts || 0,
-        activeAlerts: activeAlerts || 0,
-        inactiveAlerts: inactiveAlerts || 0,
-        draftAlerts: draftAlerts || 0,
-        criticalAlerts: criticalAlerts || 0,
-        highPriorityAlerts: highPriorityAlerts || 0,
-        alertsByType: alertsByTypeArray,
-        alertsBySeverity: alertsBySeverityArray,
-        recentAlerts: recentAlerts || []
+      const response = await fetch('/api/admin/alerts/stats')
+      const data = await response.json()
+      
+      if (!response.ok) {
+        console.error('Error fetching stats:', data.error)
+      } else {
+        setAlertStats(data.stats)
       }
-
-      setAlertStats(stats)
     } catch (error) {
       console.error('Error fetching stats:', error)
     }
@@ -182,30 +90,19 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
   const handleCreateAlert = async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('admin_alerts')
-        .insert({
-          title: formData.title,
-          message: formData.message,
-          alert_type: formData.alert_type,
-          severity: formData.severity,
-          status: formData.status,
-          is_global: formData.is_global,
-          target_audience: formData.target_audience,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
-          priority: formData.priority,
-          action_url: formData.action_url || null,
-          action_text: formData.action_text || null,
-          dismissible: formData.dismissible,
-          auto_expire: formData.auto_expire,
-          created_by: null
-        })
-        .select()
+      const response = await fetch('/api/admin/alerts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-      if (error) {
-        console.error('Error creating alert:', error)
-        alert(`Error creating alert: ${error.message}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Error creating alert:', data.error)
+        alert(`Error creating alert: ${data.error}`)
       } else {
         setShowCreateModal(false)
         resetForm()
@@ -222,30 +119,22 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     if (!editingAlert) return
 
     try {
-      const { data, error } = await supabaseAdmin
-        .from('admin_alerts')
-        .update({
-          title: formData.title,
-          message: formData.message,
-          alert_type: formData.alert_type,
-          severity: formData.severity,
-          status: formData.status,
-          is_global: formData.is_global,
-          target_audience: formData.target_audience,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
-          priority: formData.priority,
-          action_url: formData.action_url || null,
-          action_text: formData.action_text || null,
-          dismissible: formData.dismissible,
-          auto_expire: formData.auto_expire
-        })
-        .eq('id', editingAlert.id)
-        .select()
+      const response = await fetch('/api/admin/alerts', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingAlert.id,
+          ...formData
+        }),
+      })
 
-      if (error) {
-        console.error('Error updating alert:', error)
-        alert(`Error updating alert: ${error.message}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Error updating alert:', data.error)
+        alert(`Error updating alert: ${data.error}`)
       } else {
         setEditingAlert(null)
         resetForm()
@@ -262,14 +151,15 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     if (!confirm('Are you sure you want to delete this alert?')) return
 
     try {
-      const { error } = await supabaseAdmin
-        .from('admin_alerts')
-        .delete()
-        .eq('id', alertId)
+      const response = await fetch(`/api/admin/alerts?id=${alertId}`, {
+        method: 'DELETE',
+      })
 
-      if (error) {
-        console.error('Error deleting alert:', error)
-        alert(`Error deleting alert: ${error.message}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Error deleting alert:', data.error)
+        alert(`Error deleting alert: ${data.error}`)
       } else {
         fetchAlerts()
         fetchStats()
@@ -284,21 +174,27 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     const newStatus = alert.status === 'active' ? 'inactive' : 'active'
     
     try {
-      const { error } = await supabaseAdmin
-        .from('admin_alerts')
-        .update({ status: newStatus })
-        .eq('id', alert.id)
+      const response = await fetch('/api/admin/alerts', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: alert.id,
+          status: newStatus
+        }),
+      })
 
-      if (error) {
-        console.error('Error updating alert status:', error)
-      
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Error updating alert status:', data.error)
       } else {
         fetchAlerts()
         fetchStats()
       }
     } catch (error) {
       console.error('Error updating alert status:', error)
-    
     }
   }
 

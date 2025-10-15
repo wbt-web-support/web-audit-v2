@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useCallback } from 'react'
 import { useEmail } from '@/hooks/useEmail'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
 interface EmailTemplate {

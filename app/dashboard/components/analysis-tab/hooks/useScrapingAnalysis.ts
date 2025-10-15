@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
 interface CachedData {
