@@ -382,4 +382,3 @@ export function getTechnologyStats(technologies: DetectedTechnology[]) {
     categories
   };
 }
-
