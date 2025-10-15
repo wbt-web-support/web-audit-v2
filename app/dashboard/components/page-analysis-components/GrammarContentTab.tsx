@@ -20,24 +20,29 @@ interface ScrapedPageData {
 interface GrammarContentTabProps {
   page: ScrapedPageData;
   cachedAnalysis?: GeminiAnalysisResult;
+  grammarAnalysis?: GeminiAnalysisResult | null;
+  grammarAnalysisError?: string | null;
+  isGrammarAnalyzing?: boolean;
+  onReAnalyze?: () => void;
 }
 type TabType = 'grammar' | 'punctuation' | 'structure' | 'style' | 'spelling' | 'uk-english' | 'content';
 export default function GrammarContentTab({
   page,
-  cachedAnalysis
+  cachedAnalysis,
+  grammarAnalysis,
+  grammarAnalysisError,
+  isGrammarAnalyzing,
+  onReAnalyze
 }: GrammarContentTabProps) {
-  const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResult | null>(cachedAnalysis || page?.gemini_analysis || null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('grammar');
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const { user } = useAuth();
   const { hasFeature, loading: planLoading } = useUserPlan();
-  const {
-    streamStatus,
-    isStreaming,
-    startAnalysis,
-    reset
-  } = useGeminiStream();
+  
+  // Use props for analysis state instead of internal state
+  const geminiAnalysis = grammarAnalysis || cachedAnalysis || page?.gemini_analysis || null;
+  const analysisError = grammarAnalysisError;
+  const isStreaming = isGrammarAnalyzing || false;
 
   // Check if user has access to grammar content analysis with caching
   const hasFeatureAccess = useMemo(() => {
@@ -72,48 +77,17 @@ export default function GrammarContentTab({
   const filteredContent = page?.filtered_content || filterHtmlContent(page?.html_content || '');
   const textContent = typeof filteredContent === 'string' ? filteredContent : filteredContent?.pureContent || '';
 
-  // Update analysis when streaming completes
-  useEffect(() => {
-    if (streamStatus.status === 'completed' && streamStatus.analysis) {
-      setGeminiAnalysis(streamStatus.analysis);
-      setAnalysisError(null);
-    } else if (streamStatus.status === 'error') {
-      setAnalysisError(streamStatus.error || 'Analysis failed');
-    }
-  }, [streamStatus]);
-
   // Clean up expired cache entries on mount
   useEffect(() => {
     featureCache.clearExpired();
   }, []);
 
-  // Function to trigger Gemini analysis
-  const handleReAnalyze = useCallback(async () => {
-    try {
-      setAnalysisError(null);
-      reset();
-
-      // Validate required fields
-      if (!page.id) {
-        throw new Error('Page ID is missing');
-      }
-      if (!page.url) {
-        throw new Error('Page URL is missing');
-      }
-      if (!textContent || textContent.trim().length === 0) {
-        throw new Error('No content available for analysis');
-      }
-      const analysis = await startAnalysis(page.id, textContent, page.url, user?.id);
-      if (analysis) {
-        setGeminiAnalysis(analysis);
-      }
-    } catch (error) {
-      console.error('Error during analysis:', error);
-      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze content. Please try again.');
+  // Function to trigger re-analysis
+  const handleReAnalyze = useCallback(() => {
+    if (onReAnalyze) {
+      onReAnalyze();
     }
-  }, [page.id, page.url, textContent, reset, startAnalysis, user?.id]);
-
-  // Removed auto-trigger analysis for security - user must manually start analysis
+  }, [onReAnalyze]);
 
   // Show skeleton loading while checking feature access
   if (isCheckingAccess || hasFeatureAccess === null) {
@@ -342,7 +316,7 @@ export default function GrammarContentTab({
               </div>
               <div className="text-center">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  {streamStatus.message || 'Analyzing your content...'}
+                  Analyzing your content...
                 </h4>
                 <p className="text-gray-600">Our AI is analyzing your content for grammar, consistency, and readability...</p>
                 

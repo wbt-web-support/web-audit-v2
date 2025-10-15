@@ -230,6 +230,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Calculate expires_at based on billing cycle
+    const now = new Date();
+    const expiresAt = plan.billing_cycle === 'monthly' 
+      ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+      : plan.billing_cycle === 'yearly' 
+      ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
+      : null;
+
     // Create payment record with all required fields based on table schema
     const paymentData = {
       user_id: user.id,
@@ -246,7 +254,8 @@ export async function POST(request: NextRequest) {
       payment_status: 'completed',
       payment_method: payment_method || 'razorpay',
       subscription_id: subscription_id || null,
-      payment_date: new Date().toISOString()
+      payment_date: new Date().toISOString(),
+      expires_at: expiresAt
     };
     const {
       data: payment,
@@ -343,6 +352,86 @@ export async function POST(request: NextRequest) {
             console.warn('Fallback: Update succeeded but no data returned - user might not exist');
           }
         }
+        // Send payment success email for fallback case too
+        try {
+          const { data: emailTemplate, error: templateError } = await supabaseServiceClient
+            .from('email_templates')
+            .select('*')
+            .eq('template_type', 'payment-success')
+            .eq('is_active', true)
+            .single();
+
+          if (emailTemplate && !templateError) {
+            const emailData = {
+              user_name: userRecord.first_name || userRecord.email?.split('@')[0] || 'User',
+              plan_name: plan.name,
+              plan_type: plan.plan_type,
+              billing_cycle: plan.billing_cycle,
+              amount: amount.toLocaleString(),
+              currency: currency,
+              payment_date: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              expires_at: userUpdateData.plan_expires_at ? new Date(userUpdateData.plan_expires_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }) : 'N/A',
+              payment_id: 'temp_' + Date.now(),
+              payment_method: payment_method || 'Razorpay',
+              features: plan.features || [],
+              dashboard_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}/dashboard`
+            };
+
+            // Replace variables in email content
+            let htmlContent = emailTemplate.html_content;
+            let textContent = emailTemplate.text_content;
+            let subject = emailTemplate.subject;
+
+            Object.entries(emailData).forEach(([key, value]) => {
+              const placeholder = `{{${key}}}`;
+              const regex = new RegExp(placeholder, 'g');
+              
+              if (typeof value === 'string') {
+                htmlContent = htmlContent.replace(regex, value);
+                textContent = textContent.replace(regex, value);
+                subject = subject.replace(regex, value);
+              } else if (Array.isArray(value)) {
+                if (key === 'features') {
+                  const featuresList = value.map(feature => `<li>${feature}</li>`).join('');
+                  htmlContent = htmlContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, featuresList);
+                  
+                  const textFeaturesList = value.map(feature => `- ${feature}`).join('\n');
+                  textContent = textContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, textFeaturesList);
+                }
+              }
+            });
+
+            const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                to: user.email,
+                subject: subject,
+                html: htmlContent,
+                text: textContent
+              })
+            });
+
+            if (emailResponse.ok) {
+              console.log('Payment success email sent successfully (fallback)');
+            } else {
+              console.warn('Failed to send payment success email (fallback):', await emailResponse.text());
+            }
+          }
+        } catch (emailError) {
+          console.warn('Payment successful but email sending failed (fallback):', emailError);
+        }
+
         const fallbackResponse = {
           success: true,
           message: 'Payment processed successfully (payments table not set up yet)',
@@ -461,9 +550,91 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trigger plan refresh for the user
-    try {} catch (notificationError) {
-      console.warn('Payment successful but notification failed:', notificationError);
+    // Send payment success email
+    try {
+      // Get the payment success email template
+      const { data: emailTemplate, error: templateError } = await supabaseServiceClient
+        .from('email_templates')
+        .select('*')
+        .eq('template_type', 'payment-success')
+        .eq('is_active', true)
+        .single();
+
+      if (emailTemplate && !templateError) {
+        // Prepare email data
+        const emailData = {
+          user_name: userRecord.first_name || userRecord.email?.split('@')[0] || 'User',
+          plan_name: plan.name,
+          plan_type: plan.plan_type,
+          billing_cycle: plan.billing_cycle,
+          amount: amount.toLocaleString(),
+          currency: currency,
+          payment_date: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          expires_at: userUpdateData.plan_expires_at ? new Date(userUpdateData.plan_expires_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'N/A',
+          payment_id: payment.id,
+          payment_method: payment_method || 'Razorpay',
+          features: plan.features || [],
+          dashboard_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}/dashboard`
+        };
+
+        // Replace variables in email content
+        let htmlContent = emailTemplate.html_content;
+        let textContent = emailTemplate.text_content;
+        let subject = emailTemplate.subject;
+
+        // Replace all variables in the template
+        Object.entries(emailData).forEach(([key, value]) => {
+          const placeholder = `{{${key}}}`;
+          const regex = new RegExp(placeholder, 'g');
+          
+          if (typeof value === 'string') {
+            htmlContent = htmlContent.replace(regex, value);
+            textContent = textContent.replace(regex, value);
+            subject = subject.replace(regex, value);
+          } else if (Array.isArray(value)) {
+            // Handle features array
+            if (key === 'features') {
+              const featuresList = value.map(feature => `<li>${feature}</li>`).join('');
+              htmlContent = htmlContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, featuresList);
+              
+              const textFeaturesList = value.map(feature => `- ${feature}`).join('\n');
+              textContent = textContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, textFeaturesList);
+            }
+          }
+        });
+
+        // Send email using your email service
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: user.email,
+            subject: subject,
+            html: htmlContent,
+            text: textContent
+          })
+        });
+
+        if (emailResponse.ok) {
+          console.log('Payment success email sent successfully');
+        } else {
+          console.warn('Failed to send payment success email:', await emailResponse.text());
+        }
+      } else {
+        console.warn('Payment success email template not found or inactive');
+      }
+    } catch (emailError) {
+      console.warn('Payment successful but email sending failed:', emailError);
     }
     const responseData = {
       success: true,

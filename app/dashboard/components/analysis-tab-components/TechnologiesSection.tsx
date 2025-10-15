@@ -10,8 +10,36 @@ interface TechnologiesSectionProps {
   scrapedPages?: ScrapedPage[]
 }
 
-export default function TechnologiesSection({ project }: TechnologiesSectionProps) {
+export default function TechnologiesSection({ project, scrapedPages = [] }: TechnologiesSectionProps) {
   const [activeTab, setActiveTab] = useState('technologies')
+
+  // Get HTML content from scraped pages (use first page or homepage)
+  const getHtmlContent = () => {
+    if (!scrapedPages || scrapedPages.length === 0) {
+      return null
+    }
+
+    // Try to find homepage first
+    const homepage = scrapedPages.find(page => {
+      try {
+        const url = new URL(page.url)
+        return url.pathname === '/' || url.pathname === '' || url.pathname === '/index.html'
+      } catch {
+        return false
+      }
+    })
+
+    // Use homepage or first page
+    const targetPage = homepage || scrapedPages[0]
+    return targetPage.html_content || null
+  }
+
+  const htmlContent = getHtmlContent()
+
+  // Debug logging
+  console.log('TechnologiesSection - scrapedPages:', scrapedPages?.length || 0)
+  console.log('TechnologiesSection - htmlContent length:', htmlContent?.length || 0)
+  console.log('TechnologiesSection - htmlContent preview:', htmlContent?.substring(0, 100) || 'No content')
 
   const tabs = [
     {
@@ -46,13 +74,27 @@ export default function TechnologiesSection({ project }: TechnologiesSectionProp
   const renderTabContent = () => {
     switch (activeTab) {
       case 'technologies':
-        return <TechnologiesTab project={project} />
+        return (
+          <TechnologiesTab 
+            project={project} 
+            htmlContent={htmlContent || undefined}
+            headers={undefined} // Could be extracted from scraped pages if available
+            cookies={undefined} // Could be extracted from scraped pages if available
+          />
+        )
       case 'keys':
         return <KeysTab key={`keys-${project.id}-${project.detected_keys ? 'has-data' : 'no-data'}`} project={project} />
       case 'social':
         return <SocialPreviewTab project={project} />
       default:
-        return <TechnologiesTab project={project} />
+        return (
+          <TechnologiesTab 
+            project={project} 
+            htmlContent={htmlContent || undefined}
+            headers={undefined}
+            cookies={undefined}
+          />
+        )
     }
   }
 

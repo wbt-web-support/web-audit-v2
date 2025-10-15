@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import PricingSection from '@/app/home-page-components/PricingSection';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { supabase } from '@/lib/supabase';
+import { handleAuthError } from '@/lib/auth-utils';
 interface PaymentHistory {
   id: string;
   razorpay_payment_id: string;
@@ -88,6 +89,8 @@ export default function Billing({
       }
     } catch (error) {
       console.error('Error checking plan expiry status:', error);
+      // Handle authentication errors
+      await handleAuthError(error, 'Billing checkPlanExpiryStatus');
     }
   };
 
@@ -123,6 +126,8 @@ export default function Billing({
       }
     } catch (error) {
       console.error('Error fetching payment history:', error);
+      // Handle authentication errors
+      await handleAuthError(error, 'Billing fetchPaymentHistory');
       // Set empty array as fallback
       setPaymentHistory([]);
     } finally {

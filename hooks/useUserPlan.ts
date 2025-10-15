@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { handleAuthError } from '@/lib/auth-utils';
 export type PlanType = 'Starter' | 'Growth' | 'Scale';
 export interface UserPlanInfo {
   plan_type: PlanType;
@@ -126,6 +127,11 @@ export function useUserPlan(): UseUserPlanResult {
         error: userError
       } = await supabase.auth.getUser();
       if (userError || !user) {
+        // Handle authentication errors
+        const wasLoggedOut = await handleAuthError(userError, 'useUserPlan');
+        if (wasLoggedOut) {
+          return;
+        }
         throw new Error('User not authenticated');
       }
 
@@ -216,6 +222,12 @@ export function useUserPlan(): UseUserPlanResult {
       setPlanInfo(userPlan);
     } catch (err) {
       console.error('Error fetching user plan:', err);
+
+      // Handle authentication errors
+      const wasLoggedOut = await handleAuthError(err, 'useUserPlan catch block');
+      if (wasLoggedOut) {
+        return;
+      }
 
       // If there's an error, provide a fallback plan instead of null
       const fallbackPlanName = await getPlanNameFromDB('Starter');

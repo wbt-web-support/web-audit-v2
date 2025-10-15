@@ -38,7 +38,6 @@ interface Plan {
   price: number;
   currency: string;
   billing_cycle: string;
-  interval_type: string;
   interval_count: number;
   features: Array<{
     name: string;
@@ -543,7 +542,7 @@ export default function AdminPlans({
                         {formatPrice(plan.price, plan.currency)}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {plan.interval_type}
+                      {plan.billing_cycle || 'monthly'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

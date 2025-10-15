@@ -168,7 +168,7 @@ function LoginPageContent() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="space-y-6"
               >
-                <h2 className="text-4xl font-bold leading-tight">
+                <h2 className="text-4xl font-bold leading-tight text-white">
                   Welcome Back to
                   <br />
                   <span className="text-purple-300">Web Audit</span>

@@ -32,7 +32,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
       'overview': 'single_page_crawl', // Basic overview is available to all
       'pages': 'full_site_crawl',
       'technologies': 'technical_analysis', // Updated to use technical_analysis
-      'cms': 'brand_consistency_check',
+      
       'performance': 'performance_metrics',
       'seo': 'seo_structure',
       'images': 'image_scan',
@@ -71,10 +71,10 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
         title: 'Technical Analysis',
         description: 'This feature is not available in your current plan. Upgrade to access detailed technical analysis and recommendations.'
       },
-      'cms': {
-        title: 'CMS Detection',
-        description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
-      },
+      // 'cms': {
+      //   title: 'CMS Detection',
+      //   description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
+      // },
       'performance': {
         title: 'Performance Metrics',
         description: 'This feature is not available in your current plan. Upgrade to access detailed performance analysis and PageSpeed Insights.'
@@ -204,7 +204,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
                 { id: 'overview', name: 'Overview', icon: 'fas fa-chart-bar' },
                 { id: 'pages', name: 'Pages', icon: 'fas fa-file-alt' },
                 { id: 'technologies', name: 'Technical', icon: 'fas fa-cogs' },
-                ...(project.cms_detected ? [{ id: 'cms', name: 'CMS', icon: 'fas fa-building' }] : []),
+                // ...(project.cms_detected ? [{ id: 'cms', name: 'CMS', icon: 'fas fa-building' }] : []),
                 { id: 'performance', name: 'Performance', icon: 'fas fa-tachometer-alt' },
                 { id: 'seo', name: 'SEO', icon: 'fas fa-search' },
                 { id: 'images', name: 'Images', icon: 'fas fa-image' },

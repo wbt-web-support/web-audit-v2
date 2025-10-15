@@ -75,12 +75,12 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
     subject: '',
     html_content: '',
     text_content: '',
-    template_type: 'custom',
+    template_type: '',
     variables: [] as string[]
   })
   
   // All template types management (system + custom)
-  const [allTemplateTypes, setAllTemplateTypes] = useState<Array<{id: string, value: string, label: string, description: string, is_system: boolean}>>([])
+  const [allTemplateTypes, setAllTemplateTypes] = useState<Array<{id: string, value: string, label: string, description: string, is_system?: boolean}>>([])
   const [showAddTypeForm, setShowAddTypeForm] = useState(false)
   const [newTypeForm, setNewTypeForm] = useState({
     value: '',
@@ -105,14 +105,15 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
 
   const { sendEmail, isLoading: emailLoading } = useEmail()
 
-  // Get system template types
+
+  // Get system template types (since is_system field doesn't exist, return empty array)
   const getSystemTemplateTypes = () => {
-    return allTemplateTypes.filter(type => type.is_system)
+    return []
   }
 
-  // Get custom template types
+  // Get custom template types (all types are considered custom since is_system field doesn't exist)
   const getCustomTemplateTypes = () => {
-    return allTemplateTypes.filter(type => !type.is_system)
+    return allTemplateTypes
   }
 
   // Check if template type already exists
@@ -242,7 +243,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
         setPlans(plansData || [])
       }
       
-      // Fetch templates using Supabase
+      // Fetch templates
       const { data: templatesData, error: templatesError } = await supabase
         .from('email_templates')
         .select('*')
@@ -250,30 +251,78 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
       
       if (templatesError) {
         console.error('Error fetching templates:', templatesError)
+        setError(`Failed to load templates: ${templatesError.message}`)
+        setTemplates([])
       } else {
         setTemplates(templatesData || [])
       }
       
-      // Fetch all template types from database (system + custom)
-      const { data: allTypesData, error: allTypesError } = await supabase
-        .from('custom_template_types')
-        .select('*')
-        .order('is_system DESC, created_at ASC') // System types first, then custom by creation date
-      
-      if (allTypesError) {
-        console.warn('Template types table not found or error occurred. Using fallback system types.')
-        // Use fallback system types when table doesn't exist or other errors occur
-        const fallbackTypes = [
-          { id: '1', value: 'login', label: 'Login', description: 'User login notifications', is_system: true },
-          { id: '2', value: 'signup', label: 'Signup', description: 'User registration welcome emails', is_system: true },
-          { id: '3', value: 'plan-update', label: 'Plan Update', description: 'Plan upgrade notifications', is_system: true },
-          { id: '4', value: 'plan-downgrade', label: 'Plan Downgrade', description: 'Plan downgrade notifications', is_system: true },
-          { id: '5', value: 'plan-expire', label: 'Plan Expire', description: 'Plan expiration warnings', is_system: true },
-          { id: '6', value: 'custom', label: 'Custom', description: 'Custom template type', is_system: true }
-        ]
-        setAllTemplateTypes(fallbackTypes)
-      } else {
-        setAllTemplateTypes(allTypesData || [])
+      // Fetch template types from custom_template_types table
+      try {
+        const { data: templateTypesData, error: templateTypesError } = await supabase
+          .from('custom_template_types')
+          .select('id, value, label, description')
+        
+        if (templateTypesError) {
+          console.error('Error fetching template types:', templateTypesError)
+          console.error('Error details:', JSON.stringify(templateTypesError, null, 2))
+          
+          // Check for specific error types
+          if (templateTypesError.code === 'PGRST116' || templateTypesError.message?.includes('relation "custom_template_types" does not exist')) {
+            setError('Template types table does not exist. Please run the database setup script first.')
+            setAllTemplateTypes([])
+            
+            // Show setup instructions
+            console.log('Table does not exist. Please run this SQL in your Supabase SQL Editor:')
+            console.log(`
+CREATE TABLE public.custom_template_types (
+  id uuid not null default gen_random_uuid (),
+  value character varying(50) not null,
+  label character varying(100) not null,
+  description text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint custom_template_types_pkey primary key (id),
+  constraint custom_template_types_value_key unique (value)
+) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_template_types USING btree (value) TABLESPACE pg_default;
+            `)
+          } else if (templateTypesError.code === '42703' || templateTypesError.message?.includes('does not exist')) {
+            setError('Column does not exist in table. The table structure may be different than expected.')
+            setAllTemplateTypes([])
+          } else if (templateTypesError.code === '42501' || templateTypesError.message?.includes('permission denied')) {
+            setError('Permission denied. You may not have access to the template types table.')
+            setAllTemplateTypes([])
+          } else if (templateTypesError.code === 'PGRST301' || templateTypesError.message?.includes('JWT')) {
+            setError('Authentication error. Please refresh the page and try again.')
+            setAllTemplateTypes([])
+          } else {
+            setError(`Failed to load template types: ${templateTypesError.message || 'Unknown error'}`)
+            setAllTemplateTypes([])
+          }
+        } else {
+          if (templateTypesData && templateTypesData.length > 0) {
+            // Map the data and add missing is_system field (default to false since field doesn't exist)
+            const mappedData = templateTypesData.map(item => ({
+              ...item,
+              is_system: false // Default to false since is_system field doesn't exist in this table
+            }))
+            setAllTemplateTypes(mappedData)
+            
+            // Set default template type if form is empty and we have types
+            if (!templateForm.template_type) {
+              setTemplateForm(prev => ({ ...prev, template_type: templateTypesData[0].value }))
+            }
+          } else {
+            setAllTemplateTypes([])
+            setError('No template types found in database. Please add some template types first.')
+          }
+        }
+      } catch (networkError) {
+        console.error('Network error fetching template types:', networkError)
+        setError('Network error. Please check your connection and try again.')
+        setAllTemplateTypes([])
       }
       
       // Fetch users using the same logic as AdminUsers
@@ -337,7 +386,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
       
       setShowTemplateForm(false)
       setEditingTemplate(null)
-      setTemplateForm({ name: '', subject: '', html_content: '', text_content: '', template_type: 'custom', variables: [] })
+      setTemplateForm({ name: '', subject: '', html_content: '', text_content: '', template_type: '', variables: [] })
       fetchData()
     } catch (error) {
       console.error('Error saving template:', error)
@@ -351,7 +400,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
       subject: template.subject,
       html_content: template.html_content,
       text_content: template.text_content || '',
-      template_type: template.template_type || 'custom',
+      template_type: template.template_type || '',
       variables: template.variables
     })
     setShowTemplateForm(true)
@@ -394,18 +443,13 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
         .insert({
           value: newTypeForm.value.toLowerCase().replace(/\s+/g, '-'),
           label: newTypeForm.label,
-          description: newTypeForm.description,
-          is_system: false
+          description: newTypeForm.description
         })
         .select()
 
       if (error) {
         console.error('Error creating custom template type:', error)
-        if (error.code === 'PGRST116' || error.message?.includes('relation "custom_template_types" does not exist')) {
-          setTemplateTypeError('Database table not set up. Please run the setup script first.')
-        } else {
-          setTemplateTypeError('Failed to create template type')
-        }
+        setTemplateTypeError('Failed to create template type')
         return
       }
 
@@ -423,11 +467,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
   const handleDeleteTemplateType = async (typeValue: string) => {
     const typeToDelete = allTemplateTypes.find(t => t.value === typeValue)
     
-    // Prevent deletion of system types
-    if (typeToDelete?.is_system) {
-      alert('System template types cannot be deleted')
-      return
-    }
+    // All types can be deleted since is_system field doesn't exist in this table
     
     // Check if any templates are using this type
     const templatesUsingType = templates.filter(t => t.template_type === typeValue)
@@ -447,17 +487,13 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
 
         if (error) {
           console.error('Error deleting template type:', error)
-          if (error.code === 'PGRST116' || error.message?.includes('relation "custom_template_types" does not exist')) {
-            alert('Database table not set up. Please run the setup script first.')
-          } else {
-            alert('Failed to delete template type')
-          }
+          alert('Failed to delete template type')
           return
         }
 
-        // If the deleted type was selected in the form, reset to 'custom'
+        // If the deleted type was selected in the form, reset to empty
         if (templateForm.template_type === typeValue) {
-          setTemplateForm(prev => ({ ...prev, template_type: 'custom' }))
+          setTemplateForm(prev => ({ ...prev, template_type: '' }))
         }
 
         fetchData() // Refresh data to remove the deleted type
@@ -567,6 +603,57 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-black mb-2">Email Management</h1>
         <p className="text-gray-600">Manage email templates and send bulk emails to users</p>
+        
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error Loading Template Types</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                  {error.includes('table does not exist') && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="font-medium text-yellow-800">Setup Required:</p>
+                      <p className="text-yellow-700 text-xs mt-1">
+                        Run this SQL in your Supabase SQL Editor to create the table:
+                      </p>
+                      <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`CREATE TABLE public.custom_template_types (
+  id uuid not null default gen_random_uuid (),
+  value character varying(50) not null,
+  label character varying(100) not null,
+  description text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint custom_template_types_pkey primary key (id),
+  constraint custom_template_types_value_key unique (value)
+);`}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      setError(null)
+                      fetchData()
+                    }}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Tabs */}
@@ -983,12 +1070,17 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
                       setTemplateTypeError(null)
                     }}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={allTemplateTypes.length === 0}
                   >
-                    {allTemplateTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label} - {type.description}
-                      </option>
-                    ))}
+                    {allTemplateTypes.length === 0 ? (
+                      <option value="">No template types available</option>
+                    ) : (
+                      allTemplateTypes.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label} - {type.description}
+                        </option>
+                      ))
+                    )}
                   </select>
                   <button
                     type="button"
@@ -1000,7 +1092,10 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Choose a type to avoid naming conflicts. Click + to add custom types.
+                  {allTemplateTypes.length === 0 
+                    ? "No template types found in database. Click + to add the first template type."
+                    : "Choose a type to avoid naming conflicts. Click + to add custom types."
+                  }
                 </p>
                 {templateTypeError && (
                   <p className="text-xs text-red-600 mt-1">{templateTypeError}</p>
@@ -1119,7 +1214,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
                 onClick={() => {
                   setShowTemplateForm(false)
                   setEditingTemplate(null)
-                  setTemplateForm({ name: '', subject: '', html_content: '', text_content: '', template_type: 'custom', variables: [] })
+                  setTemplateForm({ name: '', subject: '', html_content: '', text_content: '', template_type: '', variables: [] })
                 }}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               >

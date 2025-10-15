@@ -56,6 +56,7 @@ interface PageData {
 
 interface ProjectWithBrandData extends AuditProject {
   brand_data?: any | null;
+  brand_consistency?: boolean;
 }
 
 export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
@@ -66,11 +67,107 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const [project, setProject] = useState<ProjectWithBrandData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Grammar analysis state - moved to parent to persist across tab changes
+  const [grammarAnalysis, setGrammarAnalysis] = useState<any>(null)
+  const [grammarAnalysisError, setGrammarAnalysisError] = useState<string | null>(null)
+  const [isGrammarAnalyzing, setIsGrammarAnalyzing] = useState(false)
 
   // Memoize cached analysis to prevent unnecessary re-renders
   const cachedAnalysis = useMemo(() => {
-    return page?.gemini_analysis || undefined
-  }, [page?.gemini_analysis])
+    return page?.gemini_analysis || grammarAnalysis || undefined
+  }, [page?.gemini_analysis, grammarAnalysis])
+
+  // Auto-start grammar analysis when page data is loaded
+  useEffect(() => {
+    if (page?.id && page?.url && page?.html_content && !grammarAnalysis && !isGrammarAnalyzing) {
+      // Check if user has access to grammar content analysis
+      if (hasFeature('grammar_content_analysis')) {
+        console.log('Auto-starting grammar analysis from parent component...');
+        startGrammarAnalysis();
+      }
+    }
+  }, [page?.id, page?.url, page?.html_content, grammarAnalysis, isGrammarAnalyzing]);
+
+  // Function to start grammar analysis
+  const startGrammarAnalysis = async () => {
+    if (!page?.id || !page?.url || !page?.html_content) return;
+    
+    setIsGrammarAnalyzing(true);
+    setGrammarAnalysisError(null);
+    
+    try {
+      const response = await fetch('/api/gemini-analysis-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pageId: page.id,
+          content: page.filtered_content || page.html_content,
+          url: page.url,
+          userId: null // Will be handled by the API
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      // Check if it's a cached response (immediate JSON)
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const data = await response.json();
+        setGrammarAnalysis(data.analysis);
+        setIsGrammarAnalyzing(false);
+        return;
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.status === 'completed' && data.analysis) {
+                setGrammarAnalysis(data.analysis);
+                setIsGrammarAnalyzing(false);
+                return;
+              }
+
+              if (data.status === 'error') {
+                throw new Error(data.error || 'Analysis failed');
+              }
+            } catch (parseError) {
+              console.error('Error parsing stream data:', parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in grammar analysis:', error);
+      setGrammarAnalysisError(error instanceof Error ? error.message : 'Analysis failed');
+      setIsGrammarAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -124,6 +221,14 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     
     const featureId = featureMap[tabId]
     if (!featureId) return true // Show tabs that don't require specific features
+    
+    // Special case for brand-consistency: check both plan feature access AND project brand_consistency column
+    if (tabId === 'brand-consistency') {
+      const hasPlanAccess = hasFeature(featureId)
+      const hasProjectAccess = project?.brand_consistency === true
+      return hasPlanAccess && hasProjectAccess
+    }
+    
     return hasFeature(featureId)
   }
 
@@ -268,7 +373,16 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       case 'images':
         return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'grammar-content':
-        return <GrammarContentTab page={page!} cachedAnalysis={cachedAnalysis} />
+        return (
+          <GrammarContentTab 
+            page={page!} 
+            cachedAnalysis={cachedAnalysis}
+            grammarAnalysis={grammarAnalysis}
+            grammarAnalysisError={grammarAnalysisError}
+            isGrammarAnalyzing={isGrammarAnalyzing}
+            onReAnalyze={startGrammarAnalysis}
+          />
+        )
       case 'brand-consistency':
         console.log('Brand consistency tab - Project data:', project);
         console.log('Brand consistency tab - Brand data:', project?.brand_data);
@@ -310,7 +424,8 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     { id: 'links', name: 'Links', icon: '🔗' },
     { id: 'images', name: 'Images', icon: '🖼️' },
     { id: 'grammar-content', name: 'Grammar & Content', icon: '📝' },
-    { id: 'brand-consistency', name: 'Brand Consistency', icon: '🎯' },
+    // Only include brand-consistency tab if project has brand_consistency enabled
+    ...(project?.brand_consistency === true ? [{ id: 'brand-consistency', name: 'Brand Consistency', icon: '🎯' }] : []),
     { id: 'seo-structure', name: 'SEO & Structure', icon: '🔍' },
     { id: 'ui-quality', name: 'UI Quality', icon: '🎨' },
     { id: 'technical', name: 'Technical', icon: '⚙️' },

@@ -62,10 +62,10 @@ export default function AnalysisTabContent({
         title: 'Technical Analysis',
         description: 'This feature is not available in your current plan. Upgrade to access detailed technical analysis and recommendations.'
       },
-      'cms': {
-        title: 'CMS Detection',
-        description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
-      },
+      // 'cms': {
+      //   title: 'CMS Detection',
+      //   description: 'This feature is not available in your current plan. Upgrade to access CMS detection and brand consistency checks.'
+      // },
       'performance': {
         title: 'Performance Metrics',
         description: 'This feature is not available in your current plan. Upgrade to access detailed performance analysis and PageSpeed Insights.'
@@ -149,10 +149,10 @@ export default function AnalysisTabContent({
   }
 
   // Guard: if CMS not detected and active section is 'cms', switch to 'overview'
-  if (state.activeSection === 'cms' && state.project && !state.project.cms_detected) {
-    handleSectionChange('overview')
-    return null
-  }
+  // if (state.activeSection === 'cms' && state.project && !state.project.cms_detected) {
+  //   handleSectionChange('overview')
+  //   return null
+  // }
 
   return (
     <div className="space-y-6">

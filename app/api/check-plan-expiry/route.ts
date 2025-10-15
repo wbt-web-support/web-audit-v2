@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
         payment_status: 'completed',
         payment_method: 'system_downgrade',
         payment_date: new Date().toISOString(),
+        expires_at: null, // Starter plan doesn't expire
         notes: `Automatic downgrade due to plan expiry on ${expiryDate?.toISOString()}`
       });
     } catch (paymentError) {

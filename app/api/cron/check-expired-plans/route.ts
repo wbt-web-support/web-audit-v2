@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
             payment_status: 'completed',
             payment_method: 'cron_downgrade',
             payment_date: new Date().toISOString(),
+            expires_at: null, // Starter plan doesn't expire
             notes: `Automatic downgrade due to plan expiry on ${user.plan_expires_at} (processed by cron)`
           });
         } catch (paymentError) {

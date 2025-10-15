@@ -208,6 +208,11 @@ export default function PricingSection({
     // If plan has expired, allow any plan
     if (isPlanExpired) return true;
 
+    // If same plan type and same billing cycle, don't allow (user is already on this exact plan)
+    if (plan.plan_type === currentPlanType && plan.billing_cycle === currentBillingCycle) {
+      return false;
+    }
+
     // If same plan type but different billing cycle, allow (monthly to yearly or vice versa)
     if (plan.plan_type === currentPlanType && plan.billing_cycle !== currentBillingCycle) {
       return true;
@@ -218,10 +223,7 @@ export default function PricingSection({
       return true;
     }
 
-    // If same plan type and same billing cycle, don't allow
-    if (plan.plan_type === currentPlanType && plan.billing_cycle === currentBillingCycle) {
-      return false;
-    }
+    // Default: allow the plan
     return true;
   }, [currentPlanType, currentBillingCycle, planExpiresAt]);
 
@@ -230,17 +232,25 @@ export default function PricingSection({
     if (plan.plan_type === 'Starter') return 'available';
     if (!currentPlanType) return 'available';
     if (currentPlanType === 'Starter') return 'available';
+    
     const isPlanExpired = planExpiresAt ? new Date(planExpiresAt) < new Date() : false;
     if (isPlanExpired) return 'available';
+    
+    // If same plan type and same billing cycle, it's the current plan
     if (plan.plan_type === currentPlanType && plan.billing_cycle === currentBillingCycle) {
       return 'current';
     }
+    
+    // If same plan type but different billing cycle, it's a billing change
     if (plan.plan_type === currentPlanType && plan.billing_cycle !== currentBillingCycle) {
       return 'billing_change';
     }
+    
+    // If different plan type, it's an upgrade or downgrade
     if (plan.plan_type !== currentPlanType) {
       return 'upgrade_downgrade';
     }
+    
     return 'available';
   }, [currentPlanType, currentBillingCycle, planExpiresAt]);
 
