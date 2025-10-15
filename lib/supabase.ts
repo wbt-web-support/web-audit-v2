@@ -26,11 +26,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 // Server-side client with service role key for admin operations
-const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!serviceRoleKey) {
   throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY environment variable. Please create a .env.local file with your Supabase service role key.'
+    'Missing SUPABASE_SERVICE_ROLE_KEY environment variable. Please create a .env.local file with your Supabase service role key.'
   )
 }
 
