@@ -157,57 +157,58 @@ export function useUserPlan(): UseUserPlanResult {
           current_projects: 0
         };
       } else {
-        // Use data directly from users table if available, otherwise fetch from plans table
-        if (userData.plan_id && userData.max_projects !== undefined && userData.can_use_features) {
-          // Get plan name from plans table
-          const {
-            data: planData,
-            error: planError
-          } = await supabase.from('plans').select('name').eq('id', userData.plan_id).single();
-          const planName = planError || !planData ? await getPlanNameFromDB(userData.plan_type as PlanType) : planData.name;
+        // Always fetch fresh data from plans table to get latest features and limits
+        // This ensures we get the most up-to-date plan configuration
+        let planData, planError;
+        
+        // Try to get by plan_id first if available, otherwise by plan_type
+        if (userData.plan_id) {
+          const result = await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('id', userData.plan_id).eq('is_active', true).single();
+          planData = result.data;
+          planError = result.error;
+        }
+        
+        // If plan_id query failed or no plan_id, try by plan_type
+        if (planError || !planData) {
+          const result = await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', userData.plan_type).eq('is_active', true).order('created_at', { ascending: true }).limit(1).single();
+          planData = result.data;
+          planError = result.error;
+        }
+        
+        if (planError || !planData) {
+          console.warn(`No plan found for type ${userData.plan_type}, using fallback plan`);
+          console.error('Plan query error:', planError);
+          const fallbackPlanName = await getPlanNameFromDB(userData.plan_type as PlanType);
           userPlan = {
             plan_type: userData.plan_type as PlanType,
-            plan_id: userData.plan_id,
-            plan_name: planName,
-            can_use_features: userData.can_use_features || [],
-            max_projects: userData.max_projects || 1,
+            plan_id: 'fallback-' + userData.plan_type.toLowerCase(),
+            plan_name: fallbackPlanName,
+            can_use_features: ['basic_audit'],
+            max_projects: 1,
             current_projects: 0,
             billing_cycle: userData.billing_cycle,
             plan_expires_at: userData.plan_expires_at
           };
         } else {
-          // Get plan details from plans table based on user's plan_type
-          const {
-            data: planData,
-            error: planError
-          } = (await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', userData.plan_type).eq('is_active', true).single()) as {
-            data: PlanData | null;
-            error: any;
+          // Debug logging to see what we're getting from the database
+          console.log('Plan data from database:', {
+            plan_type: planData.plan_type,
+            can_use_features: planData.can_use_features,
+            max_projects: planData.max_projects,
+            features_count: planData.can_use_features?.length || 0
+          });
+          
+          userPlan = {
+            plan_type: planData.plan_type,
+            plan_id: planData.id,
+            plan_name: planData.name,
+            // Always use fresh data from plans table
+            can_use_features: planData.can_use_features || [],
+            max_projects: planData.max_projects || 1,
+            current_projects: 0,
+            billing_cycle: userData.billing_cycle,
+            plan_expires_at: userData.plan_expires_at
           };
-          if (planError || !planData) {
-            console.warn(`No plan found for type ${userData.plan_type}, using fallback plan`);
-            const fallbackPlanName = await getPlanNameFromDB(userData.plan_type as PlanType);
-            userPlan = {
-              plan_type: userData.plan_type as PlanType,
-              plan_id: 'fallback-' + userData.plan_type.toLowerCase(),
-              plan_name: fallbackPlanName,
-              can_use_features: ['basic_audit'],
-              max_projects: 1,
-              current_projects: 0
-            };
-          } else {
-            userPlan = {
-              plan_type: planData.plan_type,
-              plan_id: planData.id,
-              plan_name: planData.name,
-              // Use the actual name from database
-              can_use_features: planData.can_use_features || [],
-              max_projects: planData.max_projects || 1,
-              current_projects: 0,
-              billing_cycle: userData.billing_cycle,
-              plan_expires_at: userData.plan_expires_at
-            };
-          }
         }
       }
 
@@ -219,6 +220,15 @@ export function useUserPlan(): UseUserPlanResult {
       if (!projectError && projects) {
         userPlan.current_projects = projects.length;
       }
+      
+      // Debug logging for final plan info
+      console.log('Final user plan info:', {
+        plan_name: userPlan.plan_name,
+        can_use_features: userPlan.can_use_features,
+        features_count: userPlan.can_use_features?.length || 0,
+        max_projects: userPlan.max_projects
+      });
+      
       setPlanInfo(userPlan);
     } catch (err) {
       console.error('Error fetching user plan:', err);
