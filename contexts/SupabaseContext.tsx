@@ -851,7 +851,7 @@ export function SupabaseProvider({
       const {
         data: userData,
         error: userError
-      } = await supabase.from('users').select('plan_type').eq('id', user.id).single();
+      } = await supabase.from('users').select('plan_type, plan_id').eq('id', user.id).single();
       if (userError || !userData) {
         return {
           data: null,
@@ -861,12 +861,25 @@ export function SupabaseProvider({
         };
       }
 
-      // Get plan details from plans table
-      const {
-        data: planData,
-        error: planError
-      } = await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', userData.plan_type).eq('is_active', true).single();
+      // Get plan details from plans table - try by plan_id first if available, then by plan_type
+      let planData, planError;
+      
+      // Try to get by plan_id first if available
+      if (userData.plan_id) {
+        const result = await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('id', userData.plan_id).eq('is_active', true).single();
+        planData = result.data;
+        planError = result.error;
+      }
+      
+      // If plan_id query failed or no plan_id, try by plan_type
       if (planError || !planData) {
+        const result = await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', userData.plan_type).eq('is_active', true).order('created_at', { ascending: true }).limit(1).single();
+        planData = result.data;
+        planError = result.error;
+      }
+      
+      if (planError || !planData) {
+        console.error('Plan query error in createAuditProject:', planError);
         return {
           data: null,
           error: {
