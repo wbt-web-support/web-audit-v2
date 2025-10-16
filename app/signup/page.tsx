@@ -314,6 +314,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Email"
+                autoComplete="email"
                 required
               />
             </div>
@@ -331,6 +332,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-800 border border-gray-300 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                   placeholder="Enter your password"
+                  autoComplete="new-password"
                   required
                 />
                 <button
@@ -365,6 +367,7 @@ export default function SignupPage() {
                   onChange={(e) => setRepeatPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-800 border border-gray-300 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                   placeholder="Confirm your password"
+                  autoComplete="new-password"
                   required
                 />
                 <button
