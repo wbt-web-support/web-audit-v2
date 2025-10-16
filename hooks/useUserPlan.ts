@@ -64,7 +64,7 @@ export function useUserPlan(): UseUserPlanResult {
   // Function to check plan expiry with debouncing
   const checkPlanExpiry = async () => {
     const now = Date.now();
-    const DEBOUNCE_TIME = 5 * 60 * 1000; // 5 minutes
+    const DEBOUNCE_TIME = 10 * 60 * 1000; // 10 minutes (increased from 5)
     
     // Only check if enough time has passed since last check
     if (now - lastExpiryCheck < DEBOUNCE_TIME) {
@@ -91,13 +91,21 @@ export function useUserPlan(): UseUserPlanResult {
       
       setLastExpiryCheck(now);
       
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch('/api/check-plan-expiry', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         if (data.downgraded) {
@@ -135,8 +143,10 @@ export function useUserPlan(): UseUserPlanResult {
         throw new Error('User not authenticated');
       }
 
-      // Check plan expiry first (with debouncing)
-      await checkPlanExpiry();
+      // Check plan expiry first (with debouncing) - non-blocking
+      checkPlanExpiry().catch(error => {
+        console.warn('Plan expiry check failed (non-blocking):', error);
+      });
 
       // Get user's plan data from user table
       const {
@@ -190,14 +200,6 @@ export function useUserPlan(): UseUserPlanResult {
             plan_expires_at: userData.plan_expires_at
           };
         } else {
-          // Debug logging to see what we're getting from the database
-          console.log('Plan data from database:', {
-            plan_type: planData.plan_type,
-            can_use_features: planData.can_use_features,
-            max_projects: planData.max_projects,
-            features_count: planData.can_use_features?.length || 0
-          });
-          
           userPlan = {
             plan_type: planData.plan_type,
             plan_id: planData.id,
@@ -220,14 +222,6 @@ export function useUserPlan(): UseUserPlanResult {
       if (!projectError && projects) {
         userPlan.current_projects = projects.length;
       }
-      
-      // Debug logging for final plan info
-      console.log('Final user plan info:', {
-        plan_name: userPlan.plan_name,
-        can_use_features: userPlan.can_use_features,
-        features_count: userPlan.can_use_features?.length || 0,
-        max_projects: userPlan.max_projects
-      });
       
       setPlanInfo(userPlan);
     } catch (err) {
