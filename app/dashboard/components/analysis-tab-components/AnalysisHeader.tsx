@@ -30,7 +30,7 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
     const featureMap: Record<string, string> = {
       // Main analysis page tabs
       'overview': 'single_page_crawl', // Basic overview is available to all
-      'pages': 'full_site_crawl',
+      'pages': 'pages_tab',
       'technologies': 'technical_analysis', // Updated to use technical_analysis
       
       'performance': 'performance_metrics',
@@ -64,8 +64,8 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
         description: 'This feature is not available in your current plan. Upgrade to access comprehensive website overview and insights.'
       },
       'pages': {
-        title: 'Full Site Crawl',
-        description: 'This feature is not available in your current plan. Upgrade to access full website crawling and analysis.'
+        title: 'Pages Tab',
+        description: 'This feature is not available in your current plan. Upgrade to access pages tab functionality.'
       },
       'technologies': {
         title: 'Technical Analysis',

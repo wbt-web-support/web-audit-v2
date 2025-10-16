@@ -60,11 +60,17 @@ export function useUserPlan(): UseUserPlanResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastExpiryCheck, setLastExpiryCheck] = useState<number>(0);
+  const [isCheckingExpiry, setIsCheckingExpiry] = useState(false);
 
   // Function to check plan expiry with debouncing
   const checkPlanExpiry = async () => {
     const now = Date.now();
     const DEBOUNCE_TIME = 10 * 60 * 1000; // 10 minutes (increased from 5)
+    
+    // Prevent concurrent expiry checks
+    if (isCheckingExpiry) {
+      return;
+    }
     
     // Only check if enough time has passed since last check
     if (now - lastExpiryCheck < DEBOUNCE_TIME) {
@@ -89,11 +95,12 @@ export function useUserPlan(): UseUserPlanResult {
         return;
       }
       
-      setLastExpiryCheck(now);
-      
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    setLastExpiryCheck(now);
+    setIsCheckingExpiry(true);
+    
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch('/api/check-plan-expiry', {
         method: 'POST',
@@ -118,8 +125,15 @@ export function useUserPlan(): UseUserPlanResult {
         console.warn('Plan expiry check failed:', response.status);
       }
     } catch (error) {
+      // Handle AbortError specifically (timeout) - don't log as error
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Plan expiry check timed out - this is normal for slow connections');
+        return;
+      }
       console.error('Error checking plan expiry:', error);
       // Don't throw error - this is a background check
+    } finally {
+      setIsCheckingExpiry(false);
     }
   };
   const fetchUserPlan = async () => {

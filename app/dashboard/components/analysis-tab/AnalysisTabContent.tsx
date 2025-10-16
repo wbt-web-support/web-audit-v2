@@ -33,7 +33,7 @@ export default function AnalysisTabContent({
   const hasAccessToSection = (sectionId: string): boolean => {
     const featureMap: Record<string, string> = {
       'overview': 'single_page_crawl', // Basic overview is available to all
-      'pages': 'full_site_crawl',
+      'pages': 'pages_tab',
       'technologies': 'technical_analysis',
       'cms': 'brand_consistency_check',
       'performance': 'performance_metrics',
@@ -55,8 +55,8 @@ export default function AnalysisTabContent({
         description: 'This feature is not available in your current plan. Upgrade to access comprehensive website overview and insights.'
       },
       'pages': {
-        title: 'Full Site Crawl',
-        description: 'This feature is not available in your current plan. Upgrade to access full website crawling and analysis.'
+        title: 'Pages Tab',
+        description: 'This feature is not available in your current plan. Upgrade to access pages tab functionality.'
       },
       'technologies': {
         title: 'Technical Analysis',

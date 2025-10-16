@@ -131,13 +131,59 @@ export default function AdminPlans({
         const response = await fetch('/api/plans');
         if (response.ok) {
           const apiData = await response.json();
-          setPlans(apiData.plans || []);
+          // Parse features from JSON strings if needed
+          const parsedPlans = (apiData.plans || []).map((plan: any) => {
+            try {
+              return {
+                ...plan,
+                features: Array.isArray(plan.features) 
+                  ? plan.features.map((feature: any) => 
+                      typeof feature === 'string' ? JSON.parse(feature) : feature
+                    ).filter((feature: any) => feature && feature.name)
+                  : [],
+                can_use_features: typeof plan.can_use_features === 'string' ? JSON.parse(plan.can_use_features) : plan.can_use_features || [],
+                limits: typeof plan.limits === 'string' ? JSON.parse(plan.limits) : plan.limits || {}
+              };
+            } catch (error) {
+              console.error('Error parsing plan data from API:', error, plan);
+              return {
+                ...plan,
+                features: [],
+                can_use_features: [],
+                limits: {}
+              };
+            }
+          });
+          setPlans(parsedPlans);
         } else {
           console.error('API access also failed:', response.status, response.statusText);
           throw new Error('Both direct and API access failed');
         }
       } else {
-        setPlans(directData);
+        // Parse features from JSON strings if needed
+        const parsedData = directData.map((plan: any) => {
+          try {
+            return {
+              ...plan,
+              features: Array.isArray(plan.features) 
+                ? plan.features.map((feature: any) => 
+                    typeof feature === 'string' ? JSON.parse(feature) : feature
+                  ).filter((feature: any) => feature && feature.name)
+                : [],
+              can_use_features: typeof plan.can_use_features === 'string' ? JSON.parse(plan.can_use_features) : plan.can_use_features || [],
+              limits: typeof plan.limits === 'string' ? JSON.parse(plan.limits) : plan.limits || {}
+            };
+          } catch (error) {
+            console.error('Error parsing plan data:', error, plan);
+            return {
+              ...plan,
+              features: [],
+              can_use_features: [],
+              limits: {}
+            };
+          }
+        });
+        setPlans(parsedData);
       }
     } catch (error) {
       console.error('Unexpected error loading plans:', error);
@@ -300,6 +346,22 @@ export default function AdminPlans({
     setIsEditing(false);
   };
   const handleEditPlan = (plan: Plan) => {
+    // Debug: Log the plan features
+    console.log('Plan features:', plan.features);
+    console.log('Plan features type:', typeof plan.features);
+    console.log('Plan features length:', plan.features?.length);
+    
+    // Features should already be parsed from the loadPlans function
+    const features = Array.isArray(plan.features) ? plan.features : [];
+    
+    // Filter out empty features and ensure proper structure
+    const validFeatures = features.filter(feature => {
+      if (!feature || typeof feature !== 'object') return false;
+      return feature.name?.trim() || feature.description?.trim() || feature.icon?.trim();
+    });
+    
+    console.log('Valid features after filtering:', validFeatures);
+    
     setFormData({
       name: plan.name || '',
       description: plan.description || '',
@@ -307,7 +369,7 @@ export default function AdminPlans({
       price: plan.price || 0,
       currency: plan.currency || 'INR',
       billing_cycle: plan.billing_cycle || 'monthly',
-      features: plan.features || [],
+      features: validFeatures,
       can_use_features: plan.can_use_features || [],
       max_projects: plan.max_projects || 1,
       limits: plan.limits || {},
@@ -850,18 +912,47 @@ export default function AdminPlans({
 
                     {/* Features List */}
                     <div className="space-y-2">
-                      {formData.features.map((feature, index) => <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-lg">{feature.icon}</span>
-                            <div>
-                              <div className="font-medium text-black">{feature.name}</div>
-                              <div className="text-sm text-gray-600">{feature.description}</div>
+                      {formData.features.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-4xl mb-2">📋</div>
+                          <p>No custom features added yet</p>
+                          <p className="text-sm">Add features using the form above</p>
+                        </div>
+                      ) : (
+                        formData.features.map((feature, index) => {
+                          // Debug: Log each feature
+                          console.log(`Feature ${index}:`, feature);
+                          console.log(`Feature ${index} name:`, feature.name);
+                          console.log(`Feature ${index} description:`, feature.description);
+                          console.log(`Feature ${index} icon:`, feature.icon);
+                          
+                          const hasName = feature.name && feature.name.trim();
+                          const hasDescription = feature.description && feature.description.trim();
+                          const hasIcon = feature.icon && feature.icon.trim();
+                          
+                          return (
+                            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-lg">{hasIcon ? feature.icon : '📋'}</span>
+                                <div>
+                                  <div className="font-medium text-black">
+                                    {hasName ? feature.name : 'Unnamed Feature'}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {hasDescription ? feature.description : 'No description'}
+                                  </div>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => handleRemoveFeature(index)} 
+                                className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 transition-colors"
+                              >
+                                Remove
+                              </button>
                             </div>
-                          </div>
-                          <button onClick={() => handleRemoveFeature(index)} className="text-red-600 hover:text-red-800">
-                            Remove
-                          </button>
-                        </div>)}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 </div>

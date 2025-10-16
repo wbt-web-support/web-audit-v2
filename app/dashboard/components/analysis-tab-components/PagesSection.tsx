@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { useUserPlan } from '@/hooks/useUserPlan'
+import FeatureUnavailableCard from '../FeatureUnavailableCard'
 
 import { ScrapedPage } from '../analysis-tab/types'
 
@@ -18,11 +20,14 @@ export default function PagesSection({
   onPageSelect, 
   onPagesUpdate 
 }: PagesSectionProps) {
+  console.log('PagesSection rendered with props:', { scrapedPages, projectId, onPageSelect, onPagesUpdate })
+  
   const { getScrapedPages } = useSupabase()
+  const { hasFeature, loading: isLoadingPlan } = useUserPlan()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pages, setPages] = useState(scrapedPages || [])
-  const [hasLoadedPages, setHasLoadedPages] = useState(scrapedPages && scrapedPages.length > 0)
+  const [hasLoadedPages, setHasLoadedPages] = useState(false)
   const [sortBy, setSortBy] = useState<'created_at' | 'title' | 'status_code'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'error' | 'redirect'>('all')
@@ -30,16 +35,28 @@ export default function PagesSection({
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [isRequestInProgress, setIsRequestInProgress] = useState(false)
 
+  // Check if user has access to pages tab feature
+  const hasPagesTabAccess = hasFeature('pages_tab')
+  console.log('PagesSection: hasPagesTabAccess:', hasPagesTabAccess)
+
   // Update pages when scrapedPages prop changes and handle persistence
   useEffect(() => {
     if (scrapedPages && scrapedPages.length > 0) {
       setPages(scrapedPages)
       setHasLoadedPages(true)
+    } else if (scrapedPages && scrapedPages.length === 0) {
+      // If scrapedPages is explicitly an empty array, mark as loaded
+      setPages([])
+      setHasLoadedPages(true)
+    } else if (scrapedPages === undefined || scrapedPages === null) {
+      // If no scrapedPages prop, reset hasLoadedPages to allow auto-fetch
+      setHasLoadedPages(false)
     }
   }, [scrapedPages])
 
   // Fetch pages function
   const fetchPages = useCallback(async () => {
+    console.log('PagesSection fetchPages called:', { projectId, isRequestInProgress })
     if (!projectId || isRequestInProgress) return
     
     setIsRequestInProgress(true)
@@ -47,7 +64,10 @@ export default function PagesSection({
     setError(null)
     
     try {
+      console.log('PagesSection: About to call getScrapedPages with projectId:', projectId)
       const { data, error: fetchError } = await getScrapedPages(projectId)
+      console.log('PagesSection: getScrapedPages response:', { data, error: fetchError })
+      
       if (fetchError) {
         console.error('Error fetching pages:', fetchError)
         console.error('Error details:', JSON.stringify(fetchError, null, 2))
@@ -62,11 +82,14 @@ export default function PagesSection({
       }
       
       if (data) {
+        console.log('PagesSection: Setting pages data:', data)
         setPages(data)
         setHasLoadedPages(true)
         if (onPagesUpdate) {
           onPagesUpdate(data)
         }
+      } else {
+        console.log('PagesSection: No data returned from getScrapedPages')
       }
     } catch (err) {
       console.error('Error fetching pages:', err)
@@ -80,10 +103,20 @@ export default function PagesSection({
 
   // Auto-load pages when component mounts if no data is available - single consolidated effect
   useEffect(() => {
-    if (projectId && !hasLoadedPages && pages.length === 0 && !isLoading && !isRequestInProgress) {
+    console.log('PagesSection auto-load check:', {
+      projectId,
+      hasLoadedPages,
+      pagesLength: pages.length,
+      isLoading,
+      isRequestInProgress,
+      hasPagesTabAccess
+    })
+    
+    if (projectId && !hasLoadedPages && pages.length === 0 && !isLoading && !isRequestInProgress && hasPagesTabAccess) {
+      console.log('PagesSection: Triggering fetchPages')
       fetchPages()
     }
-  }, [projectId, hasLoadedPages, pages.length, isLoading, isRequestInProgress, fetchPages])
+  }, [projectId, hasLoadedPages, pages.length, isLoading, isRequestInProgress, hasPagesTabAccess, fetchPages])
 
   // Filter and sort pages
   const filteredAndSortedPages = pages
@@ -130,6 +163,35 @@ export default function PagesSection({
   useEffect(() => {
     setCurrentPage(1)
   }, [filterStatus, sortBy, sortOrder, itemsPerPage])
+
+  // Show loading state while checking plan
+  if (isLoadingPlan) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="text-center py-8">
+          <div className="inline-flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-gray-600">Loading...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show feature unavailable card if user doesn't have access
+  if (!hasPagesTabAccess) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <FeatureUnavailableCard 
+          title="Pages Tab"
+          description="This feature is not available in your current plan. Upgrade to access pages tab functionality."
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -358,13 +420,43 @@ export default function PagesSection({
           {hasLoadedPages && (
             <p className="text-sm text-gray-500 mt-1">Data will persist when switching tabs</p>
           )}
+          <div className="text-xs text-gray-400 mt-2 space-y-1">
+            <div>Debug Info:</div>
+            <div>• hasLoadedPages: {hasLoadedPages.toString()}</div>
+            <div>• pages.length: {pages.length}</div>
+            <div>• isLoading: {isLoading.toString()}</div>
+            <div>• hasPagesTabAccess: {hasPagesTabAccess.toString()}</div>
+            <div>• scrapedPages.length: {scrapedPages?.length || 0}</div>
+          </div>
           {projectId && (
-            <button
-              onClick={fetchPages}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
-            >
-              Try fetching pages
-            </button>
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    console.log('Manual fetch triggered')
+                    setHasLoadedPages(false)
+                    fetchPages()
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Try fetching pages
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('Reset state triggered')
+                    setHasLoadedPages(false)
+                    setPages([])
+                    setError(null)
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors duration-200"
+                >
+                  Reset State
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">
+                Debug: Project ID: {projectId}
+              </div>
+            </div>
           )}
         </div>
       ) : null}

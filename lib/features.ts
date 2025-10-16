@@ -172,6 +172,14 @@ export const FEATURES: Feature[] = [
     category: 'media',
     icon: '🔗',
     isCore: true
+  },
+  {
+    id: 'pages_tab',
+    name: 'Pages Tab Control',
+    description: 'Block and unblock access to pages tab functionality',
+    category: 'technical',
+    icon: '📄',
+    isCore: false
   }
 ]
 
