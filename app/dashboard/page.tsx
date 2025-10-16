@@ -10,6 +10,7 @@ import AnalysisTab from './components/tabs/AnalysisTab';
 import PageAnalysisTab from './components/tabs/PageAnalysisTab';
 import ConnectionStatus from './components/ConnectionStatus';
 import { ScrapedPage } from './components/analysis-tab/types';
+import { useProjectsStore } from '@/lib/stores/projectsStore';
 function DashboardContentWrapper() {
   const {
     user,
@@ -28,12 +29,17 @@ function DashboardContentWrapper() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
-  // Projects data state
-  const [projects, setProjects] = useState<AuditProject[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
-  const [projectsFetched, setProjectsFetched] = useState(false);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  // Use Zustand store for projects
+  const { 
+    projects, 
+    loading: projectsLoading, 
+    error: projectsError, 
+    setProjects,
+    setLoading,
+    setError,
+    setFetchFunction,
+    refreshProjects: storeRefreshProjects
+  } = useProjectsStore();
 
   // Analysis data cache
   const [analysisCache, setAnalysisCache] = useState<Map<string, {
@@ -88,58 +94,20 @@ function DashboardContentWrapper() {
     if (activeTab === 'analysis' && selectedProjectId) {}
   }, [activeTab, selectedProjectId]);
 
-  // Refresh projects function
-  const refreshProjects = useCallback(async () => {
-    if (!user) return;
-    setProjectsLoading(true);
-    setProjectsError(null);
-    try {
-      const {
-        data,
-        error
-      } = await getAuditProjectsOptimized();
-      if (error) {
-        console.error('❌ Dashboard: Error refreshing projects:', error);
-        setProjectsError('Failed to refresh projects');
-        return;
-      }
-      if (data) {
-        setProjects(data);
-        setProjectsError(null);
-        setProjectsFetched(true);
-        setLastFetchTime(Date.now());
-      }
-    } catch (err) {
-      console.error('❌ Dashboard: Unexpected error refreshing projects:', err);
-      setProjectsError('Failed to refresh projects');
-    } finally {
-      setProjectsLoading(false);
-    }
-  }, [user, getAuditProjectsOptimized]);
+  // Use store's refreshProjects function
+  const refreshProjects = storeRefreshProjects;
 
-  // Handle browser visibility changes to prevent unnecessary refetches
+  // Handle browser visibility changes - simplified with Zustand
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Only refetch if data is stale (older than 5 minutes)
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTime;
-        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-        if (timeSinceLastFetch > CACHE_DURATION && projectsFetched) {
-          refreshProjects();
-        }
+        // Immediately refresh when page becomes visible
+        refreshProjects();
       }
     };
     const handleFocus = () => {
-      // Only refetch if data is stale (older than 5 minutes)
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTime;
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-      if (timeSinceLastFetch > CACHE_DURATION && projectsFetched) {
-        refreshProjects();
-      }
+      // Immediately refresh when window gains focus
+      refreshProjects();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
@@ -147,7 +115,7 @@ function DashboardContentWrapper() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [lastFetchTime, projectsFetched, refreshProjects]);
+  }, [refreshProjects]);
 
   // Handle tab changes with URL updates
   const handleTabChange = (tab: string) => {
@@ -290,50 +258,22 @@ function DashboardContentWrapper() {
     });
   };
 
-  // Fetch projects data when user is available
+  // Set fetch function in store and load projects when user is available
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!authChecked || !isAuthenticated || !user) {
-        setProjectsLoading(false);
-        return;
-      }
-
-      // Prevent unnecessary re-fetches
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTime;
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-      if (projectsFetched && timeSinceLastFetch < CACHE_DURATION) {
-        setProjectsLoading(false);
-        return;
-      }
-      setProjectsLoading(true);
-      setProjectsError(null);
-      try {
-        const {
-          data,
-          error
-        } = await getAuditProjectsOptimized();
+    if (authChecked && isAuthenticated && user) {
+      // Set the fetch function in the store
+      setFetchFunction(async () => {
+        const { data, error } = await getAuditProjectsOptimized();
         if (error) {
-          console.error('❌ Dashboard: Error fetching projects:', error);
-          setProjectsError('Failed to load projects');
-          return;
+          throw new Error(error.message || 'Failed to fetch projects');
         }
-        if (data) {
-          setProjects(data);
-          setProjectsError(null);
-          setProjectsFetched(true);
-          setLastFetchTime(now);
-        }
-      } catch (err) {
-        console.error('❌ Dashboard: Unexpected error fetching projects:', err);
-        setProjectsError('Failed to load projects');
-      } finally {
-        setProjectsLoading(false);
-      }
-    };
-    fetchProjects();
-  }, [authChecked, isAuthenticated, user, getAuditProjectsOptimized, lastFetchTime, projectsFetched]); // Enhanced dependencies for better auth checking
+        return data || [];
+      });
+      
+      // Load projects
+      storeRefreshProjects();
+    }
+  }, [authChecked, isAuthenticated, user, getAuditProjectsOptimized, setFetchFunction, storeRefreshProjects]);
 
   // Show loading state
   if (loading) {
@@ -366,14 +306,14 @@ function DashboardContentWrapper() {
         {/* Header */}
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} userProfile={userProfile} />
 
-        {/* Content */}
-        {activeTab === 'analysis' && selectedProjectId ? <div className="p-6">
-            <AnalysisTab key={selectedProjectId} // Prevent unnecessary re-mounting
-        projectId={selectedProjectId} cachedData={getCachedAnalysisData(selectedProjectId)} onDataUpdate={(project, scrapedPages) => setCachedAnalysisData(selectedProjectId, project, scrapedPages)} onPageSelect={handlePageSelect} />
-          </div> : activeTab === 'page-analysis' && selectedPageId ? <div className="p-6">
-            <PageAnalysisTab key={selectedPageId} // Prevent unnecessary re-mounting
-        pageId={selectedPageId} />
-          </div> : <DashboardContent activeTab={activeTab} userProfile={userProfile as any} projects={projects} projectsLoading={projectsLoading} projectsError={projectsError} refreshProjects={refreshProjects} onProjectSelect={handleProjectSelect} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onRecrawlProject={handleRecrawlProject} />}
+         {/* Content */}
+         {activeTab === 'analysis' && selectedProjectId ? <div className="p-6">
+             <AnalysisTab key={selectedProjectId} // Prevent unnecessary re-mounting
+         projectId={selectedProjectId} cachedData={getCachedAnalysisData(selectedProjectId)} onDataUpdate={(project, scrapedPages) => setCachedAnalysisData(selectedProjectId, project, scrapedPages)} onPageSelect={handlePageSelect} />
+           </div> : activeTab === 'page-analysis' && selectedPageId ? <div className="p-6">
+             <PageAnalysisTab key={selectedPageId} // Prevent unnecessary re-mounting
+         pageId={selectedPageId} />
+           </div> : <DashboardContent activeTab={activeTab} userProfile={userProfile as any} onProjectSelect={handleProjectSelect} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onRecrawlProject={handleRecrawlProject} />}
       </div>
       <ConnectionStatus />
     </div>;

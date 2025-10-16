@@ -4,45 +4,21 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { AuditProject } from '@/types/audit';
 import { RecentProjectSkeleton } from '../SkeletonLoader';
+import { useProjectsStore } from '@/lib/stores/projectsStore';
 interface RecentProjectsProps {
-  projects: AuditProject[];
-  projectsLoading: boolean;
-  projectsError: string | null;
-  refreshProjects: () => Promise<void>;
   onProjectSelect?: (projectId: string) => void;
 }
 export default function RecentProjects({
-  projects,
-  projectsLoading,
-  projectsError,
-  refreshProjects,
   onProjectSelect
 }: RecentProjectsProps) {
+  // Use Zustand store for projects data
+  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   const previousProjectsRef = useRef<AuditProject[]>([]);
 
-  // Monitor project status changes and refresh when crawling is successful
+  // Load projects when component mounts
   useEffect(() => {
-    if (projects.length === 0 || projectsLoading) return;
-    const previousProjects = previousProjectsRef.current;
-    const currentProjects = projects;
-
-    // Check if any project has transitioned from pending/in_progress to completed
-    const hasStatusChanged = currentProjects.some(currentProject => {
-      const previousProject = previousProjects.find(p => p.id === currentProject.id);
-      if (!previousProject) return false;
-
-      // Check if status changed from pending/in_progress to completed
-      const wasProcessing = previousProject.status === 'pending' || previousProject.status === 'in_progress';
-      const isNowCompleted = currentProject.status === 'completed';
-      return wasProcessing && isNowCompleted;
-    });
-    if (hasStatusChanged) {
-      refreshProjects();
-    }
-
-    // Update the ref with current projects
-    previousProjectsRef.current = currentProjects;
-  }, [projects, refreshProjects, projectsLoading]);
+    refreshProjects();
+  }, [refreshProjects]);
 
   const getProjectName = (siteUrl: string) => {
     try {

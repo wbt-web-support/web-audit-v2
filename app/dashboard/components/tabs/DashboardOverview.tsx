@@ -9,6 +9,7 @@ import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 import UpgradeModal from '../modals/UpgradeModal'
 import UserAlerts from '../UserAlerts'
+import { useProjectsStore } from '@/lib/stores/projectsStore'
 
 interface UserProfile {
   id: string
@@ -23,10 +24,6 @@ interface UserProfile {
 
 interface DashboardOverviewProps {
   userProfile: UserProfile | null
-  projects: AuditProject[]
-  projectsLoading: boolean
-  projectsError: string | null
-  refreshProjects: () => Promise<void>
   onProjectSelect?: (projectId: string) => void
 }
 
@@ -40,12 +37,10 @@ interface Feature {
 
 export default function DashboardOverview({ 
   userProfile, 
-  projects, 
-  projectsLoading, 
-  projectsError, 
-  refreshProjects,
   onProjectSelect
 }: DashboardOverviewProps) {
+  // Use Zustand store for projects data
+  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   const { createAuditProject } = useSupabase()
   const { planInfo } = useUserPlan()
   
@@ -338,10 +333,6 @@ export default function DashboardOverview({
 
         {/* Recent Projects */}
         <RecentProjects 
-          projects={projects}
-          projectsLoading={projectsLoading}
-          projectsError={projectsError}
-          refreshProjects={refreshProjects}
           onProjectSelect={onProjectSelect}
         />
       </div>

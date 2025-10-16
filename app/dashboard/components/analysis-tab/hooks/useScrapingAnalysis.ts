@@ -3,6 +3,7 @@ import { useSupabase } from '@/contexts/SupabaseContext';
 import { supabase } from '@/lib/supabase-client';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
+import { useProjectsStore } from '@/lib/stores/projectsStore';
 interface CachedData {
   project: AuditProject | null;
   scrapedPages: ScrapedPage[];
@@ -15,6 +16,9 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     updateAuditProject,
     session
   } = useSupabase();
+  
+  // Use Zustand store for updating project status
+  const { updateProject } = useProjectsStore();
   const [state, setState] = useState<AnalysisTabState>({
     project: null,
     scrapedPages: [],
@@ -196,6 +200,16 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               throw new Error(`Failed to update project: ${updateError.message}`);
             }
 
+            // Update Zustand store immediately
+            updateProject(project.id, {
+              status: 'completed',
+              progress: 100,
+              scraping_completed_at: new Date().toISOString(),
+              total_pages: retryData.pages?.length || 0,
+              total_links: retryData.summary?.totalLinks || 0,
+              total_images: retryData.summary?.totalImages || 0
+            } as any);
+
             // Update the project in state immediately
             const updatedProject = {
               ...project,
@@ -236,6 +250,16 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       if (updateError) {
         throw new Error(`Failed to update project: ${updateError.message}`);
       }
+
+      // Update Zustand store immediately
+      updateProject(project.id, {
+        status: 'completed',
+        progress: 100,
+        scraping_completed_at: new Date().toISOString(),
+        total_pages: scrapeData.pages?.length || 0,
+        total_links: scrapeData.summary?.totalLinks || 0,
+        total_images: scrapeData.summary?.totalImages || 0
+      } as any);
 
       // Update the project in state immediately
       const updatedProject = {

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { AuditProject } from '@/types/audit';
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader';
 import EditProjectModal from '../modals/EditProjectModal';
+import { useProjectsStore } from '@/lib/stores/projectsStore';
 interface BrandConsistencyData {
   companyName: string;
   phoneNumber: string;
@@ -19,10 +20,6 @@ interface HiddenUrl {
 }
 interface ProjectsTabProps {
   userProfile: unknown;
-  projects: AuditProject[];
-  projectsLoading: boolean;
-  projectsError: string | null;
-  refreshProjects: () => Promise<void>;
   onProjectSelect?: (projectId: string) => void;
   onUpdateProject?: (projectId: string, data: {
     siteUrl: string;
@@ -37,15 +34,13 @@ interface ProjectsTabProps {
   onRecrawlProject?: (projectId: string) => Promise<void>;
 }
 export default function ProjectsTab({
-  projects,
-  projectsLoading,
-  projectsError,
-  refreshProjects,
   onProjectSelect,
   onUpdateProject,
   onDeleteProject,
   onRecrawlProject
 }: Omit<ProjectsTabProps, 'userProfile'>) {
+  // Use Zustand store for projects data
+  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const previousProjectsRef = useRef<AuditProject[]>([]);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -54,29 +49,12 @@ export default function ProjectsTab({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
-  // Monitor project status changes and refresh when crawling is successful
+  // Load projects when component mounts
   useEffect(() => {
-    if (projects.length === 0 || projectsLoading) return;
-    const previousProjects = previousProjectsRef.current;
-    const currentProjects = projects;
+    refreshProjects();
+  }, [refreshProjects]);
 
-    // Check if any project has transitioned from pending/in_progress to completed
-    const hasStatusChanged = currentProjects.some(currentProject => {
-      const previousProject = previousProjects.find(p => p.id === currentProject.id);
-      if (!previousProject) return false;
-
-      // Check if status changed from pending/in_progress to completed
-      const wasProcessing = previousProject.status === 'pending' || previousProject.status === 'in_progress';
-      const isNowCompleted = currentProject.status === 'completed';
-      return wasProcessing && isNowCompleted;
-    });
-    if (hasStatusChanged) {
-      refreshProjects();
-    }
-
-    // Update the ref with current projects
-    previousProjectsRef.current = currentProjects;
-  }, [projects, refreshProjects, projectsLoading]);
+  // Zustand store automatically handles status updates - no need for manual monitoring
 
   // Performance tracking
   useEffect(() => {

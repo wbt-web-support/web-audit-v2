@@ -7,6 +7,7 @@ import ProjectsTab from '../tabs/ProjectsTab'
 import ProfileTab from '../tabs/ProfileTab'
 import AdminTab from '../tabs/AdminTab'
 import UserAlerts from '../UserAlerts'
+import { useProjectsStore } from '@/lib/stores/projectsStore'
 
 interface DashboardContentProps {
   activeTab: string
@@ -20,10 +21,6 @@ interface DashboardContentProps {
     created_at: string;
     updated_at?: string;
   } | null
-  projects: AuditProject[]
-  projectsLoading: boolean
-  projectsError: string | null
-  refreshProjects: () => Promise<void>
   onProjectSelect?: (projectId: string) => void
   onUpdateProject?: (projectId: string, data: {
     siteUrl: string;
@@ -50,15 +47,13 @@ interface DashboardContentProps {
 export default function DashboardContent({ 
   activeTab, 
   userProfile, 
-  projects, 
-  projectsLoading, 
-  projectsError, 
-  refreshProjects,
-  onProjectSelect,
-  onUpdateProject,
-  onDeleteProject,
-  onRecrawlProject
+  onProjectSelect, 
+  onUpdateProject, 
+  onDeleteProject, 
+  onRecrawlProject 
 }: DashboardContentProps) {
+  // Use Zustand store for projects data
+  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
