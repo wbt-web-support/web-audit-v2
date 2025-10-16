@@ -60,20 +60,12 @@ export default function DashboardContent({
         return (
           <DashboardOverview 
             userProfile={userProfile} 
-            projects={projects}
-            projectsLoading={projectsLoading}
-            projectsError={projectsError}
-            refreshProjects={refreshProjects}
             onProjectSelect={onProjectSelect}
           />
         )
       case 'projects':
         return (
           <ProjectsTab
-            projects={projects}
-            projectsLoading={projectsLoading}
-            projectsError={projectsError}
-            refreshProjects={refreshProjects}
             onProjectSelect={onProjectSelect}
             onUpdateProject={onUpdateProject}
             onDeleteProject={onDeleteProject}
@@ -88,10 +80,7 @@ export default function DashboardContent({
         return (
           <DashboardOverview 
             userProfile={userProfile} 
-            projects={projects}
-            projectsLoading={projectsLoading}
-            projectsError={projectsError}
-            refreshProjects={refreshProjects}
+            onProjectSelect={onProjectSelect}
           />
         )
     }

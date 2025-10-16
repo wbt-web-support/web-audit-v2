@@ -856,39 +856,7 @@ export default function PricingSection({
 
 
 
-        {/* Bottom CTA */}
-
-        <motion.div initial={{
-        opacity: 0,
-        y: 30
-      }} animate={isInView ? {
-        opacity: 1,
-        y: 0
-      } : {
-        opacity: 0,
-        y: 30
-      }} transition={{
-        duration: 0.8,
-        delay: 0.8
-      }} className="text-center mt-16">
-
-          <p className="text-gray-600 mb-6">
-
-            All plans include 14-day free trial. No credit card required.
-
-          </p>
-
-          <motion.button whileHover={{
-          scale: 1.05
-        }} whileTap={{
-          scale: 0.95
-        }} className="px-8 py-3 border-2 border-black text-black font-semibold rounded-lg hover:bg-black hover:text-white transition-all duration-300">
-
-            Compare All Features
-
-          </motion.button>
-
-        </motion.div>
+     
 
       </div>
 

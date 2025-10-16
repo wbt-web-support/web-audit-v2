@@ -225,7 +225,7 @@ export default function Billing({
         </motion.div>}
 
       {/* Current Plan Usage */}
-      <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
+      {/* <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -313,7 +313,7 @@ export default function Billing({
             </p>
           </motion.div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Pricing Plans */}
       <motion.div initial={{

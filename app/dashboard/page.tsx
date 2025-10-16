@@ -38,6 +38,8 @@ function DashboardContentWrapper() {
     setLoading,
     setError,
     setFetchFunction,
+    updateProject,
+    removeProject,
     refreshProjects: storeRefreshProjects
   } = useProjectsStore();
 
@@ -181,11 +183,10 @@ function DashboardContentWrapper() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Update the project in local state
-      setProjects(prev => prev.map(project => project.id === projectId ? {
-        ...project,
+      updateProject(projectId, {
         site_url: data.siteUrl,
         updated_at: new Date().toISOString()
-      } : project));
+      });
     } catch (error) {
       console.error('Dashboard: Error updating project:', error);
       throw error;
@@ -203,7 +204,7 @@ function DashboardContentWrapper() {
       }
 
       // Remove the project from local state
-      setProjects(prev => prev.filter(project => project.id !== projectId));
+      removeProject(projectId);
     } catch (error) {
       console.error('Dashboard: Error deleting project:', error);
       throw error;
@@ -216,11 +217,10 @@ function DashboardContentWrapper() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Update the project status to pending
-      setProjects(prev => prev.map(project => project.id === projectId ? {
-        ...project,
+      updateProject(projectId, {
         status: 'pending',
         updated_at: new Date().toISOString()
-      } : project));
+      });
     } catch (error) {
       console.error('Dashboard: Error recrawling project:', error);
       throw error;
