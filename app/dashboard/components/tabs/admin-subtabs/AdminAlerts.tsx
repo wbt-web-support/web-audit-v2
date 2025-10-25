@@ -443,13 +443,17 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                 <div className="flex space-x-2">
                     <button 
                       onClick={() => handleToggleStatus(alertItem)}
-                      className={`text-sm px-2 py-1 rounded ${
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                         alertItem.status === 'active' 
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          ? 'bg-green-600' 
+                          : 'bg-gray-200'
                       }`}
                     >
-                      {alertItem.status === 'active' ? 'Deactivate' : 'Activate'}
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          alertItem.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
                     </button>
                     <button 
                       onClick={() => handleEditAlert(alertItem)}
@@ -500,7 +504,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingAlert) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
             className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
             initial={{ opacity: 0, scale: 0.9 }}

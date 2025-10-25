@@ -27,22 +27,19 @@ export default function UserAlerts({
       setLoading(true);
 
       // Get active alerts that are global or match user's plan
-      let query = supabase.from('admin_alerts').select('*').eq('status', 'active').lte('start_date', new Date().toISOString()).or(`end_date.is.null,end_date.gte.${new Date().toISOString()}`).order('priority', {
-        ascending: false
-      }).order('created_at', {
-        ascending: false
-      });
+      const { data: alerts, error } = await supabase
+        .from('admin_alerts')
+        .select('*')
+        .eq('status', 'active')
+        .or(`target_audience.eq.all,target_audience.eq.${userPlan}`)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false });
 
-      // Filter by target audience
-      query = query.or(`target_audience.eq.all,target_audience.eq.${userPlan}`);
-      const {
-        data: alerts,
-        error
-      } = await query;
       if (error) {
         console.error('Error fetching alerts:', error);
         setAlerts([]);
       } else {
+        console.log('Fetched alerts from database:', alerts);
         setAlerts(alerts || []);
       }
     } catch (error) {
@@ -94,20 +91,44 @@ export default function UserAlerts({
     }
   };
 
-  // Filter out dismissed alerts and only show active ones
-  const visibleAlerts = alerts.filter(alert => alert.status === 'active' && !dismissedAlerts.has(alert.id) && new Date(alert.start_date) <= new Date() && (!alert.end_date || new Date(alert.end_date) >= new Date()));
+  // Filter out dismissed alerts and only show active ones, then deduplicate by ID
+  const filteredAlerts = alerts.filter(alert => alert.status === 'active' && !dismissedAlerts.has(alert.id) && new Date(alert.start_date) <= new Date() && (!alert.end_date || new Date(alert.end_date) >= new Date()));
+  
+  // Deduplicate alerts by ID to prevent showing duplicates
+  const uniqueAlerts = filteredAlerts.reduce((acc, alert) => {
+    if (!acc.find(a => a.id === alert.id)) {
+      acc.push(alert);
+    }
+    return acc;
+  }, [] as AdminAlert[]);
+  
+  const visibleAlerts = uniqueAlerts;
   if (loading) {
     return null;
   }
 
   // Debug logging
+  console.log('UserAlerts Debug:', {
+    totalAlerts: alerts.length,
+    visibleAlerts: visibleAlerts.length,
+    userPlan,
+    dismissedAlerts: Array.from(dismissedAlerts),
+    alerts: alerts.map(a => ({
+      id: a.id,
+      title: a.title,
+      status: a.status,
+      start_date: a.start_date,
+      end_date: a.end_date,
+      target_audience: a.target_audience
+    }))
+  });
 
   if (visibleAlerts.length === 0) {
     return null;
   }
   return <div className="space-y-3 mb-6">
       <AnimatePresence>
-        {visibleAlerts.map((alert, index) => <motion.div key={alert.id} initial={{
+        {visibleAlerts.map((alert, index) => <motion.div key={`${alert.id}-${index}`} initial={{
         opacity: 0,
         y: -20,
         scale: 0.95

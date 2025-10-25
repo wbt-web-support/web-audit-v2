@@ -356,7 +356,7 @@ export default function AdminSupport({}: AdminSupportProps) {
       </div>
 
       {/* Ticket Analytics */}
-      <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
+      {/* <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -393,7 +393,7 @@ export default function AdminSupport({}: AdminSupportProps) {
             <div className="text-sm text-gray-600">Avg Response Time</div>
           </div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Filters */}
       <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
