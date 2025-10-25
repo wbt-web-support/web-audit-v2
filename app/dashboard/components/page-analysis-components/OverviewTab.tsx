@@ -2,6 +2,7 @@
 
 import { AuditProject } from '@/types/audit'
 import SEOAnalysisSection from '../analysis-tab-components/SEOAnalysisSection'
+import FaviconDisplay from '../FaviconDisplay'
 
 interface OverviewTabProps {
   page: {
@@ -88,6 +89,18 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Page Summary</h3>
           <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Site Favicon:</span>
+              <div className="flex items-center">
+                <FaviconDisplay 
+                  data={project} 
+                  siteUrl={project?.site_url}
+                  size="sm"
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-500">From {project?.site_url}</span>
+              </div>
+            </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Content Length:</span>
               <span className="font-medium">{page.html_content_length || 0} characters</span>

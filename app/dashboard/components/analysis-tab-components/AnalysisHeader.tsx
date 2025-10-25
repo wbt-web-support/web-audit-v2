@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserPlan } from '@/hooks/useUserPlan'
 import FeatureUnavailableCard from '../FeatureUnavailableCard'
+import FaviconDisplay from '../FaviconDisplay'
 
 interface AnalysisHeaderProps {
   project: AuditProject
@@ -165,9 +166,17 @@ export default function AnalysisHeader({ project, activeSection, onSectionChange
             </button>
           )}
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 truncate">
-              {pageTitle || getProjectName(project.site_url)} 
-            </h1>
+            <div className="flex items-center mb-2">
+              <FaviconDisplay 
+                data={project} 
+                siteUrl={project.site_url}
+                size="sm"
+                className="mr-3 flex-shrink-0"
+              />
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                {pageTitle || getProjectName(project.site_url)}  
+              </h1>
+            </div>
             <p className="text-gray-600 break-all text-sm sm:text-base">{project.site_url}</p>
           </div>
         </div>

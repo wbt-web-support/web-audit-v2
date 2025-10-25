@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { AuditProject } from '@/types/audit';
 import { RecentProjectSkeleton } from '../SkeletonLoader';
 import { useProjectsStore } from '@/lib/stores/projectsStore';
+import FaviconDisplay from '../FaviconDisplay';
 interface RecentProjectsProps {
   onProjectSelect?: (projectId: string) => void;
 }
@@ -89,6 +90,12 @@ export default function RecentProjects({
             >
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
+                    <FaviconDisplay 
+                      data={project} 
+                      siteUrl={project.site_url}
+                      size="sm"
+                      className="mr-2 flex-shrink-0"
+                    />
                     <h3 className="font-semibold text-black">
                       {getProjectName(project.site_url)}
                     </h3>

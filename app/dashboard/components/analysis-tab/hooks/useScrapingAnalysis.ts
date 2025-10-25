@@ -236,6 +236,14 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       }
       const scrapeData = await scrapeResponse.json();
 
+      // Log the scraping data received from API
+      console.log('📥 Scraping data received:', {
+        hasSummary: !!scrapeData.summary,
+        hasFavicons: !!(scrapeData as any).summary?.favicons,
+        faviconCount: (scrapeData as any).summary?.favicons?.length || 0,
+        firstFavicon: (scrapeData as any).summary?.favicons?.[0]
+      });
+
       // Update project status to completed FIRST (without large data to avoid timeout)
       const {
         error: updateError
@@ -245,7 +253,11 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         scraping_completed_at: new Date().toISOString(),
         total_pages: scrapeData.pages?.length || 0,
         total_links: scrapeData.summary?.totalLinks || 0,
-        total_images: scrapeData.summary?.totalImages || 0
+        total_images: scrapeData.summary?.totalImages || 0,
+        brand_data: {
+          favicons: (scrapeData as any).summary?.favicons || [],
+          summary: scrapeData.summary
+        } // Store favicon data in brand_data
       });
       if (updateError) {
         throw new Error(`Failed to update project: ${updateError.message}`);

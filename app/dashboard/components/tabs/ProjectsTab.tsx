@@ -7,6 +7,7 @@ import { AuditProject } from '@/types/audit';
 import { ProjectCardSkeleton, StatsCardSkeleton } from '../SkeletonLoader';
 import EditProjectModal from '../modals/EditProjectModal';
 import { useProjectsStore } from '@/lib/stores/projectsStore';
+import FaviconDisplay from '../FaviconDisplay';
 interface BrandConsistencyData {
   companyName: string;
   phoneNumber: string;
@@ -442,9 +443,32 @@ export default function ProjectsTab({
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                        <h3 className="text-lg font-semibold text-black truncate">
-                          {getProjectName(project.site_url)}
-                        </h3>
+                        <div className="flex items-center">
+                          <FaviconDisplay 
+                            data={project} 
+                            siteUrl={project.site_url}
+                            size="sm"
+                            className="mr-2 flex-shrink-0"
+                          />
+                          <h3 className="text-lg font-semibold text-black truncate">
+                            {getProjectName(project.site_url)}
+                          </h3>
+                        </div>
+                        
+                        {/* Debug info - remove in production */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-500 mt-1 space-y-1">
+                            <div>Debug: {JSON.stringify({
+                              hasScrapingData: !!project.scraping_data,
+                              hasSummary: !!project.scraping_data?.summary,
+                              hasFavicons: !!project.scraping_data?.summary?.favicons,
+                              faviconCount: project.scraping_data?.summary?.favicons?.length || 0
+                            })}</div>
+                            <div>Scraping Data Keys: {Object.keys(project.scraping_data || {}).join(', ')}</div>
+                            <div>Summary Keys: {Object.keys(project.scraping_data?.summary || {}).join(', ')}</div>
+                            <div>First Favicon: {JSON.stringify(project.scraping_data?.summary?.favicons?.[0])}</div>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex px-3 py-1 text-xs font-medium rounded flex-shrink-0 ${getStatusColor(project.status)}`}>
                             {getStatusDisplayName(project.status)}
@@ -538,6 +562,12 @@ export default function ProjectsTab({
               }} className="overflow-hidden">
                       <div className="p-4 bg-gray-50 border-t border-gray-200">
                         <h4 className="text-sm font-semibold text-black mb-3 flex items-center">
+                          <FaviconDisplay 
+                            data={project} 
+                            siteUrl={project.site_url}
+                            size="sm"
+                            className="mr-2"
+                          />
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
@@ -626,6 +656,12 @@ export default function ProjectsTab({
                         {/* CMS Information - Only show if CMS is detected and has data */}
                         {project.cms_detected && (project.cms_type || project.cms_version || project.cms_plugins && project.cms_plugins.length > 0 || project.cms_themes && project.cms_themes.length > 0 || project.cms_components && project.cms_components.length > 0) && <div className="mt-6 pt-4 border-t border-gray-200">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                              <FaviconDisplay 
+                                data={project} 
+                                siteUrl={project.site_url}
+                                size="sm"
+                                className="mr-2"
+                              />
                               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                               </svg>
@@ -745,6 +781,12 @@ export default function ProjectsTab({
                         {/* Technologies Information - Only show if there are technologies */}
                         {project.technologies && project.technologies.length > 0 && <div className="mt-6 pt-4 border-t border-gray-200">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                              <FaviconDisplay 
+                                data={project} 
+                                siteUrl={project.site_url}
+                                size="sm"
+                                className="mr-2"
+                              />
                               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                               </svg>

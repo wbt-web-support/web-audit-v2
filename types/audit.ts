@@ -285,8 +285,18 @@ export interface MetaTag {
   charset?: string
 }
 
+export interface FaviconData {
+  href: string
+  sizes?: string | null
+  type?: string | null
+  rel: string
+  fullTag?: string | null
+  isDefault?: boolean
+}
+
 export interface MetaTagsData {
   all_meta_tags: MetaTag[]
+  favicons?: FaviconData[]
   standard_meta_tags: {
     title?: string
     description?: string

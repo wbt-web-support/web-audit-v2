@@ -649,9 +649,27 @@ export default function ScrapingService({
 
       // Log the exact data being sent to database
 
+      // Store the complete scraping data including favicons
+      const completeScrapingData = {
+        ...summaryData,
+        // Store favicon data in brand_data field (accepts any data)
+        brand_data: {
+          favicons: (scrapingData as any).summary?.favicons || [],
+          summary: scrapingData.summary
+        }
+      };
+
+      // Log the scraping data being stored (including favicons)
+      console.log('💾 Storing complete scraping data:', {
+        hasSummary: !!scrapingData.summary,
+        hasFavicons: !!(scrapingData as any).summary?.favicons,
+        faviconCount: (scrapingData as any).summary?.favicons?.length || 0,
+        firstFavicon: (scrapingData as any).summary?.favicons?.[0]
+      });
+
       const {
         error: updateError
-      } = await updateAuditProject(projectId, summaryData);
+      } = await updateAuditProject(projectId, completeScrapingData);
       if (updateError) {
         console.error('❌ Database update failed:', updateError);
         console.error('❌ Error updating audit project with summary:', updateError);

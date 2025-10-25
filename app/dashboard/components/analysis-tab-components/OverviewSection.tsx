@@ -3,6 +3,7 @@
 import { AuditProject } from "@/types/audit";
 import SEOAnalysisSection from "./SEOAnalysisSection";
 import DynamicImage from "./DynamicImage";
+import FaviconDisplay from "../FaviconDisplay";
 
 interface OverviewSectionProps {
   project: AuditProject;
@@ -164,6 +165,14 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
             Project Info
           </h3>
           <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Site Favicon</span>
+              <FaviconDisplay 
+                data={project} 
+                siteUrl={project.site_url}
+                size="sm"
+              />
+            </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Status</span>
               <span
