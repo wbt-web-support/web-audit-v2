@@ -22,20 +22,23 @@ export default function FaviconDisplay({
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Direct access to summary favicons
+  // Enhanced favicon extraction with multiple fallback paths
   let faviconUrl = null;
-  
+
   // Try brand_data.favicons (primary location)
   if (data?.brand_data?.favicons && Array.isArray(data.brand_data.favicons) && data.brand_data.favicons.length > 0) {
     faviconUrl = data.brand_data.favicons[0].href;
+    console.log('✅ Found favicon in brand_data.favicons:', faviconUrl);
   }
   // Try direct access to scraping_data.summary.favicons
   else if (data?.scraping_data?.summary?.favicons && Array.isArray(data.scraping_data.summary.favicons) && data.scraping_data.summary.favicons.length > 0) {
     faviconUrl = data.scraping_data.summary.favicons[0].href;
+    console.log('✅ Found favicon in scraping_data.summary.favicons:', faviconUrl);
   }
   // Try direct access to summary.favicons
   else if (data?.summary?.favicons && Array.isArray(data.summary.favicons) && data.summary.favicons.length > 0) {
     faviconUrl = data.summary.favicons[0].href;
+    console.log('✅ Found favicon in summary.favicons:', faviconUrl);
   }
   // Try parsing scraping_data if it's a string (common in database storage)
   else if (data?.scraping_data && typeof data.scraping_data === 'string') {
@@ -43,10 +46,26 @@ export default function FaviconDisplay({
       const parsedData = JSON.parse(data.scraping_data);
       if (parsedData?.summary?.favicons && Array.isArray(parsedData.summary.favicons) && parsedData.summary.favicons.length > 0) {
         faviconUrl = parsedData.summary.favicons[0].href;
+        console.log('✅ Found favicon in parsed scraping_data.summary.favicons:', faviconUrl);
       }
     } catch (e) {
-      // Continue to next fallback
+      console.log('❌ Failed to parse scraping_data:', e);
     }
+  }
+  // Try meta_tags_data.favicons
+  else if (data?.meta_tags_data?.favicons && Array.isArray(data.meta_tags_data.favicons) && data.meta_tags_data.favicons.length > 0) {
+    faviconUrl = data.meta_tags_data.favicons[0].href;
+    console.log('✅ Found favicon in meta_tags_data.favicons:', faviconUrl);
+  }
+  // Try social_meta_tags_data.favicons
+  else if (data?.social_meta_tags_data?.favicons && Array.isArray(data.social_meta_tags_data.favicons) && data.social_meta_tags_data.favicons.length > 0) {
+    faviconUrl = data.social_meta_tags_data.favicons[0].href;
+    console.log('✅ Found favicon in social_meta_tags_data.favicons:', faviconUrl);
+  }
+  // Try detected_keys.favicons
+  else if (data?.detected_keys?.favicons && Array.isArray(data.detected_keys.favicons) && data.detected_keys.favicons.length > 0) {
+    faviconUrl = data.detected_keys.favicons[0].href;
+    console.log('✅ Found favicon in detected_keys.favicons:', faviconUrl);
   }
   
   // TEMPORARY: Try to access favicon from the raw scraping data structure
@@ -82,12 +101,18 @@ export default function FaviconDisplay({
   }
   
   // TEMPORARY: Hardcoded test with the favicon from your console log
-  if (!faviconUrl) {
-    console.log('🧪 Testing with hardcoded favicon from console log...');
-    faviconUrl = 'https://njdesignpark.com/wp-content/uploads/2023/08/nj-logo-1-2.png';
-  }
+  // if (!faviconUrl) {
+  //   console.log('🧪 Testing with hardcoded favicon from console log...');
+  //   faviconUrl = 'https://njdesignpark.com/wp-content/uploads/2023/08/nj-logo-1-2.png';
+  // }
   
   const fallbackUrl = siteUrl ? generateFallbackFaviconUrl(siteUrl) : null;
+  
+  // Debug: Log the fallback URL for testing
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Fallback URL generated:', fallbackUrl);
+    console.log('🔍 Site URL:', siteUrl);
+  }
 
   // Debug logging (remove in production)
   if (process.env.NODE_ENV === 'development') {
@@ -160,6 +185,24 @@ export default function FaviconDisplay({
         <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
         </svg>
+      </div>
+    );
+  }
+
+  // If we have an error loading the favicon, try fallback URL
+  if (imageError && fallbackUrl) {
+    return (
+      <div className={`${sizeClasses[size]} ${className} relative`}>
+        <Image
+          src={fallbackUrl}
+          alt="Site favicon"
+          width={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
+          height={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
+          className="rounded"
+          onError={() => setImageError(true)}
+          onLoad={handleImageLoad}
+          priority
+        />
       </div>
     );
   }
