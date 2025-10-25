@@ -455,20 +455,6 @@ export default function ProjectsTab({
                           </h3>
                         </div>
                         
-                        {/* Debug info - remove in production */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="text-xs text-gray-500 mt-1 space-y-1">
-                            <div>Debug: {JSON.stringify({
-                              hasScrapingData: !!project.scraping_data,
-                              hasSummary: !!project.scraping_data?.summary,
-                              hasFavicons: !!project.scraping_data?.summary?.favicons,
-                              faviconCount: project.scraping_data?.summary?.favicons?.length || 0
-                            })}</div>
-                            <div>Scraping Data Keys: {Object.keys(project.scraping_data || {}).join(', ')}</div>
-                            <div>Summary Keys: {Object.keys(project.scraping_data?.summary || {}).join(', ')}</div>
-                            <div>First Favicon: {JSON.stringify(project.scraping_data?.summary?.favicons?.[0])}</div>
-                          </div>
-                        )}
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex px-3 py-1 text-xs font-medium rounded flex-shrink-0 ${getStatusColor(project.status)}`}>
                             {getStatusDisplayName(project.status)}
