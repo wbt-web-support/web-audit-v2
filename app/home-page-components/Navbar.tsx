@@ -103,7 +103,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <motion.div 
-            className="hidden lg:flex items-center space-x-1"
+            className="hidden sm:flex items-center space-x-1"
           >
             {navItems.map((item, index) => (
               <motion.a

@@ -704,7 +704,7 @@ export default function HeroSection() {
             >
                AI-POWERED
             </motion.span>
-            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-gray-300 font-light px-4">
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-gray-100 font-light px-4">
               Complete Website Analysis in Minutes
             </h2>
           </motion.div>
@@ -802,36 +802,7 @@ export default function HeroSection() {
               </div>
             </motion.div>
           )}
-          {/* Stats - Only show when no analysis results */}
-          {!analysisResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 1 }}
-              className="mt-12 sm:mt-16 flex flex-row justify-center items-center gap-4 sm:gap-8 md:gap-12 max-w-4xl mx-auto px-4"
-            >
-              {[
-                { number: "10K+", label: "Websites Audited" },
-                { number: "99.9%", label: "Accuracy Rate" },
-                { number: "< 2min", label: "Average Scan Time" }
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
-                  className="text-center flex-shrink-0"
-                >
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
-                    {stat.label}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
+          
         </div>
       </motion.div>
 
@@ -1162,27 +1133,7 @@ export default function HeroSection() {
         </motion.div>
       )}
 
-      {/* Scroll Indicator - Only show when no analysis results */}
-      {!analysisResult && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-6 h-10 border-2 border-white rounded-full flex justify-center"
-          >
-            <motion.div
-              animate={{ y: [0, 12, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-1 h-3 bg-white rounded-full mt-2"
-            />
-          </motion.div>
-        </motion.div>
-      )}
+   
     </div>
   );
 }
