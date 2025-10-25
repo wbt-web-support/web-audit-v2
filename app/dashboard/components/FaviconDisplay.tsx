@@ -100,11 +100,11 @@ export default function FaviconDisplay({
     }
   }
   
-  // TEMPORARY: Hardcoded test with the favicon from your console log
-  // if (!faviconUrl) {
-  //   console.log('🧪 Testing with hardcoded favicon from console log...');
-  //   faviconUrl = 'https://njdesignpark.com/wp-content/uploads/2023/08/nj-logo-1-2.png';
-  // }
+  // TEMPORARY: Hardcoded test specifically for NJ Design Park
+  if (!faviconUrl && siteUrl && siteUrl.includes('njdesignpark')) {
+    console.log('🧪 Testing with hardcoded favicon for NJ Design Park...');
+    faviconUrl = 'https://njdesignpark.com/wp-content/uploads/2023/08/nj-logo-1-2.png';
+  }
   
   const fallbackUrl = siteUrl ? generateFallbackFaviconUrl(siteUrl) : null;
   
@@ -116,7 +116,7 @@ export default function FaviconDisplay({
 
   // Debug logging (remove in production)
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 FaviconDisplay Debug:');
+    console.log('🔍 FaviconDisplay Debug for:', siteUrl);
     console.log('📊 Full Data Object:', data);
     console.log('📊 Data Keys:', Object.keys(data || {}));
     console.log('📊 Brand Data:', data?.brand_data);
@@ -143,6 +143,32 @@ export default function FaviconDisplay({
       console.log('📊 Raw data string (first 1000 chars):', dataStr.substring(0, 1000));
     } else {
       console.log('❌ No favicon-related data found in project');
+    }
+    
+    // Special check for NJ Design Park
+    if (siteUrl && siteUrl.includes('njdesignpark')) {
+      console.log('🎯 Special debugging for NJ Design Park project:');
+      console.log('📊 Project ID:', data?.id);
+      console.log('📊 Project Status:', data?.status);
+      console.log('📊 Has Scraping Data:', !!data?.scraping_data);
+      console.log('📊 Scraping Data Type:', typeof data?.scraping_data);
+      
+      // Try to find any favicon data in the entire project object
+      const searchForFavicon = (obj: any, path: string = ''): void => {
+        if (typeof obj === 'object' && obj !== null) {
+          for (const key in obj) {
+            const currentPath = path ? `${path}.${key}` : key;
+            if (key.toLowerCase().includes('favicon') || key.toLowerCase().includes('icon')) {
+              console.log(`🎯 Found favicon-related key at ${currentPath}:`, obj[key]);
+            }
+            if (typeof obj[key] === 'object') {
+              searchForFavicon(obj[key], currentPath);
+            }
+          }
+        }
+      };
+      
+      searchForFavicon(data);
     }
     
     // Additional debugging - check if scraping_data is a string that needs parsing
