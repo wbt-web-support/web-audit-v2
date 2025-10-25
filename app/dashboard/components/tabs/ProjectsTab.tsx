@@ -459,14 +459,6 @@ export default function ProjectsTab({
                           <span className={`inline-flex px-3 py-1 text-xs font-medium rounded flex-shrink-0 ${getStatusColor(project.status)}`}>
                             {getStatusDisplayName(project.status)}
                           </span>
-                          <div className="hidden md:flex items-center">
-                            <div className="w-20 bg-gray-200 rounded-full h-1.5 mr-2">
-                              <div className="bg-blue-600 h-1.5 rounded-full" style={{
-                            width: `${project.progress}%`
-                          }}></div>
-                            </div>
-                            <span className="text-xs font-medium text-gray-600">{project.progress}%</span>
-                          </div>
                         </div>
                       </div>
                       <p className="text-sm text-gray-500 mb-2 break-all">{project.site_url}</p>
