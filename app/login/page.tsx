@@ -21,6 +21,12 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+
+  useEffect(() => {
+    
+      router.push('/');
+   
+  }, []);
   // Handle confirmation message from URL parameters
   useEffect(() => {
     const message = searchParams.get('message');
@@ -122,7 +128,7 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -202,7 +208,7 @@ function LoginPageContent() {
           </div>
 
           {/* Right Section - Login Form */}
-          <div className="flex-1 lg:w-3/5 flex items-center justify-center p-8">
+          <div className="flex-1 lg:w-3/5 flex items-center justify-center p-8 relative z-10">
             <div className="w-full max-w-md">
               {/* Header */}
               <div className="text-center mb-8">
@@ -292,7 +298,7 @@ function LoginPageContent() {
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="Enter your email"
                     autoComplete="email"
                     required
@@ -310,7 +316,7 @@ function LoginPageContent() {
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                       placeholder="Enter your password"
                       autoComplete="current-password"
                       required
@@ -339,7 +345,7 @@ function LoginPageContent() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 text-blue-600 bg-gray-50 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="ml-2 text-sm text-gray-700">Remember me</span>
                   </label>
@@ -417,7 +423,7 @@ function LoginPageContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>

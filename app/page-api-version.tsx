@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase-client';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -23,108 +22,30 @@ export default function Home() {
     setMessageType('');
 
     try {
-      // Check if email already exists
-      const { data: existingEmail, error: checkError } = await supabase
-        .from('notify_me')
-        .select('id, email, is_active')
-        .eq('email', email.toLowerCase().trim())
-        .single();
+      const response = await fetch('/api/notify-me', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          source: 'homepage'
+        }),
+      });
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected for new emails
-        console.error('Error checking existing email:', checkError);
-        console.error('Check error details:', {
-          message: checkError.message,
-          details: checkError.details,
-          hint: checkError.hint,
-          code: checkError.code
-        });
-        
-        if (checkError.code === 'PGRST301') {
-          setMessage('Table not found. Please run the database setup script first.');
-        } else if (checkError.message.includes('permission denied')) {
-          setMessage('Permission denied. Please check your Supabase RLS policies.');
-        } else {
-          setMessage(`Database error: ${checkError.message || 'Unknown error'}`);
-        }
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message);
+        setMessageType('success');
+        setEmail(''); // Clear the form on success
+      } else {
+        setMessage(data.error || 'Something went wrong. Please try again.');
         setMessageType('error');
-        return;
       }
-
-      if (existingEmail) {
-        if (existingEmail.is_active) {
-          setMessage('You\'re already on our notification list! We\'ll notify you when we launch.');
-          setMessageType('success');
-          setEmail(''); // Clear the form
-          return;
-        } else {
-          // Reactivate the subscription
-          const { error: updateError } = await supabase
-            .from('notify_me')
-            .update({ 
-              is_active: true, 
-              updated_at: new Date().toISOString(),
-              source: 'homepage'
-            })
-            .eq('id', existingEmail.id);
-
-          if (updateError) {
-            console.error('Error reactivating subscription:', updateError);
-            setMessage('Failed to reactivate subscription');
-            setMessageType('error');
-            return;
-          }
-
-          setMessage('Welcome back! We\'ve reactivated your notification subscription.');
-          setMessageType('success');
-          setEmail(''); // Clear the form
-          return;
-        }
-      }
-
-      // Insert new email
-      const { data, error } = await supabase
-        .from('notify_me')
-        .insert([
-          {
-            email: email.toLowerCase().trim(),
-            source: 'homepage',
-            is_active: true
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error inserting email:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // Provide more specific error messages
-        if (error.code === 'PGRST301') {
-          setMessage('Table not found. Please run the database setup script first.');
-        } else if (error.code === 'PGRST116') {
-          setMessage('Database connection failed. Please check your Supabase configuration.');
-        } else if (error.message.includes('permission denied')) {
-          setMessage('Permission denied. Please check your Supabase RLS policies.');
-        } else {
-          setMessage(`Failed to subscribe: ${error.message || 'Unknown error'}`);
-        }
-        setMessageType('error');
-        return;
-      }
-
-      setMessage('Thank you! We\'ll notify you when we launch.');
-      setMessageType('success');
-      setEmail(''); // Clear the form on success
-
     } catch (error) {
-      console.error('Unexpected error:', error);
-      setMessage('An unexpected error occurred');
+      console.error('Error submitting email:', error);
+      setMessage('Network error. Please check your connection and try again.');
       setMessageType('error');
     } finally {
       setIsLoading(false);
@@ -244,3 +165,4 @@ export default function Home() {
     </div>
   );
 }
+
