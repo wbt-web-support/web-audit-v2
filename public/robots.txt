@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Block access to admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/analysis/
+Disallow: /dashboard/page-analysis/
+
+# Allow important pages
+Allow: /
+Allow: /login
+Allow: /signup
+Allow: /dashboard
+
+# Sitemap location
+Sitemap: https://auditly360.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1
