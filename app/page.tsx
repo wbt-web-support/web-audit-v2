@@ -164,6 +164,15 @@ export default function Home() {
         <div className="min-h-screen flex justify-center items-center">
           {/* Main Heading */}
           <div>
+            <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full ring-1 ring-slate-200/70 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 shadow-sm">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+              </span>
+              <span className="bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent text-sm font-semibold tracking-wide">
+                Coming soon
+              </span>
+            </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
             Complete Website Audit & Analysis Platform
           </h1>
