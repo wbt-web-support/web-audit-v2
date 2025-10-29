@@ -22,11 +22,6 @@ export default function SignupPage() {
 
   const { signUp, signInWithGoogle, resendConfirmation } = useAuth();
   const router = useRouter();
-  useEffect(() => {
-    
-    router.push('/');
- 
-}, []);
   // Redirect is handled by useAuth hook
 
   const handleSubmit = async (e: React.FormEvent) => {

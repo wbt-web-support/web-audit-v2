@@ -22,11 +22,6 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
 
 
-  useEffect(() => {
-    
-      router.push('/');
-   
-  }, []);
   // Handle confirmation message from URL parameters
   useEffect(() => {
     const message = searchParams.get('message');
