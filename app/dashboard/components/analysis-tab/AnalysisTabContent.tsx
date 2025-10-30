@@ -6,6 +6,7 @@ import { useScrapingAnalysis } from './hooks/useScrapingAnalysis'
 import ScrapingService from '../ScrapingService'
 import { AnalysisTabProps } from './types'
 import { AnalysisHeader, OverviewSection, ModernLoader } from '../analysis-tab-components'
+import FeedbackModal from '../modals/FeedbackModal'
 import ErrorState from './components/ErrorState'
 import SectionSkeleton from './components/SectionSkeleton'
 import { useUserPlan } from '@/hooks/useUserPlan'
@@ -26,7 +27,7 @@ export default function AnalysisTabContent({
   onDataUpdate, 
   onPageSelect 
 }: AnalysisTabProps) {
-  const { state, updateState, refreshData, handleSectionChange, startScraping, loadScrapedPages } = useScrapingAnalysis(projectId, cachedData)
+  const { state, updateState, refreshData, handleSectionChange, startScraping, loadScrapedPages, showFeedbackModal, confirmFeedback, laterFeedback } = useScrapingAnalysis(projectId, cachedData)
   const { hasFeature } = useUserPlan()
 
   // Check if user has access to a specific section
@@ -156,6 +157,7 @@ export default function AnalysisTabContent({
 
   return (
     <div className="space-y-6">
+      <FeedbackModal open={showFeedbackModal} onConfirm={(text) => confirmFeedback(text)} onLater={laterFeedback} />
       {/* ScrapingService component to handle data processing */}
       {state.project?.scraping_data && (
         <ScrapingService

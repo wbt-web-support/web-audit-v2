@@ -31,6 +31,7 @@ interface UserProfile {
   can_use_features: any[];
   plan_expires_at: string | null;
   subscription_id: string | null;
+  feedback_given?: boolean;
 }
 interface AuditProjectWithUserId extends AuditProject {
   user_id: string;
@@ -398,7 +399,8 @@ export function SupabaseProvider({
           max_projects: 1,
           can_use_features: [],
           plan_expires_at: null,
-          subscription_id: null
+          subscription_id: null,
+          feedback_given: false
         } as UserProfile;
       }
       const profileData = {
@@ -454,7 +456,8 @@ export function SupabaseProvider({
           max_projects: 1,
           can_use_features: [],
           plan_expires_at: null,
-          subscription_id: null
+          subscription_id: null,
+          feedback_given: false
         } as UserProfile;
       }
       return data as UserProfile;
@@ -561,7 +564,8 @@ export function SupabaseProvider({
               max_projects: 1,
               can_use_features: [],
               plan_expires_at: null,
-              subscription_id: null
+            subscription_id: null,
+            feedback_given: false
             };
             setUserProfile(fallbackProfile);
 
@@ -683,7 +687,8 @@ export function SupabaseProvider({
               max_projects: 1,
               can_use_features: [],
               plan_expires_at: null,
-              subscription_id: null
+              subscription_id: null,
+              feedback_given: false
             };
             setUserProfile(fallbackProfile);
           }

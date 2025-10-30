@@ -14,11 +14,14 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     getAuditProject,
     getScrapedPages,
     updateAuditProject,
-    session
+    session,
+    user,
+    userProfile,
+    updateUser
   } = useSupabase();
   
   // Use Zustand store for updating project status
-  const { updateProject } = useProjectsStore();
+  const { updateProject, projects } = useProjectsStore();
   const [state, setState] = useState<AnalysisTabState>({
     project: null,
     scrapedPages: [],
@@ -41,6 +44,12 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
   // Track if scraping has been initiated to prevent multiple calls
   const [scrapingInitiated, setScrapingInitiated] = useState(false);
   const initializationRef = useRef(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const userProfileRef = useRef(userProfile);
+
+  useEffect(() => {
+    userProfileRef.current = userProfile;
+  }, [userProfile]);
 
   // Update state helper
   const updateState = useCallback((updates: Partial<AnalysisTabState>) => {
@@ -109,6 +118,16 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         console.error('❌ No session access token available');
         throw new Error('User not authenticated. Please log in again.');
       }
+      // Pre-scrape feedback modal (non-blocking)
+      try {
+        const currentProfile = userProfileRef.current as any;
+        const projectCount = (projects?.length || currentProfile?.projects || 0);
+        const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
+        if (projectCount >= 2 && !hasGivenFeedback) {
+          setShowFeedbackModal(true);
+        }
+      } catch {}
+
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
         method: 'POST',
@@ -226,6 +245,16 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               isScraping: false,
               dataVersion: state.dataVersion + 1
             });
+
+            // Show feedback modal after successful crawl completion
+            try {
+              const currentProfile = userProfileRef.current as any;
+              const projectCount = (projects?.length || currentProfile?.projects || 0);
+              const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
+              if (projectCount >= 2 && !hasGivenFeedback) {
+                setShowFeedbackModal(true);
+              }
+            } catch {}
             return; // Success, exit early
           } catch (refreshError) {
             console.error('❌ Session refresh failed:', refreshError);
@@ -289,6 +318,16 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         isScraping: false,
         dataVersion: state.dataVersion + 1
       });
+
+      // Show feedback modal after successful crawl completion
+      try {
+        const currentProfile = userProfileRef.current as any;
+        const projectCount = (projects?.length || currentProfile?.projects || 0);
+        const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
+        if (projectCount >= 2 && !hasGivenFeedback) {
+          setShowFeedbackModal(true);
+        }
+      } catch {}
     } catch (error) {
       console.error('❌ Scraping error:', error);
 
@@ -313,6 +352,23 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       });
     }
   }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion, session?.access_token]);
+
+  const confirmFeedback = useCallback(async (text?: string) => {
+    try {
+      if (user?.id) {
+        const updates: any = { feedback_given: true };
+        if (text && text.length > 0) {
+          updates.notes = text;
+        }
+        await updateUser(user.id, updates);
+      }
+    } catch {}
+    setShowFeedbackModal(false);
+  }, [updateUser, user?.id]);
+
+  const laterFeedback = useCallback(() => {
+    setShowFeedbackModal(false);
+  }, []);
 
   // Load project data from database
   const loadProjectData = useCallback(async (skipAutoScraping = false) => {
@@ -426,6 +482,9 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     loadScrapedPages,
     refreshData,
     handleSectionChange,
-    startScraping
+    startScraping,
+    showFeedbackModal,
+    confirmFeedback,
+    laterFeedback
   };
 }

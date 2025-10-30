@@ -7,7 +7,7 @@ import { getBestFaviconUrl, generateFallbackFaviconUrl } from '@/lib/favicon-uti
 interface FaviconDisplayProps {
   data: any;
   siteUrl?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   fallbackIcon?: React.ReactNode;
 }
@@ -192,8 +192,9 @@ export default function FaviconDisplay({
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
-    lg: 'w-6 h-6'
-  };
+    lg: 'w-6 h-6',
+    xl: 'w-10 h-10'
+  } as const;
 
   const handleImageError = () => {
     setImageError(true);
@@ -222,8 +223,8 @@ export default function FaviconDisplay({
         <Image
           src={fallbackUrl}
           alt="Site favicon"
-          width={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
-          height={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
+          width={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
+          height={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
           className="rounded"
           onError={() => setImageError(true)}
           onLoad={handleImageLoad}
@@ -242,8 +243,8 @@ export default function FaviconDisplay({
       <Image
         src={faviconUrl || fallbackUrl || '/favicon.ico'}
         alt="Site favicon"
-        width={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
-        height={size === 'sm' ? 16 : size === 'md' ? 20 : 24}
+        width={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
+        height={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
         className={`rounded ${imageError ? 'hidden' : ''}`}
         onError={handleImageError}
         onLoad={handleImageLoad}
