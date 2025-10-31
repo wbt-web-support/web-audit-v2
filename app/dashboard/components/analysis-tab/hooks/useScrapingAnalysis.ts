@@ -34,7 +34,7 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
     userProfile,
     updateUser
   } = useSupabase();
-  
+
   // Use Zustand store for updating project status
   const { updateProject, projects } = useProjectsStore();
   const [state, setState] = useState<AnalysisTabState>({
@@ -282,12 +282,6 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
       // Log the scraping data received from API
       const scrapeSummary = scrapeData as ScrapeResponseSummary;
-      console.log('📥 Scraping data received:', {
-        hasSummary: !!scrapeSummary.summary,
-        hasFavicons: !!scrapeSummary.summary?.favicons,
-        faviconCount: scrapeSummary.summary?.favicons ? scrapeSummary.summary.favicons.length : 0,
-        firstFavicon: scrapeSummary.summary?.favicons ? scrapeSummary.summary.favicons[0] : undefined
-      });
 
       // Update project status to completed FIRST (without large data to avoid timeout)
       const {

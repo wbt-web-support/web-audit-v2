@@ -60,7 +60,7 @@ export default function KeysTab({
       if (error) {
         // Try fallback to client-side detection if HTML is available
         if (pageHtml && pageHtml.length > 0) {
-          console.log('Database query failed, falling back to client-side detection');
+
           const result = await detectKeysInHtml(pageHtml);
           setKeysData({
             keys: result.keys,
@@ -119,7 +119,7 @@ export default function KeysTab({
     } catch (err) {
       // Fallback to client-side detection if HTML is available
       if (pageHtml && pageHtml.length > 0) {
-        console.log('Unexpected error occurred, falling back to client-side detection');
+
         try {
           const result = await detectKeysInHtml(pageHtml);
           setKeysData({
@@ -291,7 +291,7 @@ export default function KeysTab({
                     <option value="warning">Warning</option>
                   </select>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Severity:</label>
                   <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)} className="text-sm border border-gray-300 rounded px-3 py-1 min-w-0 flex-1 sm:flex-none">
@@ -349,23 +349,23 @@ export default function KeysTab({
                         </div>
                         <div className="space-y-2">
                           <div className="text-sm text-gray-600">
-                            <span className="font-medium">Key:</span> 
+                            <span className="font-medium">Key:</span>
                             <div className="mt-1 font-mono text-xs break-all">
                               {key.key}
                             </div>
                           </div>
                           <div className="text-sm text-gray-600">
-                            <span className="font-medium">Location:</span> 
+                            <span className="font-medium">Location:</span>
                             <div className="mt-1 font-mono text-xs break-all">
                               {key.location}
                             </div>
                           </div>
                           <div className="text-sm text-gray-600">
-                            <span className="font-medium">Description:</span> 
+                            <span className="font-medium">Description:</span>
                             <span className="ml-1">{key.description}</span>
                           </div>
                           {key.context && <div className="text-sm text-gray-600">
-                              <span className="font-medium">Context:</span> 
+                              <span className="font-medium">Context:</span>
                               <div className="mt-1 text-xs break-all">
                                 {key.context}
                               </div>

@@ -77,7 +77,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const [project, setProject] = useState<ProjectWithBrandData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Grammar analysis state - moved to parent to persist across tab changes
   const [grammarAnalysis, setGrammarAnalysis] = useState<GeminiAnalysisResult | null>(null)
   const [grammarAnalysisError, setGrammarAnalysisError] = useState<string | null>(null)
@@ -89,14 +89,13 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     return analysis as GeminiAnalysisResult | undefined
   }, [page?.gemini_analysis, grammarAnalysis])
 
- 
   // Function to start grammar analysis
   const startGrammarAnalysis = useCallback(async () => {
     if (!page?.id || !page?.url || !page?.html_content) return;
-    
+
     setIsGrammarAnalyzing(true);
     setGrammarAnalysisError(null);
-    
+
     try {
       const response = await fetch('/api/gemini-analysis-stream', {
         method: 'POST',
@@ -136,7 +135,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -147,7 +146,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.status === 'completed' && data.analysis) {
                 setGrammarAnalysis(data.analysis);
                 setIsGrammarAnalyzing(false);
@@ -175,7 +174,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     if (page?.id && page?.url && page?.html_content && !grammarAnalysis && !isGrammarAnalyzing) {
       // Check if user has access to grammar content analysis
       if (hasFeature('grammar_content_analysis')) {
-        console.log('Auto-starting grammar analysis from parent component...');
+
         startGrammarAnalysis();
       }
     }
@@ -185,12 +184,12 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     const loadData = async () => {
       try {
         setLoading(true)
-        
+
         // Verify context methods are available
         if (!getScrapedPage || !getAuditProject) {
           throw new Error('Supabase context methods not available. Please check if user is authenticated.')
         }
-        
+
         // Load page data
         const { data: pageData, error: pageError } = await getScrapedPage(pageId)
         if (pageError) {
@@ -198,14 +197,13 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
           throw pageError
         }
         if (!pageData) throw new Error('Page not found')
-        
+
         setPage(pageData as PageData)
-        
+
         // Load project data
         if (pageData.audit_project_id) {
           const { data: projectData, error: projectError } = await getAuditProject(pageData.audit_project_id)
-          console.log('Raw project data from database:', projectData);
-          console.log('Brand data from database:', projectData?.brand_data);
+
           if (projectError) {
             console.error('Error fetching audit project:', projectError)
           }
@@ -213,7 +211,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
             setProject(projectData as ProjectWithBrandData)
           }
         }
-        
+
       } catch (err) {
         console.error('Error loading page data:', err)
         setError(err instanceof Error ? err.message : 'Failed to load page')
@@ -241,17 +239,17 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       'performance': 'performance_metrics',
       'accessibility': 'accessibility_audit'
     }
-    
+
     const featureId = featureMap[tabId]
     if (!featureId) return true // Show tabs that don't require specific features
-    
+
     // Special case for brand-consistency: check both plan feature access AND project brand_consistency column
     if (tabId === 'brand-consistency') {
       const hasPlanAccess = hasFeature(featureId)
       const hasProjectAccess = project?.brand_consistency === true
       return hasPlanAccess && hasProjectAccess
     }
-    
+
     return hasFeature(featureId)
   }
 
@@ -304,7 +302,6 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       description: 'This feature is not available in your current plan. Upgrade to access this functionality.'
     }
   }
-
 
   if (loading) {
     return (
@@ -378,7 +375,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     if (!hasAccessToTab(activeTab)) {
       const tabInfo = getTabInfo(activeTab)
       return (
-        <FeatureUnavailableCard 
+        <FeatureUnavailableCard
           title={tabInfo.title}
           description={tabInfo.description}
         />
@@ -387,7 +384,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
 
     // Create a mock scrapedPages array with the current page for the sections
     const scrapedPages = page ? [page] : []
-    
+
     switch (activeTab) {
       case 'overview':
         return <OverviewTab page={page} project={project} />
@@ -397,14 +394,14 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         return <ImagesSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'grammar-content':
         return (
-          <GrammarContentTab 
+          <GrammarContentTab
             page={{
               id: page.id,
               url: page.url,
               html_content: page.html_content,
               filtered_content: page.filtered_content,
               gemini_analysis: page.gemini_analysis as GeminiAnalysisResult | null
-            }} 
+            }}
             cachedAnalysis={cachedAnalysis}
             grammarAnalysis={grammarAnalysis}
             grammarAnalysisError={grammarAnalysisError}
@@ -413,18 +410,16 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
           />
         )
       case 'brand-consistency':
-        console.log('Brand consistency tab - Project data:', project);
-        console.log('Brand consistency tab - Brand data:', project?.brand_data);
-        
+
         // Test: Try to create a project with brand data to see if it works
         if (!project?.brand_data) {
-          console.log('No brand data found. Testing brand data creation...');
+
           // This is just for debugging - we'll remove this later
         }
-        
+
         return (
-          <BrandConsistencyTab 
-            page={page!} 
+          <BrandConsistencyTab
+            page={page!}
             projectBrandData={project?.brand_data as BrandConsistencyData | null | undefined}
             onBrandDataUpdate={(newBrandData) => {
               // Update the project state with new brand data
@@ -465,7 +460,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   return (
     <div className="space-y-6">
       {/* Use AnalysisHeader for consistent design */}
-      <AnalysisHeader 
+      <AnalysisHeader
         project={mockProject}
         activeSection={activeTab}
         onSectionChange={setActiveTab}

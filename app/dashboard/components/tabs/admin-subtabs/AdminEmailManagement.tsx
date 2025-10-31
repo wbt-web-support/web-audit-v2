@@ -42,7 +42,6 @@ interface Plan {
   is_active: boolean
 }
 
-
 interface AdminEmailManagementProps {
   userProfile: {
     id: string
@@ -65,7 +64,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Template management
   const [showTemplateForm, setShowTemplateForm] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null)
@@ -77,7 +76,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
     template_type: '',
     variables: [] as string[]
   })
-  
+
   // All template types management (system + custom)
   const [allTemplateTypes, setAllTemplateTypes] = useState<Array<{id: string, value: string, label: string, description: string, is_system?: boolean}>>([])
   const [showAddTypeForm, setShowAddTypeForm] = useState(false)
@@ -87,25 +86,20 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
     description: ''
   })
   const [templateTypeError, setTemplateTypeError] = useState<string | null>(null)
-  
+
   // For tracking cursor position in textareas
   const [activeTextarea, setActiveTextarea] = useState<'html' | 'text' | null>(null)
-  
+
   // Send email
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [sending, setSending] = useState(false)
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterPlan, setFilterPlan] = useState('all')
-
-  
-
-
-  
 
   // Get custom template types (all types are considered custom since is_system field doesn't exist)
   const getCustomTemplateTypes = () => {
@@ -138,13 +132,13 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
     const matchesSearch = displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = filterRole === 'all' || user.role === filterRole
-    const matchesStatus = filterStatus === 'all' || 
+    const matchesStatus = filterStatus === 'all' ||
                          (filterStatus === 'verified' && user.email_confirmed) ||
                          (filterStatus === 'unverified' && !user.email_confirmed)
-    const matchesPlan = filterPlan === 'all' || 
+    const matchesPlan = filterPlan === 'all' ||
                        (user.plan_type === filterPlan) ||
                        (filterPlan === 'no-plan' && !user.plan_type)
-    
+
     return matchesSearch && matchesRole && matchesStatus && matchesPlan
   })
 
@@ -161,7 +155,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
 
     const field = activeTextarea === 'html' ? 'html_content' : 'text_content'
     const currentValue = templateForm[field]
-    
+
     // For simplicity, we'll append the variable at the end
     // In a real implementation, you'd track cursor position
     setTemplateForm(prev => ({
@@ -179,7 +173,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
             .from('scraped_pages')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
-          
+
           if (error) {
             console.error(`Error counting projects for user ${user.id}:`, error)
             return { ...user, project_count: 0 }
@@ -187,19 +181,19 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
 
           // Find the plan details by searching in plans table using plan_type field
           let userPlan = null
-          
+
           if (user.plan_type) {
             // Match by plan_type field (not name field)
             userPlan = plansData.find(plan => plan.plan_type === user.plan_type)
-            
+
             // If no exact match, try case-insensitive match
             if (!userPlan) {
-              userPlan = plansData.find(plan => 
+              userPlan = plansData.find(plan =>
                 plan.plan_type.toLowerCase() === user.plan_type?.toLowerCase()
               )
             }
           }
-          
+
           const planLimit = userPlan?.max_projects || 0
           const planName = userPlan?.name || (user.plan_type || 'No Plan')
 
@@ -221,26 +215,26 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      
+
       // First load plans
       const { data: plansData, error: plansError } = await supabase
         .from('plans')
         .select('*')
         .eq('is_active', true)
         .order('price', { ascending: true })
-      
+
       if (plansError) {
         console.error('Error loading plans:', plansError)
       } else {
         setPlans(plansData || [])
       }
-      
+
       // Fetch templates
       const { data: templatesData, error: templatesError } = await supabase
         .from('email_templates')
         .select('*')
         .order('created_at', { ascending: false })
-      
+
       if (templatesError) {
         console.error('Error fetching templates:', templatesError)
         setError(`Failed to load templates: ${templatesError.message}`)
@@ -248,38 +242,24 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
       } else {
         setTemplates(templatesData || [])
       }
-      
+
       // Fetch template types from custom_template_types table
       try {
         const { data: templateTypesData, error: templateTypesError } = await supabase
           .from('custom_template_types')
           .select('id, value, label, description')
-        
+
         if (templateTypesError) {
           console.error('Error fetching template types:', templateTypesError)
           console.error('Error details:', JSON.stringify(templateTypesError, null, 2))
-          
+
           // Check for specific error types
           if (templateTypesError.code === 'PGRST116' || templateTypesError.message?.includes('relation "custom_template_types" does not exist')) {
             setError('Template types table does not exist. Please run the database setup script first.')
             setAllTemplateTypes([])
-            
-            // Show setup instructions
-            console.log('Table does not exist. Please run this SQL in your Supabase SQL Editor:')
-            console.log(`
-CREATE TABLE public.custom_template_types (
-  id uuid not null default gen_random_uuid (),
-  value character varying(50) not null,
-  label character varying(100) not null,
-  description text null,
-  created_at timestamp with time zone null default now(),
-  updated_at timestamp with time zone null default now(),
-  constraint custom_template_types_pkey primary key (id),
-  constraint custom_template_types_value_key unique (value)
-) TABLESPACE pg_default;
 
-CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_template_types USING btree (value) TABLESPACE pg_default;
-            `)
+            // Show setup instructions
+
           } else if (templateTypesError.code === '42703' || templateTypesError.message?.includes('does not exist')) {
             setError('Column does not exist in table. The table structure may be different than expected.')
             setAllTemplateTypes([])
@@ -301,7 +281,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
               is_system: false // Default to false since is_system field doesn't exist in this table
             }))
             setAllTemplateTypes(mappedData)
-            
+
             // Set default template type if form is empty and we have types
             setTemplateForm(prev => (
               prev.template_type ? prev : { ...prev, template_type: templateTypesData[0].value }
@@ -316,10 +296,10 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
         setError('Network error. Please check your connection and try again.')
         setAllTemplateTypes([])
       }
-      
+
       // Fetch users using the same logic as AdminUsers
       const { data: usersData, error: usersError } = await getUsers()
-      
+
       if (usersError) {
         console.error('Error fetching users:', usersError)
         setError(usersError.message || 'Failed to load users')
@@ -328,7 +308,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
         const usersWithCounts = await calculateUserProjectCounts(usersData || [], plansData || [])
         setUsers(usersWithCounts)
       }
-      
+
     } catch (err) {
       console.error('Error fetching data:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -356,7 +336,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
             variables: templateForm.variables
           })
           .eq('id', editingTemplate.id)
-        
+
         if (error) {
           console.error('Error updating template:', error)
           return
@@ -373,13 +353,13 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
             template_type: templateForm.template_type,
             variables: templateForm.variables
           })
-        
+
         if (error) {
           console.error('Error creating template:', error)
           return
         }
       }
-      
+
       setShowTemplateForm(false)
       setEditingTemplate(null)
       setTemplateForm({ name: '', subject: '', html_content: '', text_content: '', template_type: '', variables: [] })
@@ -409,7 +389,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
           .from('email_templates')
           .delete()
           .eq('id', id)
-        
+
         if (error) {
           console.error('Error deleting template:', error)
         } else {
@@ -462,12 +442,12 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
   // Handle deleting template type (only custom types can be deleted)
   const handleDeleteTemplateType = async (typeValue: string) => {
     const typeToDelete = allTemplateTypes.find(t => t.value === typeValue)
-    
+
     // All types can be deleted since is_system field doesn't exist in this table
-    
+
     // Check if any templates are using this type
     const templatesUsingType = templates.filter(t => t.template_type === typeValue)
-    
+
     if (templatesUsingType.length > 0) {
       const templateNames = templatesUsingType.map(t => t.name).join(', ')
       alert(`Cannot delete this template type. The following template(s) are using it:\n\n${templateNames}\n\nPlease change their type first, then try deleting again.`)
@@ -508,12 +488,12 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
 
     try {
       setSending(true)
-      
+
       const selectedTemplateData = templates.find(t => t.id === selectedTemplate)
       if (!selectedTemplateData) return
 
       const selectedUsersData = users.filter(u => selectedUsers.includes(u.id))
-      
+
       for (const user of selectedUsersData) {
         const variables = {
           firstName: user.first_name || 'User',
@@ -556,11 +536,11 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
           console.error(`Failed to send email to ${user.email}`)
         }
       }
-      
+
       alert(`Email sent to ${selectedUsersData.length} users successfully!`)
       setSelectedUsers([])
       setSelectedTemplate('')
-      
+
     } catch (error) {
       console.error('Error sending bulk email:', error)
       alert('Error sending emails')
@@ -599,7 +579,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-black mb-2">Email Management</h1>
         <p className="text-gray-600">Manage email templates and send bulk emails to users</p>
-        
+
         {/* Error Display */}
         {error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -732,12 +712,12 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   + Add Custom Type
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {allTemplateTypes.map((type) => (
                   <div key={type.value} className={`rounded-lg p-4 border ${
-                    type.is_system 
-                      ? 'bg-gray-50 border-gray-200' 
+                    type.is_system
+                      ? 'bg-gray-50 border-gray-200'
                       : 'bg-blue-50 border-blue-200'
                   }`}>
                     <div className="flex justify-between items-start mb-2">
@@ -747,8 +727,8 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          type.is_system 
-                            ? 'bg-gray-200 text-gray-700' 
+                          type.is_system
+                            ? 'bg-gray-200 text-gray-700'
                             : 'bg-blue-200 text-blue-700'
                         }`}>
                           {type.is_system ? 'System' : 'Custom'}
@@ -765,8 +745,8 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                       </div>
                     </div>
                     <div className={`text-xs font-mono px-2 py-1 rounded ${
-                      type.is_system 
-                        ? 'text-gray-600 bg-gray-100' 
+                      type.is_system
+                        ? 'text-gray-600 bg-gray-100'
                         : 'text-blue-600 bg-blue-100'
                     }`}>
                       {type.value}
@@ -774,7 +754,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   </div>
                 ))}
               </div>
-              
+
               {getCustomTemplateTypes().length === 0 && (
                 <div className="text-center py-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
                   <p className="text-blue-600 text-sm">No custom template types yet. Click &quot;Add Custom Type&quot; to create your first one.</p>
@@ -784,12 +764,10 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
           </div>
         )}
 
-
         {/* Send Email Tab */}
         {activeTab === 'send' && (
           <div className="space-y-6">
-           
-            
+
             {/* Template Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -950,7 +928,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                             </div>
                             <div className="ml-3">
                               <div className="text-sm font-medium text-black">
-                                {user.first_name && user.last_name 
+                                {user.first_name && user.last_name
                                   ? `${user.first_name} ${user.last_name}`
                                   : user.first_name || 'User'
                                 }
@@ -972,11 +950,11 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                               {user.plan_name || 'No Plan'}
                             </div>
                             <div className="text-gray-500 text-xs">
-                              {user.plan_limit === -1 
-                                ? 'Unlimited' 
+                              {user.plan_limit === -1
+                                ? 'Unlimited'
                                 : user.plan_limit !== undefined && user.plan_limit !== null
                                   ? `${user.plan_limit} projects`
-                                  : user.plan_type 
+                                  : user.plan_type
                                     ? 'No limit set'
                                     : 'No plan assigned'
                               }
@@ -993,7 +971,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                                 ? 'unlimited'
                                 : user.plan_limit !== undefined && user.plan_limit !== null
                                   ? `of ${user.plan_limit}`
-                                  : user.plan_type 
+                                  : user.plan_type
                                     ? 'no limit set'
                                     : 'no plan'
                               }
@@ -1043,7 +1021,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
             <h3 className="text-lg font-semibold text-black mb-4">
               {editingTemplate ? 'Edit Template' : 'New Template'}
             </h3>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
               <div>
@@ -1055,7 +1033,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Template Type</label>
                 <div className="flex gap-2">
@@ -1088,7 +1066,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {allTemplateTypes.length === 0 
+                  {allTemplateTypes.length === 0
                     ? "No template types found in database. Click + to add the first template type."
                     : "Choose a type to avoid naming conflicts. Click + to add custom types."
                   }
@@ -1097,7 +1075,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   <p className="text-xs text-red-600 mt-1">{templateTypeError}</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                 <input
@@ -1107,7 +1085,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">HTML Content</label>
                 <textarea
@@ -1118,7 +1096,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Text Content</label>
                 <textarea
@@ -1204,7 +1182,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-2 mt-6">
               <button
                 onClick={() => {
@@ -1232,7 +1210,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
         <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-black mb-4">Add Custom Template Type</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Value (unique identifier)</label>
@@ -1248,7 +1226,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                 />
                 <p className="text-xs text-gray-500 mt-1">Lowercase, no spaces (will be auto-formatted)</p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Label (display name)</label>
                 <input
@@ -1259,7 +1237,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input
@@ -1270,14 +1248,14 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               {templateTypeError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md">
                   <p className="text-sm text-red-600">{templateTypeError}</p>
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end space-x-2 mt-6">
               <button
                 onClick={() => {

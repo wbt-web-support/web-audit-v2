@@ -57,34 +57,34 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'google tag manager': 'https://img.icons8.com/color/48/google-tag-manager.png',
       'gtag': 'https://img.icons8.com/color/48/google-analytics.png',
       'gtm': 'https://img.icons8.com/color/48/google-tag-manager.png',
-      
+
       // CSS Frameworks
       'tailwind css': 'https://img.icons8.com/color/48/tailwind-css.png',
       'tailwindcss': 'https://img.icons8.com/color/48/tailwind-css.png',
-      
+
       // Additional tracking
       'hotjar': 'https://img.icons8.com/color/48/hotjar.png',
       'mixpanel': 'https://img.icons8.com/color/48/mixpanel.png',
       'segment': 'https://img.icons8.com/color/48/segment.png',
       'amplitude': 'https://img.icons8.com/color/48/amplitude.png',
-      
+
       // Payment & E-commerce
       'stripe': 'https://img.icons8.com/color/48/stripe.png',
       'paypal': 'https://img.icons8.com/color/48/paypal.png',
       'square': 'https://img.icons8.com/color/48/square.png',
-      
+
       // Social Media
       'instagram': 'https://img.icons8.com/color/48/instagram.png',
       'youtube': 'https://img.icons8.com/color/48/youtube.png',
       'tiktok': 'https://img.icons8.com/color/48/tiktok.png',
       'snapchat': 'https://img.icons8.com/color/48/snapchat.png',
-      
+
       // Communication
       'slack': 'https://img.icons8.com/color/48/slack.png',
       'discord': 'https://img.icons8.com/color/48/discord.png',
       'telegram': 'https://img.icons8.com/color/48/telegram.png',
       'whatsapp': 'https://img.icons8.com/color/48/whatsapp.png',
-      
+
       // Development Tools
       'figma': 'https://img.icons8.com/color/48/figma.png',
       'sketch': 'https://img.icons8.com/color/48/sketch.png',
@@ -92,7 +92,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'photoshop': 'https://img.icons8.com/color/48/adobe-photoshop.png',
       'illustrator': 'https://img.icons8.com/color/48/adobe-illustrator.png'
     }
-    
+
     return altIcons[name.toLowerCase()]
   }
 
@@ -105,7 +105,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'vue.js': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg',
       'angular': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/angular/angular-original.svg',
       'svelte': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/svelte/svelte-original.svg',
-      
+
       // Languages
       'javascript': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
       'typescript': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
@@ -117,7 +117,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'c#': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg',
       'go': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg',
       'rust': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg',
-      
+
       // CSS Frameworks
       'bootstrap': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bootstrap/bootstrap-original.svg',
       'tailwind': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg',
@@ -127,19 +127,19 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'scss': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sass/sass-original.svg',
       'less': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/less/less-plain-wordmark.svg',
       'stylus': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/stylus/stylus-original.svg',
-      
+
       // Libraries
       'jquery': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jquery/jquery-original.svg',
       'lodash': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/lodash/lodash-original.svg',
       'd3': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/d3js/d3js-original.svg',
-      
+
       // CMS & E-commerce
       'wordpress': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/wordpress/wordpress-original.svg',
       'shopify': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/shopify/shopify-original.svg',
       'drupal': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/drupal/drupal-original.svg',
       'joomla': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/joomla/joomla-original.svg',
       'magento': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/magento/magento-original.svg',
-      
+
       // Databases
       'mysql': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg',
       'postgresql': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
@@ -147,7 +147,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'redis': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg',
       'sqlite': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg',
       'firebase': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg',
-      
+
       // Backend
       'node.js': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
       'express': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg',
@@ -155,14 +155,14 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'flask': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg',
       'laravel': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-plain.svg',
       'symfony': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/symfony/symfony-original.svg',
-      
+
       // Cloud & DevOps
       'aws': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original.svg',
       'docker': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
       'kubernetes': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-original.svg',
       'nginx': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nginx/nginx-original.svg',
       'apache': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apache/apache-original.svg',
-      
+
       // Tools & Services
       'google': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg',
       'github': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg',
@@ -173,7 +173,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'vite': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vitejs/vitejs-original.svg',
       'gulp': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/gulp/gulp-plain.svg',
       'grunt': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/grunt/grunt-original.svg',
-      
+
       // Analytics & Marketing
       'google-analytics': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg',
       'google analytics': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg',
@@ -184,7 +184,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'facebook-pixel': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg',
       'twitter': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/twitter/twitter-original.svg',
       'linkedin': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg',
-      
+
       // Additional Analytics & Tracking
       'gtag': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg',
       'gtm': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg',
@@ -193,7 +193,7 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
       'segment': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/segment/segment-original.svg',
       'amplitude': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amplitude/amplitude-original.svg'
     }
-    
+
     return iconMap[name.toLowerCase()] || getAlternativeIconUrl(name) || getTechnologyIconUrl(name)
   }
 
@@ -234,12 +234,12 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
 
   // Try to get icon URL (from tech.icon or from icon service)
   const iconUrl = tech.icon || getIconUrl(tech.name)
-  
+
   if (iconUrl) {
     return (
       <div className={`${className} rounded-lg flex items-center justify-center bg-white border border-gray-200 `}>
-        <Image 
-          src={iconUrl} 
+        <Image
+          src={iconUrl}
           alt={tech.name || 'Technology'}
           width={24}
           height={24}
@@ -277,18 +277,15 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
 
   // HTML-based technology detection
   useEffect(() => {
-    console.log('TechnologiesTab - htmlContent received:', htmlContent ? `${htmlContent.length} chars` : 'none')
-    console.log('TechnologiesTab - headers:', headers)
-    console.log('TechnologiesTab - cookies:', cookies)
-    
+
     if (htmlContent && htmlContent.length > 0) {
-      console.log('TechnologiesTab - Starting HTML detection...')
+
       setIsDetecting(true)
       setDetectionError(null)
-      
+
       try {
         const detected = detectTechnologiesFromHTML(htmlContent, headers, cookies)
-        console.log('TechnologiesTab - Detected technologies:', detected)
+
         setDetectedTechnologies(detected)
       } catch (error) {
         console.error('Error detecting technologies:', error)
@@ -297,7 +294,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
         setIsDetecting(false)
       }
     } else {
-      console.log('TechnologiesTab - No HTML content available for detection')
+
       // Test with sample HTML if no content is provided
       const testHtml = `
         <!DOCTYPE html>
@@ -313,10 +310,10 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
         </body>
         </html>
       `
-      console.log('TechnologiesTab - Testing with sample HTML...')
+
       try {
         const testDetected = detectTechnologiesFromHTML(testHtml)
-        console.log('TechnologiesTab - Test detection result:', testDetected)
+
         setDetectedTechnologies(testDetected)
       } catch (error) {
         console.error('Test detection failed:', error)
@@ -338,7 +335,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
 
   // Combine both sources of technologies
   const allTechnologies = [...projectTechnologies, ...detectedTechnologies]
-  
+
   // Remove duplicates based on name (project technologies take precedence)
   const uniqueTechnologies = allTechnologies.reduce((acc, tech) => {
     const existing = acc.find(t => t.name.toLowerCase() === tech.name.toLowerCase())
@@ -360,8 +357,6 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
   const hasDetectedTechnologies = detectedTechnologies.length > 0
 
   // Debug: Log categories to see if any contain "unknown"
-  console.log('TechnologiesTab - Categories found:', Object.keys(categorizedTechnologies))
-  console.log('TechnologiesTab - All technologies:', uniqueTechnologies.map(t => ({ name: t.name, category: t.category })))
 
   return (
     <div className="space-y-6">
@@ -446,7 +441,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
                 {Object.keys(categorizedTechnologies).length} categories
               </div>
             </div>
-            
+
             <div className="space-y-6">
               {Object.entries(categorizedTechnologies).map(([category, techs]) => (
                 <div key={category} className="bg-white rounded-xl border border-gray-200">
@@ -477,8 +472,8 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
                                   {Math.round(tech.confidence * 100)}%
                                 </span> */}
                                 {/* <span className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
-                                  tech.detection_method === 'project_data' 
-                                    ? 'bg-green-100 text-green-700' 
+                                  tech.detection_method === 'project_data'
+                                    ? 'bg-green-100 text-green-700'
                                     : 'bg-blue-100 text-blue-700'
                                 }`}>
                                   {tech.detection_method === 'project_data' ? 'Project' : 'HTML'}

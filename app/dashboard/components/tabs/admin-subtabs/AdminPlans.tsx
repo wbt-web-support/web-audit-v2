@@ -137,8 +137,8 @@ export default function AdminPlans({
           try {
             return {
               ...p,
-              features: Array.isArray(p.features) 
-                ? p.features.map((feature: unknown) => 
+              features: Array.isArray(p.features)
+                ? p.features.map((feature: unknown) =>
                     typeof feature === 'string' ? JSON.parse(feature as string) : feature
                   ).filter((feature: any) => feature && (feature as { name?: string }).name)
                 : [],
@@ -188,8 +188,8 @@ export default function AdminPlans({
           try {
             return {
               ...p,
-              features: Array.isArray(p.features) 
-                ? p.features.map((feature: unknown) => 
+              features: Array.isArray(p.features)
+                ? p.features.map((feature: unknown) =>
                     typeof feature === 'string' ? JSON.parse(feature as string) : feature
                   ).filter((feature: any) => feature && (feature as { name?: string }).name)
                 : [],
@@ -391,21 +391,16 @@ export default function AdminPlans({
   };
   const handleEditPlan = (plan: Plan) => {
     // Debug: Log the plan features
-    console.log('Plan features:', plan.features);
-    console.log('Plan features type:', typeof plan.features);
-    console.log('Plan features length:', plan.features?.length);
-    
+
     // Features should already be parsed from the loadPlans function
     const features = Array.isArray(plan.features) ? plan.features : [];
-    
+
     // Filter out empty features and ensure proper structure
     const validFeatures = features.filter(feature => {
       if (!feature || typeof feature !== 'object') return false;
       return feature.name?.trim() || feature.description?.trim() || feature.icon?.trim();
     });
-    
-    console.log('Valid features after filtering:', validFeatures);
-    
+
     setFormData({
       name: plan.name || '',
       description: plan.description || '',
@@ -965,15 +960,11 @@ export default function AdminPlans({
                       ) : (
                         formData.features.map((feature, index) => {
                           // Debug: Log each feature
-                          console.log(`Feature ${index}:`, feature);
-                          console.log(`Feature ${index} name:`, feature.name);
-                          console.log(`Feature ${index} description:`, feature.description);
-                          console.log(`Feature ${index} icon:`, feature.icon);
-                          
+
                           const hasName = feature.name && feature.name.trim();
                           const hasDescription = feature.description && feature.description.trim();
                           const hasIcon = feature.icon && feature.icon.trim();
-                          
+
                           return (
                             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                               <div className="flex items-center space-x-3">
@@ -987,8 +978,8 @@ export default function AdminPlans({
                                   </div>
                                 </div>
                               </div>
-                              <button 
-                                onClick={() => handleRemoveFeature(index)} 
+                              <button
+                                onClick={() => handleRemoveFeature(index)}
                                 className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 transition-colors"
                               >
                                 Remove

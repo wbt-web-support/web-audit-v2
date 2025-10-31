@@ -232,9 +232,9 @@ export async function POST(request: NextRequest) {
 
     // Calculate expires_at based on billing cycle
     const now = new Date();
-    const expiresAt = plan.billing_cycle === 'monthly' 
+    const expiresAt = plan.billing_cycle === 'monthly'
       ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
-      : plan.billing_cycle === 'yearly' 
+      : plan.billing_cycle === 'yearly'
       ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
       : null;
 
@@ -400,7 +400,7 @@ export async function POST(request: NextRequest) {
             Object.entries(emailData).forEach(([key, value]) => {
               const placeholder = `{{${key}}}`;
               const regex = new RegExp(placeholder, 'g');
-              
+
               if (typeof value === 'string') {
                 htmlContent = htmlContent.replace(regex, value);
                 textContent = textContent.replace(regex, value);
@@ -409,7 +409,7 @@ export async function POST(request: NextRequest) {
                 if (key === 'features') {
                   const featuresList = value.map(feature => `<li>${feature}</li>`).join('');
                   htmlContent = htmlContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, featuresList);
-                  
+
                   const textFeaturesList = value.map(feature => `- ${feature}`).join('\n');
                   textContent = textContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, textFeaturesList);
                 }
@@ -430,7 +430,7 @@ export async function POST(request: NextRequest) {
             });
 
             if (emailResponse.ok) {
-              console.log('Payment success email sent successfully (fallback)');
+
             } else {
               console.warn('Failed to send payment success email (fallback):', await emailResponse.text());
             }
@@ -608,7 +608,7 @@ export async function POST(request: NextRequest) {
         Object.entries(emailData).forEach(([key, value]) => {
           const placeholder = `{{${key}}}`;
           const regex = new RegExp(placeholder, 'g');
-          
+
           if (typeof value === 'string') {
             htmlContent = htmlContent.replace(regex, value);
             textContent = textContent.replace(regex, value);
@@ -618,7 +618,7 @@ export async function POST(request: NextRequest) {
             if (key === 'features') {
               const featuresList = value.map(feature => `<li>${feature}</li>`).join('');
               htmlContent = htmlContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, featuresList);
-              
+
               const textFeaturesList = value.map(feature => `- ${feature}`).join('\n');
               textContent = textContent.replace(/{{#each features}}[\s\S]*?{{\/each}}/g, textFeaturesList);
             }
@@ -640,7 +640,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (emailResponse.ok) {
-          console.log('Payment success email sent successfully');
+
         } else {
           console.warn('Failed to send payment success email:', await emailResponse.text());
         }

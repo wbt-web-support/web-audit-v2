@@ -54,7 +54,7 @@ export default function BrandConsistencyTab({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  
+
   const { user } = useAuth();
   const { hasFeature, loading: planLoading } = useUserPlan();
   const { updateAuditProject, getAuditProject } = useSupabase();
@@ -62,18 +62,18 @@ export default function BrandConsistencyTab({
   // Check if user has access to brand consistency analysis with caching
   const hasFeatureAccess = useMemo(() => {
     const cacheKey = createCacheKey('brand_consistency_check', user?.id);
-    
+
     // Return cached result if available
     const cachedResult = featureCache.get(cacheKey);
     if (cachedResult !== undefined) {
       return cachedResult;
     }
-    
+
     // If still loading, return null to show skeleton
     if (planLoading) {
       return null;
     }
-    
+
     // Get fresh result and cache it
     const result = hasFeature('brand_consistency_check');
     featureCache.set(cacheKey, result);
@@ -124,7 +124,7 @@ export default function BrandConsistencyTab({
       });
     } else {
       const normalizedFound = foundPhones.map(phone => normalizeText(phone));
-      const hasMatch = normalizedFound.some(phone => 
+      const hasMatch = normalizedFound.some(phone =>
         phone.includes(normalizedExpected) || normalizedExpected.includes(phone)
       );
 
@@ -161,7 +161,7 @@ export default function BrandConsistencyTab({
         suggestion: `Add the email address "${expectedEmail}" to your content`
       });
     } else {
-      const hasMatch = foundEmails.some(email => 
+      const hasMatch = foundEmails.some(email =>
         email.toLowerCase() === expectedEmail.toLowerCase()
       );
 
@@ -187,7 +187,7 @@ export default function BrandConsistencyTab({
 
     const normalizedExpected = normalizeText(expectedName);
     const words = normalizedExpected.split(' ');
-    
+
     // Look for company name variations
     const nameRegex = new RegExp(`\\b(${words.join('|')})\\b`, 'gi');
     const matches = content.match(nameRegex);
@@ -222,7 +222,7 @@ export default function BrandConsistencyTab({
 
     const normalizedExpected = normalizeText(expectedAddress);
     const addressWords = normalizedExpected.split(' ').filter(word => word.length > 2);
-    
+
     // Look for address components
     const addressRegex = new RegExp(`\\b(${addressWords.join('|')})\\b`, 'gi');
     const matches = content.match(addressRegex);
@@ -257,7 +257,7 @@ export default function BrandConsistencyTab({
 
     const normalizedExpected = normalizeText(expectedInfo);
     const words = normalizedExpected.split(' ').filter(word => word.length > 3);
-    
+
     if (words.length > 0) {
       const infoRegex = new RegExp(`\\b(${words.join('|')})\\b`, 'gi');
       const matches = content.match(infoRegex);
@@ -280,14 +280,11 @@ export default function BrandConsistencyTab({
   // Main analysis function
   const analyzeBrandConsistency = useCallback(async (customBrandData?: BrandConsistencyData) => {
     const dataToAnalyze = customBrandData || brandData;
-    
+
     if (!dataToAnalyze || !textContent) {
       setAnalysisError('No brand data or content available for analysis');
       return;
     }
-
-    console.log('Analyzing with brand data:', dataToAnalyze);
-    console.log('Content to analyze:', textContent.substring(0, 100) + '...');
 
     setIsAnalyzing(true);
     setAnalysisError(null);
@@ -302,7 +299,6 @@ export default function BrandConsistencyTab({
       issues.push(...checkAddress(textContent, dataToAnalyze.address));
       issues.push(...checkAdditionalInfo(textContent, dataToAnalyze.additionalInformation));
 
-      console.log('Analysis completed with', issues.length, 'issues found');
       setAnalysisResults(issues);
     } catch (error) {
       console.error('Error during brand consistency analysis:', error);
@@ -315,14 +311,14 @@ export default function BrandConsistencyTab({
   // Sync brandData with projectBrandData when it changes
   useEffect(() => {
     if (projectBrandData && projectBrandData !== brandData) {
-      console.log('Brand data updated from props:', projectBrandData);
+
       setBrandData(projectBrandData);
     }
   }, [projectBrandData, brandData]);
 
   // Log when brandData changes
   useEffect(() => {
-    console.log('Brand data state changed:', brandData);
+
   }, [brandData]);
 
   // Auto-analyze when component mounts or data changes
@@ -340,8 +336,6 @@ export default function BrandConsistencyTab({
         throw new Error('Project ID is missing');
       }
 
-      console.log('Step 1: Starting to save brand data...', updatedBrandData);
-
       // Step 1: Save to database using Supabase
       const { data, error } = await updateAuditProject(page.audit_project_id, {
         brand_data: updatedBrandData
@@ -351,61 +345,52 @@ export default function BrandConsistencyTab({
         throw new Error(error.message || 'Failed to save brand data');
       }
 
-      console.log('Step 2: Brand data saved successfully to database:', data);
-      
       // Step 2: Fetch updated project data from database
-      console.log('Step 3: Fetching updated project data from database...');
+
       const { data: updatedProject, error: fetchError } = await getAuditProject(page.audit_project_id);
-      
+
       if (fetchError) {
         console.warn('Step 3 Warning: Could not fetch updated project data:', fetchError);
         // Continue with local state update as fallback
         setBrandData(updatedBrandData);
       } else if (updatedProject?.brand_data) {
-        console.log('Step 3 Success: Fetched updated brand data from database:', updatedProject.brand_data);
+
         setBrandData(updatedProject.brand_data);
       } else {
-        console.log('Step 3 Fallback: Using local brand data');
+
         setBrandData(updatedBrandData);
       }
-      
+
       // Step 3: Close modal
       setIsEditModalOpen(false);
-      console.log('Step 4: Modal closed');
-      
+
       // Step 4: Force refresh by updating refresh key
       setRefreshKey(prev => prev + 1);
-      console.log('Step 5: Refresh key updated to force re-render');
-      
+
       // Step 5: Notify parent component about the update
       if (onBrandDataUpdate) {
         const finalBrandData = updatedProject?.brand_data || updatedBrandData;
         onBrandDataUpdate(finalBrandData);
-        console.log('Step 6: Parent component notified of brand data update');
+
       }
-      
+
       // Step 6: Clear previous analysis results to trigger re-analysis
       setAnalysisResults([]);
-      console.log('Step 7: Previous analysis results cleared');
-      
+
       // Step 7: Wait for state to update, then re-analyze with new data
       setTimeout(() => {
-        console.log('Step 8: Starting re-analysis with updated brand data...');
-        console.log('Step 8: Current brand data state:', brandData);
-        console.log('Step 8: Updated brand data that should be used:', updatedProject?.brand_data || updatedBrandData);
-        
+
         // Force re-analysis with the latest brand data
         if (updatedProject?.brand_data || updatedBrandData) {
           const latestBrandData = updatedProject?.brand_data || updatedBrandData;
-          console.log('Step 8: Using latest brand data for analysis:', latestBrandData);
-          
+
           // Run analysis directly with the latest brand data
           analyzeBrandConsistency(latestBrandData);
         } else {
           console.warn('Step 8: No brand data available for analysis');
         }
       }, 300);
-      
+
     } catch (error) {
       console.error('Error saving brand data:', error);
       setAnalysisError(error instanceof Error ? error.message : 'Failed to save brand data. Please try again.');
@@ -438,7 +423,7 @@ export default function BrandConsistencyTab({
               <div className="text-xs text-gray-500">
                 Current plan: <span className="font-medium">Check your plan settings</span>
               </div>
-              <button 
+              <button
                 onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
@@ -477,11 +462,11 @@ export default function BrandConsistencyTab({
           <p className="text-xs text-gray-600 mb-2">Debug Info:</p>
           <p className="text-xs text-gray-500">Project Brand Data: {JSON.stringify(projectBrandData, null, 2)}</p>
         </div>
-        
+
         {/* Temporary test button - remove this later */}
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800 mb-2">Test: Add sample brand data</p>
-          <button 
+          <button
             onClick={() => {
               const testBrandData = {
                 companyName: 'Test Company',
@@ -530,7 +515,7 @@ export default function BrandConsistencyTab({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsEditModalOpen(true)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
             >
@@ -539,8 +524,8 @@ export default function BrandConsistencyTab({
               </svg>
               Edit Brand Data
             </button>
-            {/* <button 
-              onClick={analyzeBrandConsistency} 
+            {/* <button
+              onClick={analyzeBrandConsistency}
               disabled={isAnalyzing}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
@@ -624,11 +609,11 @@ export default function BrandConsistencyTab({
                         {issues.length} issue{issues.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {issues.map((issue, index) => (
-                        <div 
-                          key={index} 
+                        <div
+                          key={index}
                           className="p-4 rounded-lg border border-gray-200 bg-gray-50"
                         >
                           <div className="flex items-start justify-between">
@@ -641,7 +626,7 @@ export default function BrandConsistencyTab({
                                   {type.label}
                                 </span>
                               </div>
-                              
+
                               <div className="space-y-2 text-sm">
                                 <div>
                                   <span className="font-medium text-gray-700">Found:</span>

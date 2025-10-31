@@ -71,12 +71,39 @@ export function getBestFaviconUrl(data: any): string | null {
 
 /**
  * Generate a fallback favicon URL from domain
+ * Tries multiple formats in order of preference: PNG, SVG, WebP, then ICO
  */
 export function generateFallbackFaviconUrl(siteUrl: string): string {
   try {
     const url = new URL(siteUrl);
-    return `${url.protocol}//${url.hostname}/favicon.ico`;
+    const baseUrl = `${url.protocol}//${url.hostname}`;
+    
+    // Try preferred formats first (PNG, SVG, WebP) - return the first one to try
+    // The actual checking will be done by the image loader's error handler
+    // Priority order: PNG > SVG > WebP > ICO (last resort)
+    return `${baseUrl}/favicon.png`;
   } catch {
-    return '/favicon.ico';
+    return '/favicon.png';
+  }
+}
+
+/**
+ * Generate multiple fallback favicon URLs to try in order
+ */
+export function generateFallbackFaviconUrls(siteUrl: string): string[] {
+  try {
+    const url = new URL(siteUrl);
+    const baseUrl = `${url.protocol}//${url.hostname}`;
+    
+    // Return URLs in priority order: PNG > SVG > WebP > ICO (last resort)
+    return [
+      `${baseUrl}/favicon.png`,
+      `${baseUrl}/favicon.svg`,
+      `${baseUrl}/favicon.webp`,
+      `${baseUrl}/apple-touch-icon.png`, // Also try apple-touch-icon
+      `${baseUrl}/favicon.ico` // Last resort
+    ];
+  } catch {
+    return ['/favicon.png', '/favicon.svg', '/favicon.ico'];
   }
 }

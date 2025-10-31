@@ -39,7 +39,7 @@ export default function UserAlerts({
         console.error('Error fetching alerts:', error);
         setAlerts([]);
       } else {
-        console.log('Fetched alerts from database:', alerts);
+
         setAlerts(alerts || []);
       }
     } catch (error) {
@@ -93,7 +93,7 @@ export default function UserAlerts({
 
   // Filter out dismissed alerts and only show active ones, then deduplicate by ID
   const filteredAlerts = alerts.filter(alert => alert.status === 'active' && !dismissedAlerts.has(alert.id) && new Date(alert.start_date) <= new Date() && (!alert.end_date || new Date(alert.end_date) >= new Date()));
-  
+
   // Deduplicate alerts by ID to prevent showing duplicates
   const uniqueAlerts = filteredAlerts.reduce((acc, alert) => {
     if (!acc.find(a => a.id === alert.id)) {
@@ -101,27 +101,13 @@ export default function UserAlerts({
     }
     return acc;
   }, [] as AdminAlert[]);
-  
+
   const visibleAlerts = uniqueAlerts;
   if (loading) {
     return null;
   }
 
   // Debug logging
-  console.log('UserAlerts Debug:', {
-    totalAlerts: alerts.length,
-    visibleAlerts: visibleAlerts.length,
-    userPlan,
-    dismissedAlerts: Array.from(dismissedAlerts),
-    alerts: alerts.map(a => ({
-      id: a.id,
-      title: a.title,
-      status: a.status,
-      start_date: a.start_date,
-      end_date: a.end_date,
-      target_audience: a.target_audience
-    }))
-  });
 
   if (visibleAlerts.length === 0) {
     return null;
@@ -162,12 +148,12 @@ export default function UserAlerts({
                     </button>}
                 </div>
               </div>
-              
+
               {alert.dismissible && <button onClick={() => handleDismissAlert(alert.id)} className="ml-3 text-gray-400 hover:text-gray-600 transition-colors" title="Dismiss alert">
                   <i className="fas fa-times"></i>
                 </button>}
             </div>
-            
+
             {/* Priority indicator for high priority alerts */}
             {alert.priority >= 8 && <div className="absolute top-2 right-2">
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">

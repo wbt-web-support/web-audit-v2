@@ -38,6 +38,8 @@ export interface AuditProject {
   social_meta_tags_data: SocialMetaTagsData | null
   // Keys detection data storage
   detected_keys: DetectedKeysData | null
+  // Brand data storage (for favicons, logos, etc.)
+  brand_data: any | null
 }
 
 export interface SEOIssue {

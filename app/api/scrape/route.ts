@@ -141,12 +141,12 @@ export async function POST(request: Request) {
 
       // Parse and return successful response
       const data = await upstreamResponse.json();
-      
+
       // Console log summary data if available
       if (data?.summary) {
-        console.log('📊 Scraping Summary:', JSON.stringify(data.summary, null, 2));
+
       }
-      
+
       return new Response(JSON.stringify(data), {
         status: 200,
         headers: {

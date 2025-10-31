@@ -37,9 +37,6 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
   const htmlContent = getHtmlContent()
 
   // Debug logging
-  console.log('TechnologiesSection - scrapedPages:', scrapedPages?.length || 0)
-  console.log('TechnologiesSection - htmlContent length:', htmlContent?.length || 0)
-  console.log('TechnologiesSection - htmlContent preview:', htmlContent?.substring(0, 100) || 'No content')
 
   const tabs = [
     {
@@ -75,8 +72,8 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
     switch (activeTab) {
       case 'technologies':
         return (
-          <TechnologiesTab 
-            project={project} 
+          <TechnologiesTab
+            project={project}
             htmlContent={htmlContent || undefined}
             headers={undefined} // Could be extracted from scraped pages if available
             cookies={undefined} // Could be extracted from scraped pages if available
@@ -88,8 +85,8 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
         return <SocialPreviewTab project={project} />
       default:
         return (
-          <TechnologiesTab 
-            project={project} 
+          <TechnologiesTab
+            project={project}
             htmlContent={htmlContent || undefined}
             headers={undefined}
             cookies={undefined}
@@ -120,7 +117,7 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
           </div>
         </div>
       </div>
-      
+
       <div className="p-6">
         {renderTabContent()}
       </div>

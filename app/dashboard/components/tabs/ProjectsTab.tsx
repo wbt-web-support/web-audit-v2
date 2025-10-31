@@ -443,12 +443,11 @@ export default function ProjectsTab({
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <FaviconDisplay 
-                            data={project} 
-                            siteUrl={project.site_url}
+                            projectId={project.id}
                             size="sm"
-                            className="mr-2 flex-shrink-0"
+                            className="flex-shrink-0"
                           />
                           <h3 className="text-lg font-semibold text-black truncate">
                             {getProjectName(project.site_url)}
@@ -541,8 +540,7 @@ export default function ProjectsTab({
                       <div className="p-4 bg-gray-50 border-t border-gray-200">
                         <h4 className="text-sm font-semibold text-black mb-3 flex items-center">
                           <FaviconDisplay 
-                            data={project} 
-                            siteUrl={project.site_url}
+                            projectId={project.id}
                             size="sm"
                             className="mr-2"
                           />
@@ -635,8 +633,7 @@ export default function ProjectsTab({
                         {project.cms_detected && (project.cms_type || project.cms_version || project.cms_plugins && project.cms_plugins.length > 0 || project.cms_themes && project.cms_themes.length > 0 || project.cms_components && project.cms_components.length > 0) && <div className="mt-6 pt-4 border-t border-gray-200">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
                               <FaviconDisplay 
-                                data={project} 
-                                siteUrl={project.site_url}
+                                projectId={project.id}
                                 size="sm"
                                 className="mr-2"
                               />
@@ -760,8 +757,7 @@ export default function ProjectsTab({
                         {project.technologies && project.technologies.length > 0 && <div className="mt-6 pt-4 border-t border-gray-200">
                             <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
                               <FaviconDisplay 
-                                data={project} 
-                                siteUrl={project.site_url}
+                                projectId={project.id}
                                 size="sm"
                                 className="mr-2"
                               />

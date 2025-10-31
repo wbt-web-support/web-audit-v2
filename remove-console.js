@@ -34,7 +34,7 @@ function processFile(filePath) {
   if (modified) {
     const output = generator(ast, {}, code).code;
     fs.writeFileSync(filePath, output);
-    console.log(`✅ Cleaned: ${filePath}`);
+
   }
 }
 
@@ -59,4 +59,3 @@ foldersToClean.forEach((folder) => {
   }
 });
 
-console.log('🎉 Done removing all console.log() statements!');

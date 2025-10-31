@@ -65,9 +65,7 @@ export async function POST(request: NextRequest) {
       url,
       userId
     } = await request.json();
-    
-    console.log('🔍 Performance analysis request:', { pageId, url, userId });
-    
+
     if (!pageId || !url) {
       console.error('❌ Missing required fields:', { pageId, url });
       return NextResponse.json({
@@ -121,12 +119,12 @@ export async function POST(request: NextRequest) {
       });
     }
     // Perform PageSpeed analysis
-    console.log('🚀 Starting PageSpeed analysis for URL:', url);
+
     const {
       data: pagespeedData,
       error: pagespeedError
     } = await fetchPageSpeedInsights(url);
-    
+
     if (pagespeedError) {
       console.error('❌ PageSpeed analysis error:', pagespeedError);
       return NextResponse.json({
@@ -135,8 +133,7 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
-    
-    console.log('✅ PageSpeed analysis completed successfully');
+
     if (!pagespeedData) {
       return NextResponse.json({
         error: 'No PageSpeed data received'

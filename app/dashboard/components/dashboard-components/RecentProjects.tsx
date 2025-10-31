@@ -16,6 +16,8 @@ export default function RecentProjects({
   const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   // const previousProjectsRef = useRef<AuditProject[]>([]);
 
+
+
   // Load projects when component mounts
   useEffect(() => {
     refreshProjects();
@@ -89,10 +91,9 @@ export default function RecentProjects({
               transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
             >
                 <div className="flex-1">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center mb-2 gap-2">
                     <FaviconDisplay 
-                      data={project as unknown as Record<string, any>} 
-                      siteUrl={project.site_url}
+                      projectId={project.id}
                       size="sm"
                       className="mr-2 flex-shrink-0"
                     />

@@ -14,14 +14,13 @@ interface PagesSectionProps {
   onPagesUpdate?: (pages: ScrapedPage[]) => void
 }
 
-export default function PagesSection({ 
-  scrapedPages, 
-  projectId, 
-  onPageSelect, 
-  onPagesUpdate 
+export default function PagesSection({
+  scrapedPages,
+  projectId,
+  onPageSelect,
+  onPagesUpdate
 }: PagesSectionProps) {
-  console.log('PagesSection rendered with props:', { scrapedPages, projectId, onPageSelect, onPagesUpdate })
-  
+
   const { getScrapedPages } = useSupabase()
   const { hasFeature, loading: isLoadingPlan } = useUserPlan()
   const [isLoading, setIsLoading] = useState(false)
@@ -37,7 +36,6 @@ export default function PagesSection({
 
   // Check if user has access to pages tab feature
   const hasPagesTabAccess = hasFeature('pages_tab')
-  console.log('PagesSection: hasPagesTabAccess:', hasPagesTabAccess)
 
   // Update pages when scrapedPages prop changes and handle persistence
   useEffect(() => {
@@ -56,22 +54,21 @@ export default function PagesSection({
 
   // Fetch pages function
   const fetchPages = useCallback(async () => {
-    console.log('PagesSection fetchPages called:', { projectId, isRequestInProgress })
+
     if (!projectId || isRequestInProgress) return
-    
+
     setIsRequestInProgress(true)
     setIsLoading(true)
     setError(null)
-    
+
     try {
-      console.log('PagesSection: About to call getScrapedPages with projectId:', projectId)
+
       const { data, error: fetchError } = await getScrapedPages(projectId)
-      console.log('PagesSection: getScrapedPages response:', { data, error: fetchError })
-      
+
       if (fetchError) {
         console.error('Error fetching pages:', fetchError)
         console.error('Error details:', JSON.stringify(fetchError, null, 2))
-        
+
         // Handle database timeout errors gracefully
         if (fetchError.code === '57014') {
           setError('Database timeout - please try again later')
@@ -80,16 +77,16 @@ export default function PagesSection({
         }
         return
       }
-      
+
       if (data) {
-        console.log('PagesSection: Setting pages data:', data)
+
         setPages(data)
         setHasLoadedPages(true)
         if (onPagesUpdate) {
           onPagesUpdate(data)
         }
       } else {
-        console.log('PagesSection: No data returned from getScrapedPages')
+
       }
     } catch (err) {
       console.error('Error fetching pages:', err)
@@ -103,17 +100,9 @@ export default function PagesSection({
 
   // Auto-load pages when component mounts if no data is available - single consolidated effect
   useEffect(() => {
-    console.log('PagesSection auto-load check:', {
-      projectId,
-      hasLoadedPages,
-      pagesLength: pages.length,
-      isLoading,
-      isRequestInProgress,
-      hasPagesTabAccess
-    })
-    
+
     if (projectId && !hasLoadedPages && pages.length === 0 && !isLoading && !isRequestInProgress && hasPagesTabAccess) {
-      console.log('PagesSection: Triggering fetchPages')
+
       fetchPages()
     }
   }, [projectId, hasLoadedPages, pages.length, isLoading, isRequestInProgress, hasPagesTabAccess, fetchPages])
@@ -129,7 +118,7 @@ export default function PagesSection({
     })
     .sort((a, b) => {
       let aValue: string | number, bValue: string | number
-      
+
       switch (sortBy) {
         case 'title':
           aValue = a.title || ''
@@ -145,7 +134,7 @@ export default function PagesSection({
           bValue = new Date(b.created_at).getTime()
           break
       }
-      
+
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1
       } else {
@@ -185,7 +174,7 @@ export default function PagesSection({
   if (!hasPagesTabAccess) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <FeatureUnavailableCard 
+        <FeatureUnavailableCard
           title="Pages Tab"
           description="This feature is not available in your current plan. Upgrade to access pages tab functionality."
         />
@@ -233,7 +222,7 @@ export default function PagesSection({
             <option value="error">Error (400+)</option>
           </select>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-gray-700">Sort by:</label>
           <select
@@ -246,7 +235,7 @@ export default function PagesSection({
             <option value="status_code">Status Code</option>
           </select>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-gray-700">Order:</label>
           <select
@@ -350,7 +339,7 @@ export default function PagesSection({
               </div>
             </div>
           ))}
-          
+
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
@@ -391,7 +380,7 @@ export default function PagesSection({
                   <span className="sm:hidden">»</span>
                 </button>
               </div>
-              
+
               <div className="flex items-center justify-center sm:justify-end space-x-2">
                 <span className="text-sm text-gray-700">Go to page:</span>
                 <select
@@ -433,7 +422,7 @@ export default function PagesSection({
               <div className="space-y-2">
                 <button
                   onClick={() => {
-                    console.log('Manual fetch triggered')
+
                     setHasLoadedPages(false)
                     fetchPages()
                   }}
@@ -443,7 +432,7 @@ export default function PagesSection({
                 </button>
                 <button
                   onClick={() => {
-                    console.log('Reset state triggered')
+
                     setHasLoadedPages(false)
                     setPages([])
                     setError(null)

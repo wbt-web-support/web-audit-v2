@@ -511,7 +511,7 @@ export default function ScrapingService({
       const filteredPages = scrapedPagesData.filter((page): page is NonNullable<typeof page> => page !== null);
 
       // Log the exact data structure being sent
-     
+
       const {
         error: pagesError
       } = await createScrapedPages(filteredPages);
@@ -659,12 +659,6 @@ export default function ScrapingService({
       };
 
       // Log the scraping data being stored (including favicons)
-      console.log('💾 Storing complete scraping data:', {
-        hasSummary: !!scrapingData.summary,
-        hasFavicons: !!(scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons,
-        faviconCount: (scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons?.length || 0,
-        firstFavicon: (scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons?.[0]
-      });
 
       const {
         error: updateError
