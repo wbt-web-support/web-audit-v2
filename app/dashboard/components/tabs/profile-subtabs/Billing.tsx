@@ -46,9 +46,8 @@ export default function Billing({
 }: BillingProps) {
   const {
     planInfo,
-    loading: planLoading
+    loading: _planLoading
   } = useUserPlan();
-  const [isUpgrading, setIsUpgrading] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [planExpiryStatus, setPlanExpiryStatus] = useState<{

@@ -10,7 +10,7 @@ interface FeatureUnavailableCardProps {
 export default function FeatureUnavailableCard({ 
   title, 
   description, 
-  icon = "🔒",
+  icon: _icon = "🔒",
   upgradeUrl = '/dashboard?tab=profile&subtab=plans'
 }: FeatureUnavailableCardProps) {
   return (

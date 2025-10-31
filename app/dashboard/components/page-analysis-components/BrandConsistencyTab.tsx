@@ -310,7 +310,7 @@ export default function BrandConsistencyTab({
     } finally {
       setIsAnalyzing(false);
     }
-  }, [brandData, textContent]);
+  }, [brandData, textContent, checkCompanyName, checkPhoneNumber, checkEmailAddress, checkAddress, checkAdditionalInfo]);
 
   // Sync brandData with projectBrandData when it changes
   useEffect(() => {
@@ -318,7 +318,7 @@ export default function BrandConsistencyTab({
       console.log('Brand data updated from props:', projectBrandData);
       setBrandData(projectBrandData);
     }
-  }, [projectBrandData]);
+  }, [projectBrandData, brandData]);
 
   // Log when brandData changes
   useEffect(() => {

@@ -70,8 +70,6 @@ export default function AdminUsers({
   const [usersError, setUsersError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userActivity, setUserActivity] = useState<Record<string, unknown> | null>(null);
-  const [_userProjects, setUserProjects] = useState<Record<string, unknown>[]>([]);
-  const [_userSubscription, setUserSubscription] = useState<Record<string, unknown> | null>(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,10 +95,7 @@ export default function AdminUsers({
           head: true
         }).eq('user_id', user.id);
         // Let's also check what's actually in the scraped_pages table for this user
-        const {
-          data: sampleData,
-          error: sampleError
-        } = await supabase.from('scraped_pages').select('id, user_id, url').eq('user_id', user.id).limit(3);
+        // Sample rows fetch removed (was unused)
         if (error) {
           console.error(`Error counting projects for user ${user.id}:`, error);
           return {
@@ -175,10 +170,7 @@ export default function AdminUsers({
         setPlans(plansData || []);
 
         // Let's also check the scraped_pages table structure
-        const {
-          data: tableInfo,
-          error: tableError
-        } = await supabase.from('scraped_pages').select('*').limit(1);
+        // Table structure probe removed (was unused)
         // Then load users with plans data
         setUsersLoading(true);
         setUsersError(null);
@@ -248,10 +240,8 @@ export default function AdminUsers({
     setShowUserDetails(true);
     try {
       // Load user activity, projects, and subscription
-      const [activityResult, projectsResult, subscriptionResult] = await Promise.all([getUserActivity(user.id), getUserProjects(user.id), getUserSubscription(user.id)]);
+      const [activityResult] = await Promise.all([getUserActivity(user.id)]);
       if (activityResult.data) setUserActivity(activityResult.data);
-      if (projectsResult.data) setUserProjects(projectsResult.data);
-      if (subscriptionResult.data) setUserSubscription(subscriptionResult.data);
     } catch (error) {
       console.error('Error loading user details:', error);
     }

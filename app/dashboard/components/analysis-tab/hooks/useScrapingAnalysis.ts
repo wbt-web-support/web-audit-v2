@@ -4,6 +4,21 @@ import { supabase } from '@/lib/supabase-client';
 import { AnalysisTabState, ScrapedPage } from '../types';
 import { AuditProject } from '@/types/audit';
 import { useProjectsStore } from '@/lib/stores/projectsStore';
+
+/** Minimal shape used from the user profile for feedback gating */
+type MinimalProfile = {
+  projects?: number | null;
+  feedback_given?: boolean | null;
+};
+/** Minimal shape used from scrape responses where only summary counts and favicons are read */
+type ScrapeResponseSummary = {
+  summary?: {
+    totalLinks?: number;
+    totalImages?: number;
+    favicons?: unknown[];
+  };
+  pages?: unknown[];
+};
 interface CachedData {
   project: AuditProject | null;
   scrapedPages: ScrapedPage[];
@@ -120,8 +135,8 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       }
       // Pre-scrape feedback modal (non-blocking)
       try {
-        const currentProfile = userProfileRef.current as any;
-        const projectCount = (projects?.length || currentProfile?.projects || 0);
+        const currentProfile = userProfileRef.current as MinimalProfile | null;
+        const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
         const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
         if (projectCount >= 2 && !hasGivenFeedback) {
           setShowFeedbackModal(true);
@@ -227,7 +242,7 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               total_pages: retryData.pages?.length || 0,
               total_links: retryData.summary?.totalLinks || 0,
               total_images: retryData.summary?.totalImages || 0
-            } as any);
+            } as Parameters<typeof updateProject>[1]);
 
             // Update the project in state immediately
             const updatedProject = {
@@ -248,8 +263,8 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
             // Show feedback modal after successful crawl completion
             try {
-              const currentProfile = userProfileRef.current as any;
-              const projectCount = (projects?.length || currentProfile?.projects || 0);
+              const currentProfile = userProfileRef.current as MinimalProfile | null;
+              const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
               const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
               if (projectCount >= 2 && !hasGivenFeedback) {
                 setShowFeedbackModal(true);
@@ -266,11 +281,12 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       const scrapeData = await scrapeResponse.json();
 
       // Log the scraping data received from API
+      const scrapeSummary = scrapeData as ScrapeResponseSummary;
       console.log('📥 Scraping data received:', {
-        hasSummary: !!scrapeData.summary,
-        hasFavicons: !!(scrapeData as any).summary?.favicons,
-        faviconCount: (scrapeData as any).summary?.favicons?.length || 0,
-        firstFavicon: (scrapeData as any).summary?.favicons?.[0]
+        hasSummary: !!scrapeSummary.summary,
+        hasFavicons: !!scrapeSummary.summary?.favicons,
+        faviconCount: scrapeSummary.summary?.favicons ? scrapeSummary.summary.favicons.length : 0,
+        firstFavicon: scrapeSummary.summary?.favicons ? scrapeSummary.summary.favicons[0] : undefined
       });
 
       // Update project status to completed FIRST (without large data to avoid timeout)
@@ -280,12 +296,12 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         status: 'completed',
         progress: 100,
         scraping_completed_at: new Date().toISOString(),
-        total_pages: scrapeData.pages?.length || 0,
-        total_links: scrapeData.summary?.totalLinks || 0,
-        total_images: scrapeData.summary?.totalImages || 0,
+        total_pages: scrapeSummary.pages ? scrapeSummary.pages.length : 0,
+        total_links: scrapeSummary.summary?.totalLinks || 0,
+        total_images: scrapeSummary.summary?.totalImages || 0,
         brand_data: {
-          favicons: (scrapeData as any).summary?.favicons || [],
-          summary: scrapeData.summary
+          favicons: scrapeSummary.summary?.favicons || [],
+          summary: scrapeSummary.summary
         } // Store favicon data in brand_data
       });
       if (updateError) {
@@ -297,10 +313,10 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         status: 'completed',
         progress: 100,
         scraping_completed_at: new Date().toISOString(),
-        total_pages: scrapeData.pages?.length || 0,
-        total_links: scrapeData.summary?.totalLinks || 0,
-        total_images: scrapeData.summary?.totalImages || 0
-      } as any);
+        total_pages: scrapeSummary.pages ? scrapeSummary.pages.length : 0,
+        total_links: scrapeSummary.summary?.totalLinks || 0,
+        total_images: scrapeSummary.summary?.totalImages || 0
+      } as Parameters<typeof updateProject>[1]);
 
       // Update the project in state immediately
       const updatedProject = {
@@ -308,9 +324,9 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         status: 'completed' as const,
         progress: 100,
         scraping_completed_at: new Date().toISOString(),
-        total_pages: scrapeData.pages?.length || 0,
-        total_links: scrapeData.summary?.totalLinks || 0,
-        total_images: scrapeData.summary?.totalImages || 0,
+        total_pages: scrapeSummary.pages ? scrapeSummary.pages.length : 0,
+        total_links: scrapeSummary.summary?.totalLinks || 0,
+        total_images: scrapeSummary.summary?.totalImages || 0,
         scraping_data: scrapeData
       };
       updateState({
@@ -321,8 +337,8 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
       // Show feedback modal after successful crawl completion
       try {
-        const currentProfile = userProfileRef.current as any;
-        const projectCount = (projects?.length || currentProfile?.projects || 0);
+        const currentProfile = userProfileRef.current as MinimalProfile | null;
+        const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
         const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
         if (projectCount >= 2 && !hasGivenFeedback) {
           setShowFeedbackModal(true);
@@ -351,12 +367,21 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         scrapingError: errorMessage
       });
     }
-  }, [updateState, updateAuditProject, scrapingInitiated, state.isScraping, state.dataVersion, session?.access_token]);
+  }, [
+    updateState,
+    updateAuditProject,
+    updateProject,
+    projects?.length,
+    scrapingInitiated,
+    state.isScraping,
+    state.dataVersion,
+    session?.access_token
+  ]);
 
   const confirmFeedback = useCallback(async (text?: string) => {
     try {
       if (user?.id) {
-        const updates: any = { feedback_given: true };
+        const updates: { feedback_given: boolean; notes?: string } = { feedback_given: true };
         if (text && text.length > 0) {
           updates.notes = text;
         }

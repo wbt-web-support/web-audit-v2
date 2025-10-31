@@ -57,20 +57,29 @@ export default function EditProjectForm({
   // Initialize form data when project changes
   useEffect(() => {
     if (project) {
+      type ProjectExtras = {
+        page_type?: 'single' | 'multiple';
+        brand_consistency?: boolean;
+        hidden_urls?: boolean;
+        keys_check?: boolean;
+        brand_data?: BrandConsistencyData;
+        hidden_urls_data?: HiddenUrl[];
+      };
+      const p = project as AuditProject & ProjectExtras;
       setFormData({
         siteUrl: project.site_url || '',
-        pageType: (project as any).page_type || 'single',
-        brandConsistency: (project as any).brand_consistency || false,
-        hiddenUrls: (project as any).hidden_urls || false,
-        keysCheck: (project as any).keys_check || false,
-        brandData: (project as any).brand_data || {
+        pageType: p.page_type || 'single',
+        brandConsistency: p.brand_consistency || false,
+        hiddenUrls: p.hidden_urls || false,
+        keysCheck: p.keys_check || false,
+        brandData: p.brand_data || {
           companyName: '',
           phoneNumber: '',
           emailAddress: '',
           address: '',
           additionalInformation: ''
         },
-        hiddenUrlsList: (project as any).hidden_urls_data || [{ id: '1', url: '' }]
+        hiddenUrlsList: p.hidden_urls_data || [{ id: '1', url: '' }]
       });
     }
   }, [project]);

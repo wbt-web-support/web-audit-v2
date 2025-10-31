@@ -2,14 +2,35 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { getBestFaviconUrl, generateFallbackFaviconUrl } from '@/lib/favicon-utils';
+import { generateFallbackFaviconUrl } from '@/lib/favicon-utils';
 
 interface FaviconDisplayProps {
-  data: any;
+  data: Record<string, any>;
   siteUrl?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   fallbackIcon?: React.ReactNode;
+}
+
+// Helper function to find the best favicon from an array
+// Prioritizes non-default favicons, prefers PNG over ICO
+function findBestFavicon(favicons: any[]): string | null {
+  if (!favicons || favicons.length === 0) return null;
+  
+  // Filter out default favicons and find the best match
+  const nonDefault = favicons.filter((fav) => !fav.isDefault && fav.href);
+  if (nonDefault.length > 0) {
+    // Prefer PNG/WebP over ICO
+    const pngFavicon = nonDefault.find((fav) => 
+      fav.href && (fav.href.includes('.png') || fav.href.includes('.webp'))
+    );
+    if (pngFavicon) return pngFavicon.href;
+    return nonDefault[0].href;
+  }
+  
+  // Fallback to any favicon
+  const anyFavicon = favicons.find((fav) => fav.href);
+  return anyFavicon?.href || null;
 }
 
 export default function FaviconDisplay({ 
@@ -24,86 +45,66 @@ export default function FaviconDisplay({
 
   // Enhanced favicon extraction with multiple fallback paths
   let faviconUrl = null;
+  
+  // Helper to extract favicons from various data structures
+  const extractFavicons = (source: any): any[] | null => {
+    if (!source) return null;
+    if (Array.isArray(source.favicons)) return source.favicons;
+    if (source.summary && Array.isArray(source.summary.favicons)) return source.summary.favicons;
+    return null;
+  };
 
   // Try brand_data.favicons (primary location)
-  if (data?.brand_data?.favicons && Array.isArray(data.brand_data.favicons) && data.brand_data.favicons.length > 0) {
-    faviconUrl = data.brand_data.favicons[0].href;
-    console.log('✅ Found favicon in brand_data.favicons:', faviconUrl);
-  }
-  // Try direct access to scraping_data.summary.favicons
-  else if (data?.scraping_data?.summary?.favicons && Array.isArray(data.scraping_data.summary.favicons) && data.scraping_data.summary.favicons.length > 0) {
-    faviconUrl = data.scraping_data.summary.favicons[0].href;
-    console.log('✅ Found favicon in scraping_data.summary.favicons:', faviconUrl);
-  }
-  // Try direct access to summary.favicons
-  else if (data?.summary?.favicons && Array.isArray(data.summary.favicons) && data.summary.favicons.length > 0) {
-    faviconUrl = data.summary.favicons[0].href;
-    console.log('✅ Found favicon in summary.favicons:', faviconUrl);
-  }
-  // Try parsing scraping_data if it's a string (common in database storage)
-  else if (data?.scraping_data && typeof data.scraping_data === 'string') {
-    try {
-      const parsedData = JSON.parse(data.scraping_data);
-      if (parsedData?.summary?.favicons && Array.isArray(parsedData.summary.favicons) && parsedData.summary.favicons.length > 0) {
-        faviconUrl = parsedData.summary.favicons[0].href;
-        console.log('✅ Found favicon in parsed scraping_data.summary.favicons:', faviconUrl);
-      }
-    } catch (e) {
-      console.log('❌ Failed to parse scraping_data:', e);
-    }
-  }
-  // Try meta_tags_data.favicons
-  else if (data?.meta_tags_data?.favicons && Array.isArray(data.meta_tags_data.favicons) && data.meta_tags_data.favicons.length > 0) {
-    faviconUrl = data.meta_tags_data.favicons[0].href;
-    console.log('✅ Found favicon in meta_tags_data.favicons:', faviconUrl);
-  }
-  // Try social_meta_tags_data.favicons
-  else if (data?.social_meta_tags_data?.favicons && Array.isArray(data.social_meta_tags_data.favicons) && data.social_meta_tags_data.favicons.length > 0) {
-    faviconUrl = data.social_meta_tags_data.favicons[0].href;
-    console.log('✅ Found favicon in social_meta_tags_data.favicons:', faviconUrl);
-  }
-  // Try detected_keys.favicons
-  else if (data?.detected_keys?.favicons && Array.isArray(data.detected_keys.favicons) && data.detected_keys.favicons.length > 0) {
-    faviconUrl = data.detected_keys.favicons[0].href;
-    console.log('✅ Found favicon in detected_keys.favicons:', faviconUrl);
+  const brandFavicons = extractFavicons(data?.brand_data);
+  if (brandFavicons && brandFavicons.length > 0) {
+    faviconUrl = findBestFavicon(brandFavicons);
+    if (faviconUrl) console.log('✅ Found favicon in brand_data.favicons:', faviconUrl);
   }
   
-  // TEMPORARY: Try to access favicon from the raw scraping data structure
-  // This is a fallback to test if the data is there but in a different structure
+  // Try scraping_data - handle both object and string formats
   if (!faviconUrl && data?.scraping_data) {
-    console.log('🔍 Trying alternative favicon access patterns...');
+    let scrapingData = data.scraping_data;
     
-    // Try different possible paths
-    const possiblePaths = [
-      'data.scraping_data.summary.favicons',
-      'data.scraping_data.favicons', 
-      'data.summary.favicons',
-      'data.favicons',
-      'data.brand_data.favicons'
-    ];
-    
-    for (const path of possiblePaths) {
+    // If it's a string, try to parse it
+    if (typeof scrapingData === 'string') {
       try {
-        const pathParts = path.split('.');
-        let current = data;
-        for (const part of pathParts) {
-          current = current?.[part];
-        }
-        if (Array.isArray(current) && current.length > 0 && current[0]?.href) {
-          console.log(`✅ Found favicon at: ${path}`, current[0]);
-          faviconUrl = current[0].href;
-          break;
-        }
-      } catch (e) {
-        // Continue to next path
+        scrapingData = JSON.parse(scrapingData);
+      } catch {
+        console.log('❌ Failed to parse scraping_data');
       }
+    }
+    
+    // Extract favicons from parsed scraping_data
+    const scrapingFavicons = extractFavicons(scrapingData);
+    if (scrapingFavicons && scrapingFavicons.length > 0) {
+      faviconUrl = findBestFavicon(scrapingFavicons);
+      if (faviconUrl) console.log('✅ Found favicon in scraping_data:', faviconUrl);
     }
   }
   
-  // TEMPORARY: Hardcoded test specifically for NJ Design Park
-  if (!faviconUrl && siteUrl && siteUrl.includes('njdesignpark')) {
-    console.log('🧪 Testing with hardcoded favicon for NJ Design Park...');
-    faviconUrl = 'https://njdesignpark.com/wp-content/uploads/2023/08/nj-logo-1-2.png';
+  // Try direct access to summary.favicons
+  const summaryFavicons = extractFavicons(data?.summary);
+  if (!faviconUrl && summaryFavicons && summaryFavicons.length > 0) {
+    faviconUrl = findBestFavicon(summaryFavicons);
+    if (faviconUrl) console.log('✅ Found favicon in summary.favicons:', faviconUrl);
+  }
+  
+  // Try meta_tags_data.favicons
+  if (!faviconUrl && data?.meta_tags_data?.favicons && Array.isArray(data.meta_tags_data.favicons) && data.meta_tags_data.favicons.length > 0) {
+    faviconUrl = findBestFavicon(data.meta_tags_data.favicons);
+    if (faviconUrl) console.log('✅ Found favicon in meta_tags_data.favicons:', faviconUrl);
+  }
+  
+  // Try social_meta_tags_data.favicons
+  if (!faviconUrl && data?.social_meta_tags_data?.favicons && Array.isArray(data.social_meta_tags_data.favicons) && data.social_meta_tags_data.favicons.length > 0) {
+    faviconUrl = findBestFavicon(data.social_meta_tags_data.favicons);
+    if (faviconUrl) console.log('✅ Found favicon in social_meta_tags_data.favicons:', faviconUrl);
+  }
+  
+  // Try detected_keys.favicons
+  if (!faviconUrl && data?.detected_keys?.favicons && Array.isArray(data.detected_keys.favicons) && data.detected_keys.favicons.length > 0) {
+    faviconUrl = findBestFavicon(data.detected_keys.favicons);
+    if (faviconUrl) console.log('✅ Found favicon in detected_keys.favicons:', faviconUrl);
   }
   
   const fallbackUrl = siteUrl ? generateFallbackFaviconUrl(siteUrl) : null;
@@ -205,16 +206,39 @@ export default function FaviconDisplay({
     setIsLoading(false);
   };
 
-  // If no favicon URL found, show fallback
+  // If no favicon URL found, show fallback (Font Awesome-like globe icon)
   if (!faviconUrl && !fallbackUrl) {
     return fallbackIcon || (
       <div className={`${sizeClasses[size]} ${className} bg-gray-200 rounded flex items-center justify-center`}>
-        <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+        <svg className="w-3 h-3 text-gray-500" viewBox="0 0 512 512" aria-hidden="true">
+          <path fill="currentColor" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm186.7 152h-70.6c-10.6-41.2-26.6-76.8-46.2-104.2 48.2 19.4 88.2 57.2 116.8 104.2zM256 48c27.1 0 61.1 37.9 80.7 112H175.3C194.9 85.9 228.9 48 256 48zM122.1 55.8C102.5 83.2 86.5 118.8 75.9 160H5.3c28.6-47 68.6-84.8 116.8-104.2zM48 256c0-17 1.8-33.7 5.1-49.6h78.2c-1.7 16-2.6 32.7-2.6 49.6s.9 33.6 2.6 49.6H53.1C49.8 289.7 48 273 48 256zm19.9 96h70.6c10.6 41.2 26.6 76.8 46.2 104.2C136.6 436.8 96.6 399 68 352zM256 464c-27.1 0-61.1-37.9-80.7-112h161.4C317.1 426.1 283.1 464 256 464zm80-144H176c-2.7-16.1-4.1-32.8-4.1-49.6s1.5-33.5 4.1-49.6h160c2.7 16.1 4.1 32.8 4.1 49.6s-1.4 33.5-4.1 49.6zm74.1 135.8c19.6-27.4 35.6-63 46.2-104.2h70.6c-28.6 47-68.6 84.8-116.8 104.2zM380.7 256c0-16.9-.9-33.6-2.6-49.6h78.2c3.3 15.9 5.1 32.6 5.1 49.6s-1.8 33.7-5.1 49.6h-78.2c1.7-16 2.6-32.7 2.6-49.6z"/>
         </svg>
       </div>
     );
   }
+
+  // Check if URL is external (needs native img tag) or internal
+  const isExternalUrl = (url: string | null): boolean => {
+    if (!url) return false;
+    // External URLs always start with http:// or https://
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Double check it's not our own domain
+      try {
+        if (typeof window !== 'undefined') {
+          const urlObj = new URL(url);
+          return urlObj.origin !== window.location.origin;
+        }
+        return true; // Assume external if window is not available (SSR)
+      } catch {
+        return true;
+      }
+    }
+    return false; // Relative paths are internal
+  };
+
+  const imageSrc = faviconUrl || fallbackUrl || '/favicon.ico';
+  const isExternal = isExternalUrl(imageSrc);
+  const imageSize = size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40;
 
   // If we have an error loading the favicon, try fallback URL
   if (imageError && fallbackUrl) {
@@ -223,12 +247,12 @@ export default function FaviconDisplay({
         <Image
           src={fallbackUrl}
           alt="Site favicon"
-          width={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
-          height={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
+          width={imageSize}
+          height={imageSize}
           className="rounded"
-          onError={() => setImageError(true)}
+          onError={handleImageError}
           onLoad={handleImageLoad}
-          priority
+          unoptimized={isExternalUrl(fallbackUrl)}
         />
       </div>
     );
@@ -241,21 +265,21 @@ export default function FaviconDisplay({
       )}
       
       <Image
-        src={faviconUrl || fallbackUrl || '/favicon.ico'}
+        src={imageSrc}
         alt="Site favicon"
-        width={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
-        height={size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40}
+        width={imageSize}
+        height={imageSize}
         className={`rounded ${imageError ? 'hidden' : ''}`}
         onError={handleImageError}
         onLoad={handleImageLoad}
-        unoptimized // Favicons might be from external domains
+        unoptimized={isExternal}
       />
       
       {imageError && (
         <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
           {fallbackIcon || (
-            <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+            <svg className="w-3 h-3 text-gray-500" viewBox="0 0 512 512" aria-hidden="true">
+              <path fill="currentColor" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm186.7 152h-70.6c-10.6-41.2-26.6-76.8-46.2-104.2 48.2 19.4 88.2 57.2 116.8 104.2zM256 48c27.1 0 61.1 37.9 80.7 112H175.3C194.9 85.9 228.9 48 256 48zM122.1 55.8C102.5 83.2 86.5 118.8 75.9 160H5.3c28.6-47 68.6-84.8 116.8-104.2zM48 256c0-17 1.8-33.7 5.1-49.6h78.2c-1.7 16-2.6 32.7-2.6 49.6s.9 33.6 2.6 49.6H53.1C49.8 289.7 48 273 48 256zm19.9 96h70.6c10.6 41.2 26.6 76.8 46.2 104.2C136.6 436.8 96.6 399 68 352zM256 464c-27.1 0-61.1-37.9-80.7-112h161.4C317.1 426.1 283.1 464 256 464zm80-144H176c-2.7-16.1-4.1-32.8-4.1-49.6s1.5-33.5 4.1-49.6h160c2.7 16.1 4.1 32.8 4.1 49.6s-1.4 33.5-4.1 49.6zm74.1 135.8c19.6-27.4 35.6-63 46.2-104.2h70.6c-28.6 47-68.6 84.8-116.8 104.2zM380.7 256c0-16.9-.9-33.6-2.6-49.6h78.2c3.3 15.9 5.1 32.6 5.1 49.6s-1.8 33.7-5.1 49.6h-78.2c1.7-16 2.6-32.7 2.6-49.6z"/>
             </svg>
           )}
         </div>

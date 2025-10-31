@@ -32,7 +32,7 @@ type AdminTabType = 'overview' | 'users' | 'plans' | 'features' | 'subscription'
 export default function AdminTab({ userProfile }: AdminTabProps) {
   const [isAdminVerified, setIsAdminVerified] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
+  const [_roleVerificationResult, setRoleVerificationResult] = useState<RoleVerificationResult | null>(null)
   const [verificationError, setVerificationError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<AdminTabType>('overview')
 

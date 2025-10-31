@@ -65,7 +65,7 @@ export default function DashboardSidebar({
     } finally {
       setRoleLoading(false);
     }
-  }, [user, userProfile?.role]);
+  }, [user]);
   useEffect(() => {
     verifyRole();
   }, [verifyRole]);

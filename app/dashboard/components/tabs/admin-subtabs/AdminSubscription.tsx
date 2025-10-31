@@ -1,10 +1,10 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PaymentStats, PaymentHistory, PlanStatistics } from '@/types/audit'
 import { RevenueChart, UserGrowthChart, PlanDistributionChart } from './charts'
-import FilterPanel from './FilterPanel'
+// import FilterPanel from './FilterPanel'
 
 interface AdminSubscriptionProps {
   userProfile: {
@@ -41,7 +41,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
     users: [],
     plans: []
   })
-  const [availablePlans, setAvailablePlans] = useState<Array<{ id: string; name: string }>>([])
+  const [_availablePlans, setAvailablePlans] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
@@ -51,7 +51,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
     chartType: 'revenue'
   })
 
-  const fetchData = async (currentFilters = filters) => {
+  const fetchData = useCallback(async (currentFilters = filters) => {
     try {
       setLoading(true)
       
@@ -107,13 +107,13 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
-  const handleFiltersChange = (newFilters: typeof filters) => {
+  const _handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters)
     fetchData(newFilters)
   }

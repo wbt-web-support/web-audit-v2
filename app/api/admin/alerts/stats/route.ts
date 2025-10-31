@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get total counts
     const { count: totalAlerts } = await supabaseAdmin
@@ -41,8 +41,10 @@ export async function GET(request: NextRequest) {
       .select('alert_type')
       .eq('status', 'active')
 
-    const typeCounts = alertsByType?.reduce((acc: any, alert) => {
-      acc[alert.alert_type] = (acc[alert.alert_type] || 0) + 1
+    type AlertTypeRow = { alert_type: string | null }
+    const typeCounts = (alertsByType as AlertTypeRow[] | null)?.reduce<Record<string, number>>((acc, alert) => {
+      const key = alert.alert_type || 'unknown'
+      acc[key] = (acc[key] || 0) + 1
       return acc
     }, {}) || {}
 
@@ -57,8 +59,10 @@ export async function GET(request: NextRequest) {
       .select('severity')
       .eq('status', 'active')
 
-    const severityCounts = alertsBySeverity?.reduce((acc: any, alert) => {
-      acc[alert.severity] = (acc[alert.severity] || 0) + 1
+    type SeverityRow = { severity: string | null }
+    const severityCounts = (alertsBySeverity as SeverityRow[] | null)?.reduce<Record<string, number>>((acc, alert) => {
+      const key = alert.severity || 'unknown'
+      acc[key] = (acc[key] || 0) + 1
       return acc
     }, {}) || {}
 

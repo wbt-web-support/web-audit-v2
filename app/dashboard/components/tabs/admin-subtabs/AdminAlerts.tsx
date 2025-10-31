@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AdminAlert, AdminAlertStats, CreateAdminAlertRequest } from '@/types/audit'
 // Removed direct supabaseAdmin import for security
 
@@ -42,23 +42,15 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
   })
 
   // Fetch alerts and stats
-  useEffect(() => {
-    fetchAlerts()
-    fetchStats()
-  }, [filterStatus, filterType, filterSeverity])
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       setLoading(true)
-      
       const params = new URLSearchParams()
       if (filterStatus !== 'all') params.append('status', filterStatus)
       if (filterType !== 'all') params.append('type', filterType)
       if (filterSeverity !== 'all') params.append('severity', filterSeverity)
-
       const response = await fetch(`/api/admin/alerts?${params.toString()}`)
       const data = await response.json()
-      
       if (!response.ok) {
         console.error('Error fetching alerts:', data.error)
         setAlerts([])
@@ -71,13 +63,12 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterStatus, filterType, filterSeverity])
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/alerts/stats')
       const data = await response.json()
-      
       if (!response.ok) {
         console.error('Error fetching stats:', data.error)
       } else {
@@ -86,7 +77,12 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
     } catch (error) {
       console.error('Error fetching stats:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchAlerts()
+    fetchStats()
+  }, [fetchAlerts, fetchStats])
 
   const handleCreateAlert = async () => {
     try {

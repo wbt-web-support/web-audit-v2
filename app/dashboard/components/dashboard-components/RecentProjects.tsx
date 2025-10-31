@@ -14,7 +14,7 @@ export default function RecentProjects({
 }: RecentProjectsProps) {
   // Use Zustand store for projects data
   const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
-  const previousProjectsRef = useRef<AuditProject[]>([]);
+  // const previousProjectsRef = useRef<AuditProject[]>([]);
 
   // Load projects when component mounts
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function RecentProjects({
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <FaviconDisplay 
-                      data={project} 
+                      data={project as unknown as Record<string, any>} 
                       siteUrl={project.site_url}
                       size="sm"
                       className="mr-2 flex-shrink-0"

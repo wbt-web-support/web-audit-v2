@@ -1,27 +1,68 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session, AuthError } from "@supabase/supabase-js";
-import { PostgrestError } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase-client";
+import type {
+  UserProfile,
+  SupabaseContextType,
+  AuditProjectWithUserId,
+  ScrapedPage,
+  Ticket,
+  TicketMessage,
+} from './supabase-types';
 import {
-  AuditProject,
-  CmsPlugin,
-  CmsTheme,
-  CmsComponent,
-  Technology,
-  PageSpeedInsightsData,
-  MetaTagsData,
-  SocialMetaTagsData,
-  DetectedKeysData,
-} from "@/types/audit";
-
-import { createTicket, getTickets, getTicket, updateTicket, deleteTicket, createTicketMessage, getTicketMessages, updateTicketMessage, deleteTicketMessage, testTicketSystemConnection } from './supabase-tickets';
-import type { UserProfile, AuditProjectWithUserId, ScrapedPage, SupabaseContextType, Ticket, TicketWithMessages, TicketMessage } from './supabase-types';
-import { getUsers, getUser, updateUser, blockUser, unblockUser, changeUserRole, getUserActivity, getUserProjects, getUserSubscription } from './supabase-user-management';
-import { createAuditProject as apCreateAuditProject, getAuditProject as apGetAuditProject, getAuditProjects as apGetAuditProjects, getAuditProjectsOptimized as apGetAuditProjectsOptimized, updateAuditProject as apUpdateAuditProject, deleteAuditProject as apDeleteAuditProject } from './audit_Projects';
-import { createScrapedPage as scCreateScrapedPage, getScrapedPages as scGetScrapedPages, getScrapedPage as scGetScrapedPage, updateScrapedPage as scUpdateScrapedPage, deleteScrapedPage as scDeleteScrapedPage, createScrapedPages as scCreateScrapedPages } from './supabase-scraping';
-import { fetchUserProfile, createUserProfile } from './supabase-auth';
+  signUp,
+  signIn,
+  signInWithGoogle,
+  signOut,
+  resendConfirmation,
+  updateProfile as updateProfileRaw,
+  fetchUserProfile,
+  createUserProfile,
+} from './supabase-auth';
+import {
+  createAuditProject as createAuditProjectRaw,
+  getAuditProject as getAuditProjectRaw,
+  getAuditProjects as getAuditProjectsRaw,
+  getAuditProjectsOptimized as getAuditProjectsOptimizedRaw,
+  updateAuditProject as updateAuditProjectRaw,
+  deleteAuditProject as deleteAuditProjectRaw,
+} from './audit_Projects';
+import {
+  createScrapedPage as createScrapedPageRaw,
+  getScrapedPages as getScrapedPagesRaw,
+  getScrapedPage as getScrapedPageRaw,
+  updateScrapedPage as updateScrapedPageRaw,
+  deleteScrapedPage as deleteScrapedPageRaw,
+  createScrapedPages as createScrapedPagesRaw,
+} from './supabase-scraping';
+import {
+  processMetaTagsData as processMetaTagsDataRaw,
+} from './supabase-helpers';
+import {
+  createTicket as createTicketRaw,
+  getTickets as getTicketsRaw,
+  getTicket as getTicketRaw,
+  updateTicket as updateTicketRaw,
+  deleteTicket as deleteTicketRaw,
+  createTicketMessage as createTicketMessageRaw,
+  getTicketMessages as getTicketMessagesRaw,
+  updateTicketMessage as updateTicketMessageRaw,
+  deleteTicketMessage as deleteTicketMessageRaw,
+  testTicketSystemConnection,
+} from './supabase-tickets';
+import {
+  getUsers as getUsersRaw,
+  getUser as getUserRaw,
+  updateUser as updateUserRaw,
+  blockUser as blockUserRaw,
+  unblockUser as unblockUserRaw,
+  changeUserRole as changeUserRoleRaw,
+  getUserActivity as getUserActivityRaw,
+  getUserProjects as getUserProjectsRaw,
+  getUserSubscription as getUserSubscriptionRaw,
+} from './supabase-user-management';
 
 // Auth and audit project logic are kept local in this context for now
 
@@ -469,17 +510,101 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   };
 
 
-  // Global request throttling to prevent multiple simultaneous calls
-
-  const activeRequests = new Map<
-    string,
-    Promise<{
-      data: any[] | null;
-
-      error: any;
-    }>
-  >();
-
+  const value = {
+    user,
+    userProfile,
+    session,
+    loading,
+    connectionError,
+    isConnected,
+    signUp,
+    signIn,
+    signInWithGoogle,
+    signOut,
+    resendConfirmation,
+    updateProfile: async (updates: Partial<UserProfile>) => updateProfileRaw(user, updates),
+    // Audit Projects
+    createAuditProject: async (
+      projectData: Omit<
+        AuditProjectWithUserId,
+        'id' | 'user_id' | 'created_at' | 'updated_at' | 'last_audit_at'
+      >
+    ) =>
+      createAuditProjectRaw(user, projectData),
+    getAuditProject: async (id: string) => getAuditProjectRaw(user, id),
+    getAuditProjects: async () => getAuditProjectsRaw(user),
+    getAuditProjectsOptimized: async () => getAuditProjectsOptimizedRaw(user),
+    updateAuditProject: async (
+      id: string,
+      updates: Partial<AuditProjectWithUserId>
+    ) =>
+      updateAuditProjectRaw(user, id, updates),
+    deleteAuditProject: async (id: string) => deleteAuditProjectRaw(user, id),
+    // Scraped Pages
+    createScrapedPage: async (
+      pageData: Omit<ScrapedPage, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+    ) =>
+      createScrapedPageRaw(user, pageData),
+    getScrapedPages: async (auditProjectId: string) =>
+      getScrapedPagesRaw(user, auditProjectId),
+    getScrapedPage: async (id: string) => getScrapedPageRaw(user, id),
+    updateScrapedPage: async (id: string, updates: Partial<ScrapedPage>) =>
+      updateScrapedPageRaw(user, id, updates),
+    deleteScrapedPage: async (id: string) => deleteScrapedPageRaw(user, id),
+    createScrapedPages: async (
+      pagesData: Omit<
+        ScrapedPage,
+        'id' | 'user_id' | 'created_at' | 'updated_at'
+      >[]
+    ) =>
+      createScrapedPagesRaw(user, pagesData),
+    // Meta Tags processing
+    processMetaTagsData: async (auditProjectId: string) =>
+      processMetaTagsDataRaw(user, auditProjectId),
+    triggerMetaTagsProcessing: async (auditProjectId: string) => {
+      const { error } = await processMetaTagsDataRaw(user, auditProjectId);
+      return { success: !error, error };
+    },
+    // Ticket System
+    createTicket: async (
+      ticketData: Omit<
+        Ticket,
+        'id' | 'user_id' | 'created_at' | 'updated_at' | 'assigned_to' | 'resolved_at' | 'closed_at'
+      >
+    ) => createTicketRaw(ticketData, user),
+    getTickets: async () => getTicketsRaw(user),
+    getTicket: async (id: string) => getTicketRaw(id, user),
+    updateTicket: async (id: string, updates: Partial<Ticket>) => updateTicketRaw(id, updates, user),
+    deleteTicket: async (id: string) => deleteTicketRaw(id, user),
+    createTicketMessage: async (
+      messageData: Omit<TicketMessage, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+    ) =>
+      createTicketMessageRaw(messageData, user),
+    getTicketMessages: async (ticketId: string) =>
+      getTicketMessagesRaw(ticketId, user),
+    updateTicketMessage: async (id: string, updates: Partial<TicketMessage>) =>
+      updateTicketMessageRaw(id, updates, user),
+    deleteTicketMessage: async (id: string) => deleteTicketMessageRaw(id, user),
+    testTicketSystemConnection,
+    // User Management
+    getUsers: async () => getUsersRaw(user),
+    getUser: async (userId: string) => getUserRaw(user, userId),
+    updateUser: async (userId: string, updates: any) =>
+      updateUserRaw(user, userId, updates),
+    blockUser: async (userId: string) => blockUserRaw(user, userId),
+    unblockUser: async (userId: string) => unblockUserRaw(user, userId),
+    changeUserRole: async (userId: string, newRole: 'user' | 'admin') =>
+      changeUserRoleRaw(user, userId, newRole),
+    getUserActivity: async (userId: string) => getUserActivityRaw(user, userId),
+    getUserProjects: async (userId: string) => getUserProjectsRaw(user, userId),
+    getUserSubscription: async (userId: string) =>
+      getUserSubscriptionRaw(user, userId),
+  } as unknown as SupabaseContextType;
+  return (
+    <SupabaseContext.Provider value={value}>
+      {children}
+    </SupabaseContext.Provider>
+  );
 }
 export function useSupabase() {
   const context = useContext(SupabaseContext);

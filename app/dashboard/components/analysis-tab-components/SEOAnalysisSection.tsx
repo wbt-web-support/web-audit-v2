@@ -72,7 +72,7 @@ export default function SEOAnalysisSection({
             // Update scraped pages with fresh data
             scrapedPages.splice(0, scrapedPages.length, ...freshPages);
           }
-        } catch (fetchError) {
+        } catch {
           // Error fetching fresh scraped pages
         }
       }
@@ -90,7 +90,7 @@ export default function SEOAnalysisSection({
               siteUrl = project.site_url;
             }
           }
-        } catch (directFetchError) {
+        } catch {
           // Error in direct database query
         }
       }
@@ -177,7 +177,7 @@ export default function SEOAnalysisSection({
       } else {
         setError('No HTML content available for analysis');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to analyze SEO content');
     } finally {
       setLoading(false);

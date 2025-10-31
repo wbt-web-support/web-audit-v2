@@ -513,7 +513,6 @@ export default function ScrapingService({
       // Log the exact data structure being sent
      
       const {
-        data: savedPages,
         error: pagesError
       } = await createScrapedPages(filteredPages);
       if (pagesError) {
@@ -535,7 +534,7 @@ export default function ScrapingService({
         // Try to save individual pages if bulk insert fails
 
         let successCount = 0;
-        let errorCount = 0;
+        let _errorCount = 0;
         for (const pageData of scrapedPagesData) {
           if (!pageData) continue;
           try {
@@ -544,13 +543,13 @@ export default function ScrapingService({
             } = await createScrapedPages([pageData]);
             if (singlePageError) {
               console.error(`❌ Failed to save individual page ${pageData.url}:`, singlePageError);
-              errorCount++;
+              _errorCount++;
             } else {
               successCount++;
             }
           } catch (err) {
             console.error(`❌ Exception saving individual page ${pageData.url}:`, err);
-            errorCount++;
+            _errorCount++;
           }
         }
         if (successCount === 0) {
@@ -654,7 +653,7 @@ export default function ScrapingService({
         ...summaryData,
         // Store favicon data in brand_data field (accepts any data)
         brand_data: {
-          favicons: (scrapingData as any).summary?.favicons || [],
+          favicons: (scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons || [],
           summary: scrapingData.summary
         }
       };
@@ -662,9 +661,9 @@ export default function ScrapingService({
       // Log the scraping data being stored (including favicons)
       console.log('💾 Storing complete scraping data:', {
         hasSummary: !!scrapingData.summary,
-        hasFavicons: !!(scrapingData as any).summary?.favicons,
-        faviconCount: (scrapingData as any).summary?.favicons?.length || 0,
-        firstFavicon: (scrapingData as any).summary?.favicons?.[0]
+        hasFavicons: !!(scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons,
+        faviconCount: (scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons?.length || 0,
+        firstFavicon: (scrapingData as unknown as { summary?: { favicons?: unknown[] } })?.summary?.favicons?.[0]
       });
 
       const {

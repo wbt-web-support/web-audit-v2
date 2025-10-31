@@ -1,13 +1,12 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { AuditProject } from '@/types/audit'
 import DashboardOverview from '../tabs/DashboardOverview'
 import ProjectsTab from '../tabs/ProjectsTab'
 import ProfileTab from '../tabs/ProfileTab'
 import AdminTab from '../tabs/AdminTab'
 import UserAlerts from '../UserAlerts'
-import { useProjectsStore } from '@/lib/stores/projectsStore'
+ 
 
 interface DashboardContentProps {
   activeTab: string
@@ -52,8 +51,7 @@ export default function DashboardContent({
   onDeleteProject, 
   onRecrawlProject 
 }: DashboardContentProps) {
-  // Use Zustand store for projects data
-  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':

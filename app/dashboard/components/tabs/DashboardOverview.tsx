@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { useUserPlan } from '@/hooks/useUserPlan'
-import { AuditProject } from '@/types/audit'
 import SiteCrawlForm from '../dashboard-components/SiteCrawlForm'
 import { StatsCards, RecentProjects, FeaturesShowcase } from '../dashboard-components'
 import UpgradeModal from '../modals/UpgradeModal'
@@ -39,7 +38,7 @@ export default function DashboardOverview({
   onProjectSelect
 }: DashboardOverviewProps) {
   // Use Zustand store for projects data
-  const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
+  const { projects, loading: projectsLoading, error: _projectsError, refreshProjects } = useProjectsStore();
   const { createAuditProject } = useSupabase()
   const { planInfo } = useUserPlan()
   

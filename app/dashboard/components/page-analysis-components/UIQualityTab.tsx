@@ -29,11 +29,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   // Comprehensive HTML Structure Analysis
   const hasViewport = content.includes('viewport')
   const hasResponsiveDesign = content.includes('responsive') || content.includes('mobile') || content.includes('@media')
-  const hasCSS = content.includes('<style') || content.includes('stylesheet')
-  const hasJavaScript = content.includes('<script')
   const hasForms = content.includes('<form')
-  const hasButtons = content.includes('<button') || content.includes('type="submit"')
-  const hasInputs = content.includes('<input')
   const hasLabels = content.includes('<label')
   
   // Count interactive elements
@@ -48,15 +44,13 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   // Advanced Structure Analysis
   const hasSemanticHTML = content.includes('<header') || content.includes('<nav') || content.includes('<main') || content.includes('<section') || content.includes('<article') || content.includes('<footer')
   const hasProperHeadingStructure = content.includes('<h1') && content.includes('<h2')
-  const hasListElements = content.includes('<ul') || content.includes('<ol')
-  const hasTableElements = content.includes('<table')
+  
   
   // Accessibility Analysis
   const hasAltText = content.includes('alt=')
   const hasTitleAttributes = content.includes('title=')
   const hasAriaLabels = content.includes('aria-label') || content.includes('aria-labelledby')
-  const hasRoleAttributes = content.includes('role=')
-  const hasTabIndex = content.includes('tabindex')
+  
   const hasLangAttribute = content.includes('lang=')
   
   // Code Quality Analysis
@@ -71,12 +65,10 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   const hasAsyncScripts = content.includes('async') || content.includes('defer')
   const hasPreloadLinks = content.includes('rel="preload"')
   const hasMetaDescription = content.includes('name="description"')
-  const hasMetaKeywords = content.includes('name="keywords"')
+  
   
   // Security Analysis
-  const hasCSRFProtection = content.includes('csrf') || content.includes('_token')
-  const hasContentSecurityPolicy = content.includes('Content-Security-Policy')
-  const hasXFrameOptions = content.includes('X-Frame-Options')
+  
   
   // Calculate comprehensive quality metrics
   const calculateQualityScore = (): QualityMetric[] => {
@@ -257,15 +249,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   
   const recommendations = generateRecommendations()
   
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'excellent': return 'bg-blue-50 text-blue-800 border-blue-200'
-      case 'good': return 'bg-blue-100 text-blue-900 border-blue-300'
-      case 'warning': return 'bg-gray-100 text-gray-800 border-gray-300'
-      case 'critical': return 'bg-gray-200 text-gray-900 border-gray-400'
-      default: return 'bg-gray-50 text-gray-700 border-gray-200'
-    }
-  }
+  
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -283,7 +267,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         <div className="flex items-center justify-between mb-2">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">UI Quality Analysis</h2>
-            <p className="text-gray-600">Comprehensive assessment of your page's user interface and structure</p>
+            <p className="text-gray-600">Comprehensive assessment of your page&apos;s user interface and structure</p>
           </div>
           <div className="text-right">
             <div className="text-5xl font-bold text-blue-600">{overallScore}</div>
@@ -294,8 +278,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         
         {/* Quality Metrics Grid */}
         {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {qualityMetrics.map((metric, index) => (
-            <div key={index} className={`rounded-lg border p-4 ${getStatusColor(metric.status)}`}>
+          {qualityMetrics.map((metric) => (
+            <div key={metric.name} className={`rounded-lg border p-4`}>
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-sm">{metric.name}</h4>
                 <span className="text-xs font-medium">{metric.value}%</span>
@@ -536,7 +520,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {recommendations.map((rec, index) => (
+            {recommendations.map((rec) => (
               <div key={rec.id} className={`rounded-lg border-l-4 p-4 ${
                 rec.priority === 'high' ? 'border-gray-400 bg-gray-50' :
                 rec.priority === 'medium' ? 'border-gray-300 bg-gray-25' :

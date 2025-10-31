@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const planId = searchParams.get('planId')
 
     // Check if payments table exists by trying a simple query first
-    const { data: testData, error: testError } = await supabase
+    const { error: testError } = await supabase
       .from('payments')
       .select('id')
       .limit(1)
@@ -29,24 +29,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Helper function to build query with filters
-    const buildQuery = (baseQuery: any) => {
+    const buildQuery = <T extends { gte: (col: string, val: unknown) => T; lte: (col: string, val: unknown) => T; eq: (col: string, val: unknown) => T }>(baseQuery: T): T => {
       let query = baseQuery
       if (startDate) {
-        query = query.gte('payment_date', startDate)
+        query = query.gte('payment_date', startDate) as T
       }
       if (endDate) {
-        query = query.lte('payment_date', endDate)
+        query = query.lte('payment_date', endDate) as T
       }
       if (planId) {
-        query = query.eq('plan_id', planId)
+        query = query.eq('plan_id', planId) as T
       }
       return query
     }
 
     // Get total payments count
-    const { count: totalPayments, error: totalError } = await buildQuery(
-      supabase.from('payments').select('*', { count: 'exact', head: true })
-    )
+    let totalQuery = supabase.from('payments').select('*', { count: 'exact', head: true })
+    if (startDate) totalQuery = totalQuery.gte('payment_date', startDate) as typeof totalQuery
+    if (endDate) totalQuery = totalQuery.lte('payment_date', endDate) as typeof totalQuery
+    if (planId) totalQuery = totalQuery.eq('plan_id', planId) as typeof totalQuery
+    const { count: totalPayments, error: totalError } = await totalQuery
 
     if (totalError) {
       console.error('Error fetching total payments:', totalError)
@@ -54,9 +56,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get active payments (completed status)
-    const { count: activePayments, error: activeError } = await buildQuery(
-      supabase.from('payments').select('*', { count: 'exact', head: true }).eq('payment_status', 'completed')
-    )
+    let activeQuery = supabase.from('payments').select('*', { count: 'exact', head: true }).eq('payment_status', 'completed')
+    if (startDate) activeQuery = activeQuery.gte('payment_date', startDate) as typeof activeQuery
+    if (endDate) activeQuery = activeQuery.lte('payment_date', endDate) as typeof activeQuery
+    if (planId) activeQuery = activeQuery.eq('plan_id', planId) as typeof activeQuery
+    const { count: activePayments, error: activeError } = await activeQuery
 
     if (activeError) {
       console.error('Error fetching active payments:', activeError)
@@ -64,9 +68,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get cancelled payments
-    const { count: cancelledPayments, error: cancelledError } = await buildQuery(
-      supabase.from('payments').select('*', { count: 'exact', head: true }).eq('payment_status', 'cancelled')
-    )
+    let cancelledQuery = supabase.from('payments').select('*', { count: 'exact', head: true }).eq('payment_status', 'cancelled')
+    if (startDate) cancelledQuery = cancelledQuery.gte('payment_date', startDate) as typeof cancelledQuery
+    if (endDate) cancelledQuery = cancelledQuery.lte('payment_date', endDate) as typeof cancelledQuery
+    if (planId) cancelledQuery = cancelledQuery.eq('plan_id', planId) as typeof cancelledQuery
+    const { count: cancelledPayments, error: cancelledError } = await cancelledQuery
 
     if (cancelledError) {
       console.error('Error fetching cancelled payments:', cancelledError)
@@ -78,13 +84,13 @@ export async function GET(request: NextRequest) {
     const startOfMonth = startDate ? new Date(startDate) : new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
     const endOfMonth = endDate ? new Date(endDate) : new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
 
-    const { data: monthlyPayments, error: monthlyError } = await buildQuery(
-      supabase.from('payments')
-        .select('amount')
-        .eq('payment_status', 'completed')
-        .gte('payment_date', startOfMonth.toISOString())
-        .lte('payment_date', endOfMonth.toISOString())
-    )
+    let monthlyQuery = supabase.from('payments')
+      .select('amount')
+      .eq('payment_status', 'completed')
+      .gte('payment_date', startOfMonth.toISOString())
+      .lte('payment_date', endOfMonth.toISOString())
+    if (planId) monthlyQuery = monthlyQuery.eq('plan_id', planId) as typeof monthlyQuery
+    const { data: monthlyPayments, error: monthlyError } = await monthlyQuery
 
     if (monthlyError) {
       console.error('Error fetching monthly revenue:', monthlyError)
@@ -95,13 +101,13 @@ export async function GET(request: NextRequest) {
     const startOfYear = startDate ? new Date(startDate) : new Date(currentDate.getFullYear(), 0, 1)
     const endOfYear = endDate ? new Date(endDate) : new Date(currentDate.getFullYear(), 11, 31)
 
-    const { data: annualPayments, error: annualError } = await buildQuery(
-      supabase.from('payments')
-        .select('amount')
-        .eq('payment_status', 'completed')
-        .gte('payment_date', startOfYear.toISOString())
-        .lte('payment_date', endOfYear.toISOString())
-    )
+    let annualQuery = supabase.from('payments')
+      .select('amount')
+      .eq('payment_status', 'completed')
+      .gte('payment_date', startOfYear.toISOString())
+      .lte('payment_date', endOfYear.toISOString())
+    if (planId) annualQuery = annualQuery.eq('plan_id', planId) as typeof annualQuery
+    const { data: annualPayments, error: annualError } = await annualQuery
 
     if (annualError) {
       console.error('Error fetching annual revenue:', annualError)
@@ -109,8 +115,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate revenues
-    const monthlyRevenue = monthlyPayments?.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0) || 0
-    const annualRevenue = annualPayments?.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0) || 0
+    type PaymentAmountRow = { amount: number | string | null | undefined }
+    const monthlyRevenue = (monthlyPayments as PaymentAmountRow[] | null)?.reduce((sum: number, payment) => sum + Number(payment.amount ?? 0), 0) || 0
+    const annualRevenue = (annualPayments as PaymentAmountRow[] | null)?.reduce((sum: number, payment) => sum + Number(payment.amount ?? 0), 0) || 0
     const averageRevenuePerUser = activePayments && activePayments > 0 ? annualRevenue / activePayments : 0
 
     const stats = {

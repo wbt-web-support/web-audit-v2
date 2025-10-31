@@ -150,7 +150,7 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     } finally {
       setIsAnalyzing(false)
     }
-  }, [page.url])
+  }, [page.id, page.url, page.user_id])
 
   // Automatically perform analysis when component loads (if no cached data and user has access)
   useEffect(() => {

@@ -41,42 +41,38 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   // Filter states
   const [selectedLinkType, setSelectedLinkType] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showBrokenOnly, setShowBrokenOnly] = useState(false)
-  const [showWorkingOnly, setShowWorkingOnly] = useState(false)
-  const [isCheckingBrokenLinks, setIsCheckingBrokenLinks] = useState(false)
+  
 
   // Function to check if a link is broken
   const checkLinkBroken = useCallback(async (linkUrl: string): Promise<boolean> => {
     try {
-      const response = await fetch(linkUrl, { 
+      await fetch(linkUrl, { 
         method: 'HEAD',
         mode: 'no-cors' // This allows checking cross-origin links
       })
       return false // If we get here, the link is working
-    } catch (error) {
+    } catch {
       return true // Link is broken
     }
   }, [])
 
-  // Function to check all links for broken status
-  const checkAllLinksBroken = useCallback(async (links: LinkData[]) => {
-    setIsCheckingBrokenLinks(true)
-    const updatedLinks = await Promise.all(
-      links.map(async (link) => {
-        if (link.url) {
-          const isBroken = await checkLinkBroken(link.url)
-          return { 
-            ...link, 
-            isBroken,
-            status: isBroken ? 'broken' : 'working'
-          }
-        }
-        return { ...link, status: 'unknown' }
-      })
-    )
-    setIsCheckingBrokenLinks(false)
-    return updatedLinks
-  }, [checkLinkBroken])
+  // (Optional) Function to check all links for broken status - kept for future use
+  // const checkAllLinksBroken = useCallback(async (links: LinkData[]) => {
+  //   const updatedLinks = await Promise.all(
+  //     links.map(async (link) => {
+  //       if (link.url) {
+  //         const isBroken = await checkLinkBroken(link.url)
+  //         return { 
+  //           ...link, 
+  //           isBroken,
+  //           status: isBroken ? 'broken' : 'working'
+  //         }
+  //       }
+  //       return { ...link, status: 'unknown' }
+  //     })
+  //   )
+  //   return updatedLinks
+  // }, [checkLinkBroken])
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -236,12 +232,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     setCurrentPage(1)
   }
 
-  // Handle check broken links
-  const handleCheckBrokenLinks = async () => {
-    const updatedLinks = await checkAllLinksBroken(links)
-    // Note: This would need to be handled by parent component or state management
-    // For now, we'll just show the loading state
-  }
+  // Handle check broken links (hook prepared; UI trigger can be added when needed)
 
 
   // Export functions

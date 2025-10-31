@@ -35,13 +35,23 @@ export default function EmailTestPanel() {
     }
   };
 
+  type SendEmailOptions = {
+    type: typeof emailType;
+    email: string;
+    firstName: string;
+    lastName?: string;
+    confirmationUrl?: string;
+    resetUrl?: string;
+    planName?: string;
+    expiryDate?: string;
+  };
   const handleSendEmail = async () => {
     if (!testEmail || !firstName) {
       alert('Please fill in required fields');
       return;
     }
 
-    const options: any = {
+    const options: SendEmailOptions = {
       type: emailType,
       email: testEmail,
       firstName,
@@ -111,7 +121,7 @@ export default function EmailTestPanel() {
           </label>
           <select
             value={emailType}
-            onChange={(e) => setEmailType(e.target.value as any)}
+            onChange={(e) => setEmailType(e.target.value as typeof emailType)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="welcome">Welcome Email</option>

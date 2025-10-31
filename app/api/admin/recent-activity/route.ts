@@ -56,10 +56,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Format activity data
-    const activities: any[] = []
+    type Activity = {
+      id: string
+      type: 'user_registration' | 'audit_completed' | 'payment_received' | 'ticket_created'
+      message: string
+      timestamp: string
+      status: 'success' | 'warning' | 'error' | 'info'
+      priority: number
+    }
+    const activities: Activity[] = []
 
     // Add user registrations
-    recentUsers?.forEach((user, index) => {
+    recentUsers?.forEach((user) => {
       activities.push({
         id: `user-${user.id}`,
         type: 'user_registration',
@@ -71,7 +79,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Add completed audits
-    recentAudits?.forEach((audit, index) => {
+    recentAudits?.forEach((audit) => {
       const status = audit.score >= 80 ? 'success' : audit.score >= 50 ? 'warning' : 'error'
       activities.push({
         id: `audit-${audit.id}`,
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Add payments
-    recentPayments?.forEach((payment, index) => {
+    recentPayments?.forEach((payment) => {
       const status = payment.payment_status === 'completed' ? 'success' : 'warning'
       activities.push({
         id: `payment-${payment.id}`,
@@ -98,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     // Add tickets (if available)
     if (recentTickets) {
-      recentTickets.forEach((ticket, index) => {
+      recentTickets.forEach((ticket) => {
         const status = ticket.status === 'resolved' ? 'success' : 
                       ticket.status === 'closed' ? 'info' : 
                       ticket.priority === 'urgent' || ticket.priority === 'high' ? 'error' : 'warning'

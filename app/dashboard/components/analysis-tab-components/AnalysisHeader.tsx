@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { AuditProject } from "@/types/audit";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+ 
 import { useUserPlan } from "@/hooks/useUserPlan";
 import FeatureUnavailableCard from "../FeatureUnavailableCard";
 import FaviconDisplay from "../FaviconDisplay";
@@ -12,7 +12,7 @@ interface AnalysisHeaderProps {
   project: AuditProject;
   activeSection: string;
   onSectionChange: (section: string) => void;
-  customTabs?: Array<{ id: string; name: string; icon: any }>;
+  customTabs?: Array<{ id: string; name: string; icon?: ReactNode | string }>;
   pageTitle?: string;
   showUnavailableContent?: boolean; // New prop to control showing unavailable content
   onRefresh?: () => void;
@@ -26,13 +26,12 @@ export default function AnalysisHeader({
   customTabs,
   pageTitle,
   showUnavailableContent = false,
-  onRefresh,
-  isRefreshing,
+  onRefresh: _onRefresh,
+  isRefreshing: _isRefreshing,
 }: AnalysisHeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
-  const { user } = useAuth();
   const { planInfo, loading: isLoadingPlan, hasFeature } = useUserPlan();
 
   // Map tab IDs to feature IDs
@@ -143,35 +142,7 @@ export default function AnalysisHeader({
     );
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-blue-100 text-blue-800";
-      case "in_progress":
-        return "bg-blue-200 text-blue-900";
-      case "pending":
-        return "bg-blue-50 text-blue-700";
-      case "failed":
-        return "bg-blue-300 text-blue-900";
-      default:
-        return "bg-blue-100 text-blue-800";
-    }
-  };
-
-  const getStatusDisplayName = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "Completed";
-      case "in_progress":
-        return "In Progress";
-      case "pending":
-        return "Pending";
-      case "failed":
-        return "Failed";
-      default:
-        return status;
-    }
-  };
+  // Note: status color and display helpers removed as they are unused in the current UI
 
   const getProjectName = (siteUrl: string) => {
     try {

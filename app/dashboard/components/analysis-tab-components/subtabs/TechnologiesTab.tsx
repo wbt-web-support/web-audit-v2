@@ -356,7 +356,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
   const stats = getTechnologyStats(uniqueTechnologies)
   const categorizedTechnologies = categorizeTechnologies(uniqueTechnologies)
   const hasTechnologies = uniqueTechnologies.length > 0
-  const hasProjectTechnologies = projectTechnologies.length > 0
+  // const hasProjectTechnologies = projectTechnologies.length > 0
   const hasDetectedTechnologies = detectedTechnologies.length > 0
 
   // Debug: Log categories to see if any contain "unknown"

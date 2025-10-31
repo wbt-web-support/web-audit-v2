@@ -274,7 +274,16 @@ export async function POST(request: NextRequest) {
       // Check for specific error types
       if (paymentError.message?.includes('relation "public.payments" does not exist')) {
         // Still update user plan even if payment record can't be created
-        const userUpdateData: any = {
+        type UserUpdateData = {
+          plan_type: string;
+          plan_id: string;
+          subscription_id: string | null;
+          updated_at?: string;
+          max_projects?: number;
+          can_use_features?: string[];
+          plan_expires_at?: string | null;
+        };
+        const userUpdateData: UserUpdateData = {
           plan_type: plan.plan_type,
           plan_id: plan.id,
           subscription_id: subscription_id || null,
@@ -293,8 +302,8 @@ export async function POST(request: NextRequest) {
           : plan.billing_cycle === 'yearly' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
           : null;
         }
-        let fallbackUpdateResult: any = null;
-        let fallbackUserUpdateError: any = null;
+        let fallbackUpdateResult: { id: string }[] | null = null;
+        let fallbackUserUpdateError: { message?: string; code?: string; details?: unknown; hint?: unknown } | null = null;
 
         // Try to update with all columns first
         const {
@@ -305,7 +314,7 @@ export async function POST(request: NextRequest) {
           console.warn('Fallback full update failed, trying with essential columns only:', fallbackFullUpdateError.message);
 
           // Fallback: Update only essential columns that should exist in any users table
-          const essentialUpdateData: any = {
+          const essentialUpdateData: { plan_type: string; plan_id: string; updated_at?: string } = {
             plan_type: plan.plan_type,
             plan_id: plan.id
           };
@@ -313,7 +322,7 @@ export async function POST(request: NextRequest) {
           // Only add updated_at if the column exists (it might not in some schemas)
           try {
             essentialUpdateData.updated_at = new Date().toISOString();
-          } catch (e) {
+          } catch {
             // Ignore if updated_at column doesn't exist
           }
           const {
@@ -346,9 +355,7 @@ export async function POST(request: NextRequest) {
           });
         } else {
           // Verify the update was successful
-          if (fallbackUpdateResult && fallbackUpdateResult.length > 0) {
-            const updatedUser = fallbackUpdateResult[0];
-          } else {
+          if (!Array.isArray(fallbackUpdateResult) || fallbackUpdateResult.length === 0) {
             console.warn('Fallback: Update succeeded but no data returned - user might not exist');
           }
         }
@@ -473,7 +480,16 @@ export async function POST(request: NextRequest) {
       });
     }
     // Update user's plan with comprehensive data (only include columns that exist)
-    const userUpdateData: any = {
+    type UserUpdateData = {
+      plan_type: string;
+      plan_id: string;
+      subscription_id: string | null;
+      updated_at?: string;
+      max_projects?: number;
+      can_use_features?: string[];
+      plan_expires_at?: string | null;
+    };
+    const userUpdateData: UserUpdateData = {
       plan_type: plan.plan_type,
       plan_id: plan.id,
       subscription_id: subscription_id || null,
@@ -494,8 +510,8 @@ export async function POST(request: NextRequest) {
       : plan.billing_cycle === 'yearly' ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
       : null;
     }
-    let updateResult: any = null;
-    let userUpdateError: any = null;
+    let updateResult: { id: string }[] | null = null;
+    let userUpdateError: { message?: string; code?: string; details?: unknown; hint?: unknown } | null = null;
 
     // Try to update with all columns first
     const {
@@ -506,7 +522,7 @@ export async function POST(request: NextRequest) {
       console.warn('Full update failed, trying with essential columns only:', fullUpdateError.message);
 
       // Fallback: Update only essential columns that should exist in any users table
-      const essentialUpdateData: any = {
+      const essentialUpdateData: { plan_type: string; plan_id: string; updated_at?: string } = {
         plan_type: plan.plan_type,
         plan_id: plan.id
       };
@@ -514,7 +530,7 @@ export async function POST(request: NextRequest) {
       // Only add updated_at if the column exists (it might not in some schemas)
       try {
         essentialUpdateData.updated_at = new Date().toISOString();
-      } catch (e) {
+      } catch {
         // Ignore if updated_at column doesn't exist
       }
       const {
@@ -543,9 +559,7 @@ export async function POST(request: NextRequest) {
       console.warn('Payment recorded but user plan update failed');
     } else {
       // Verify the update was successful
-      if (updateResult && updateResult.length > 0) {
-        const updatedUser = updateResult[0];
-      } else {
+      if (!Array.isArray(updateResult) || updateResult.length === 0) {
         console.warn('Update succeeded but no data returned - user might not exist');
       }
     }

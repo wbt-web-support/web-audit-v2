@@ -131,57 +131,101 @@ export default function AdminPlans({
         const response = await fetch('/api/plans');
         if (response.ok) {
           const apiData = await response.json();
-          // Parse features from JSON strings if needed
-          const parsedPlans = (apiData.plans || []).map((plan: any) => {
-            try {
-              return {
-                ...plan,
-                features: Array.isArray(plan.features) 
-                  ? plan.features.map((feature: any) => 
-                      typeof feature === 'string' ? JSON.parse(feature) : feature
-                    ).filter((feature: any) => feature && feature.name)
-                  : [],
-                can_use_features: typeof plan.can_use_features === 'string' ? JSON.parse(plan.can_use_features) : plan.can_use_features || [],
-                limits: typeof plan.limits === 'string' ? JSON.parse(plan.limits) : plan.limits || {}
-              };
-            } catch (error) {
-              console.error('Error parsing plan data from API:', error, plan);
-              return {
-                ...plan,
-                features: [],
-                can_use_features: [],
-                limits: {}
-              };
-            }
-          });
-          setPlans(parsedPlans);
+        // Parse features from JSON strings if needed
+        const parsedPlans = (apiData.plans || []).map((plan: unknown) => {
+          const p = plan as Partial<Plan> & { features?: unknown; can_use_features?: unknown; limits?: unknown };
+          try {
+            return {
+              ...p,
+              features: Array.isArray(p.features) 
+                ? p.features.map((feature: unknown) => 
+                    typeof feature === 'string' ? JSON.parse(feature as string) : feature
+                  ).filter((feature: any) => feature && (feature as { name?: string }).name)
+                : [],
+              can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : p.can_use_features || [],
+              limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : p.limits || {}
+            };
+          } catch (error) {
+            console.error('Error parsing plan data from API:', error, plan);
+            return {
+              ...p,
+              features: [],
+              can_use_features: [],
+              limits: {}
+            };
+          }
+        }).filter((p: Partial<Plan>): p is Plan => {
+          // Filter out plans missing required fields
+          return !!(
+            p.id &&
+            p.name &&
+            p.description &&
+            p.plan_type &&
+            p.razorpay_plan_id &&
+            p.subscription_id !== undefined &&
+            p.price !== undefined &&
+            p.currency &&
+            p.billing_cycle &&
+            p.interval_count !== undefined &&
+            p.max_projects !== undefined &&
+            p.is_active !== undefined &&
+            p.is_popular !== undefined &&
+            p.color &&
+            p.sort_order !== undefined &&
+            p.created_at &&
+            p.updated_at
+          );
+        });
+        setPlans(parsedPlans);
         } else {
           console.error('API access also failed:', response.status, response.statusText);
           throw new Error('Both direct and API access failed');
         }
       } else {
         // Parse features from JSON strings if needed
-        const parsedData = directData.map((plan: any) => {
+        const parsedData = directData.map((plan: unknown) => {
+          const p = plan as Partial<Plan> & { features?: unknown; can_use_features?: unknown; limits?: unknown };
           try {
             return {
-              ...plan,
-              features: Array.isArray(plan.features) 
-                ? plan.features.map((feature: any) => 
-                    typeof feature === 'string' ? JSON.parse(feature) : feature
-                  ).filter((feature: any) => feature && feature.name)
+              ...p,
+              features: Array.isArray(p.features) 
+                ? p.features.map((feature: unknown) => 
+                    typeof feature === 'string' ? JSON.parse(feature as string) : feature
+                  ).filter((feature: any) => feature && (feature as { name?: string }).name)
                 : [],
-              can_use_features: typeof plan.can_use_features === 'string' ? JSON.parse(plan.can_use_features) : plan.can_use_features || [],
-              limits: typeof plan.limits === 'string' ? JSON.parse(plan.limits) : plan.limits || {}
+              can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : p.can_use_features || [],
+              limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : p.limits || {}
             };
           } catch (error) {
             console.error('Error parsing plan data:', error, plan);
             return {
-              ...plan,
+              ...p,
               features: [],
               can_use_features: [],
               limits: {}
             };
           }
+        }).filter((p: Partial<Plan>): p is Plan => {
+          // Filter out plans missing required fields
+          return !!(
+            p.id &&
+            p.name &&
+            p.description &&
+            p.plan_type &&
+            p.razorpay_plan_id &&
+            p.subscription_id !== undefined &&
+            p.price !== undefined &&
+            p.currency &&
+            p.billing_cycle &&
+            p.interval_count !== undefined &&
+            p.max_projects !== undefined &&
+            p.is_active !== undefined &&
+            p.is_popular !== undefined &&
+            p.color &&
+            p.sort_order !== undefined &&
+            p.created_at &&
+            p.updated_at
+          );
         });
         setPlans(parsedData);
       }

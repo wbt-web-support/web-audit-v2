@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useCallback } from 'react'
-import { useEmail } from '@/hooks/useEmail'
 import { supabase } from '@/lib/supabase-client'
 import { useSupabase } from '@/contexts/SupabaseContext'
 
@@ -58,7 +57,7 @@ interface AdminEmailManagementProps {
 
 // All template types will now be loaded from the database
 
-export default function AdminEmailManagement({ userProfile }: AdminEmailManagementProps) {
+export default function AdminEmailManagement({}: AdminEmailManagementProps) {
   const { getUsers } = useSupabase()
   const [activeTab, setActiveTab] = useState<'templates' | 'send'>('templates')
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
@@ -103,13 +102,10 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterPlan, setFilterPlan] = useState('all')
 
-  const { sendEmail, isLoading: emailLoading } = useEmail()
+  
 
 
-  // Get system template types (since is_system field doesn't exist, return empty array)
-  const getSystemTemplateTypes = () => {
-    return []
-  }
+  
 
   // Get custom template types (all types are considered custom since is_system field doesn't exist)
   const getCustomTemplateTypes = () => {
@@ -222,11 +218,7 @@ export default function AdminEmailManagement({ userProfile }: AdminEmailManageme
     }
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -311,9 +303,9 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
             setAllTemplateTypes(mappedData)
             
             // Set default template type if form is empty and we have types
-            if (!templateForm.template_type) {
-              setTemplateForm(prev => ({ ...prev, template_type: templateTypesData[0].value }))
-            }
+            setTemplateForm(prev => (
+              prev.template_type ? prev : { ...prev, template_type: templateTypesData[0].value }
+            ))
           } else {
             setAllTemplateTypes([])
             setError('No template types found in database. Please add some template types first.')
@@ -343,7 +335,11 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
     } finally {
       setLoading(false)
     }
-  }
+  }, [getUsers, calculateUserProjectCounts])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleSaveTemplate = async () => {
     try {
@@ -438,7 +434,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('custom_template_types')
         .insert({
           value: newTypeForm.value.toLowerCase().replace(/\s+/g, '-'),
@@ -576,7 +572,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
   const tabs = [
     { id: 'templates', label: 'Email Templates' },
     { id: 'send', label: 'Send Email' }
-  ]
+  ] as const
 
   if (loading) {
     return (
@@ -662,7 +658,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white'
@@ -781,7 +777,7 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
               
               {getCustomTemplateTypes().length === 0 && (
                 <div className="text-center py-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
-                  <p className="text-blue-600 text-sm">No custom template types yet. Click "Add Custom Type" to create your first one.</p>
+                  <p className="text-blue-600 text-sm">No custom template types yet. Click &quot;Add Custom Type&quot; to create your first one.</p>
                 </div>
               )}
             </div>
@@ -1147,21 +1143,21 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                         className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
                       >
                         <code className="text-blue-800 font-mono text-sm">{'{{firstName}}'}</code>
-                        <div className="text-xs text-gray-600 mt-1">User's first name</div>
+                        <div className="text-xs text-gray-600 mt-1">User&apos;s first name</div>
                       </button>
                       <button
                         onClick={() => insertVariable('lastName')}
                         className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
                       >
                         <code className="text-blue-800 font-mono text-sm">{'{{lastName}}'}</code>
-                        <div className="text-xs text-gray-600 mt-1">User's last name</div>
+                        <div className="text-xs text-gray-600 mt-1">User&apos;s last name</div>
                       </button>
                       <button
                         onClick={() => insertVariable('email')}
                         className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
                       >
                         <code className="text-blue-800 font-mono text-sm">{'{{email}}'}</code>
-                        <div className="text-xs text-gray-600 mt-1">User's email address</div>
+                        <div className="text-xs text-gray-600 mt-1">User&apos;s email address</div>
                       </button>
                       <button
                         onClick={() => insertVariable('dashboardUrl')}
@@ -1175,14 +1171,14 @@ CREATE INDEX IF NOT EXISTS idx_custom_template_types_value ON public.custom_temp
                         className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
                       >
                         <code className="text-blue-800 font-mono text-sm">{'{{planName}}'}</code>
-                        <div className="text-xs text-gray-600 mt-1">User's current plan</div>
+                        <div className="text-xs text-gray-600 mt-1">User&apos;s current plan</div>
                       </button>
                       <button
                         onClick={() => insertVariable('projectCount')}
                         className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
                       >
                         <code className="text-blue-800 font-mono text-sm">{'{{projectCount}}'}</code>
-                        <div className="text-xs text-gray-600 mt-1">Number of user's projects</div>
+                        <div className="text-xs text-gray-600 mt-1">Number of user&apos;s projects</div>
                       </button>
                       <button
                         onClick={() => insertVariable('companyName')}

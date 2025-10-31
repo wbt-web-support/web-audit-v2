@@ -33,8 +33,8 @@ interface KeysData {
 export default function KeysTab({
   project,
   pageHtml,
-  pageUrl,
-  pageName
+  pageUrl: _pageUrl,
+  pageName: _pageName
 }: KeysTabProps) {
   const {
     getDetectedKeys

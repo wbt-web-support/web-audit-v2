@@ -27,7 +27,7 @@ interface Plan {
   updated_at: string;
 }
 export default function AdminFeatureManagement({
-  userProfile: _
+  userProfile: _userProfile
 }: AdminFeatureManagementProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);

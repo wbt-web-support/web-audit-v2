@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { AuditProject } from '@/types/audit'
+import { GeminiAnalysisResult } from '@/lib/gemini'
 import AnalysisHeader from '../analysis-tab-components/AnalysisHeader'
 import { useUserPlan } from '@/hooks/useUserPlan'
 import FeatureUnavailableCard from '../FeatureUnavailableCard'
@@ -18,6 +19,15 @@ import {
 import SEOAnalysisSection from '../analysis-tab-components/SEOAnalysisSection'
 import ImagesSection from '../analysis-tab-components/ImagesSection'
 import LinksSection from '../analysis-tab-components/LinksSection'
+
+// Brand consistency data interface
+interface BrandConsistencyData {
+  companyName: string;
+  phoneNumber: string;
+  emailAddress: string;
+  address: string;
+  additionalInformation: string;
+}
 
 interface PageAnalysisTabProps {
   pageId: string
@@ -49,13 +59,13 @@ interface PageData {
   is_external: boolean
   response_time: number | null
   performance_analysis: Record<string, unknown> | undefined
-  gemini_analysis?: any | null
+  gemini_analysis?: GeminiAnalysisResult | null
   created_at: string
   updated_at: string
 }
 
 interface ProjectWithBrandData extends AuditProject {
-  brand_data?: any | null;
+  brand_data?: BrandConsistencyData | null;
   brand_consistency?: boolean;
 }
 
@@ -69,28 +79,19 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const [error, setError] = useState<string | null>(null)
   
   // Grammar analysis state - moved to parent to persist across tab changes
-  const [grammarAnalysis, setGrammarAnalysis] = useState<any>(null)
+  const [grammarAnalysis, setGrammarAnalysis] = useState<GeminiAnalysisResult | null>(null)
   const [grammarAnalysisError, setGrammarAnalysisError] = useState<string | null>(null)
   const [isGrammarAnalyzing, setIsGrammarAnalyzing] = useState(false)
 
   // Memoize cached analysis to prevent unnecessary re-renders
-  const cachedAnalysis = useMemo(() => {
-    return page?.gemini_analysis || grammarAnalysis || undefined
+  const cachedAnalysis = useMemo((): GeminiAnalysisResult | undefined => {
+    const analysis = page?.gemini_analysis || grammarAnalysis
+    return analysis as GeminiAnalysisResult | undefined
   }, [page?.gemini_analysis, grammarAnalysis])
 
-  // Auto-start grammar analysis when page data is loaded
-  useEffect(() => {
-    if (page?.id && page?.url && page?.html_content && !grammarAnalysis && !isGrammarAnalyzing) {
-      // Check if user has access to grammar content analysis
-      if (hasFeature('grammar_content_analysis')) {
-        console.log('Auto-starting grammar analysis from parent component...');
-        startGrammarAnalysis();
-      }
-    }
-  }, [page?.id, page?.url, page?.html_content, grammarAnalysis, isGrammarAnalyzing]);
-
+ 
   // Function to start grammar analysis
-  const startGrammarAnalysis = async () => {
+  const startGrammarAnalysis = useCallback(async () => {
     if (!page?.id || !page?.url || !page?.html_content) return;
     
     setIsGrammarAnalyzing(true);
@@ -167,16 +168,35 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       setGrammarAnalysisError(error instanceof Error ? error.message : 'Analysis failed');
       setIsGrammarAnalyzing(false);
     }
-  };
+  }, [page?.id, page?.url, page?.html_content]);
+
+  // Auto-start grammar analysis when page data is loaded
+  useEffect(() => {
+    if (page?.id && page?.url && page?.html_content && !grammarAnalysis && !isGrammarAnalyzing) {
+      // Check if user has access to grammar content analysis
+      if (hasFeature('grammar_content_analysis')) {
+        console.log('Auto-starting grammar analysis from parent component...');
+        startGrammarAnalysis();
+      }
+    }
+  }, [page?.id, page?.url, page?.html_content, grammarAnalysis, isGrammarAnalyzing, hasFeature, startGrammarAnalysis]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true)
         
+        // Verify context methods are available
+        if (!getScrapedPage || !getAuditProject) {
+          throw new Error('Supabase context methods not available. Please check if user is authenticated.')
+        }
+        
         // Load page data
         const { data: pageData, error: pageError } = await getScrapedPage(pageId)
-        if (pageError) throw pageError
+        if (pageError) {
+          console.error('Error fetching scraped page:', pageError)
+          throw pageError
+        }
         if (!pageData) throw new Error('Page not found')
         
         setPage(pageData as PageData)
@@ -186,6 +206,9 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
           const { data: projectData, error: projectError } = await getAuditProject(pageData.audit_project_id)
           console.log('Raw project data from database:', projectData);
           console.log('Brand data from database:', projectData?.brand_data);
+          if (projectError) {
+            console.error('Error fetching audit project:', projectError)
+          }
           if (!projectError && projectData) {
             setProject(projectData as ProjectWithBrandData)
           }
@@ -375,7 +398,13 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       case 'grammar-content':
         return (
           <GrammarContentTab 
-            page={page!} 
+            page={{
+              id: page.id,
+              url: page.url,
+              html_content: page.html_content,
+              filtered_content: page.filtered_content,
+              gemini_analysis: page.gemini_analysis as GeminiAnalysisResult | null
+            }} 
             cachedAnalysis={cachedAnalysis}
             grammarAnalysis={grammarAnalysis}
             grammarAnalysisError={grammarAnalysisError}
@@ -396,10 +425,10 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         return (
           <BrandConsistencyTab 
             page={page!} 
-            projectBrandData={project?.brand_data}
+            projectBrandData={project?.brand_data as BrandConsistencyData | null | undefined}
             onBrandDataUpdate={(newBrandData) => {
               // Update the project state with new brand data
-              setProject(prev => prev ? { ...prev, brand_data: newBrandData } : null);
+              setProject(prev => prev ? { ...prev, brand_data: newBrandData as BrandConsistencyData } : null);
             }}
           />
         )

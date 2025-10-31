@@ -16,7 +16,7 @@ interface AdminOverviewProps {
   }
 }
 
-export default function AdminOverview({ userProfile }: AdminOverviewProps) {
+export default function AdminOverview({ userProfile: _userProfile }: AdminOverviewProps) {
   const [systemStats, setSystemStats] = useState<OverviewStats>({
     totalUsers: 0,
     activeUsers: 0,

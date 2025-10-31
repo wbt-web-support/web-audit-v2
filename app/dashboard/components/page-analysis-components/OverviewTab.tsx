@@ -92,13 +92,19 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Site Favicon:</span>
               <div className="flex items-center">
-                <FaviconDisplay 
-                  data={project} 
-                  siteUrl={project?.site_url}
-                  size="sm"
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-500">From {project?.site_url}</span>
+                {project ? (
+                  <>
+                    <FaviconDisplay 
+                      data={project as unknown as Record<string, any>} 
+                      siteUrl={project.site_url}
+                      size="sm"
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-500">From {project.site_url}</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">No project data</span>
+                )}
               </div>
             </div>
             <div className="flex justify-between">

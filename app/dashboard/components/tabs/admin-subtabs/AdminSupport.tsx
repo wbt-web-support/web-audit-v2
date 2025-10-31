@@ -138,7 +138,6 @@ export default function AdminSupport({}: AdminSupportProps) {
     setIsSubmittingMessage(true);
     try {
       const {
-        data,
         error
       } = await createTicketMessage({
         ticket_id: selectedTicket.id,
@@ -163,7 +162,6 @@ export default function AdminSupport({}: AdminSupportProps) {
   const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
     try {
       const {
-        data,
         error
       } = await updateTicket(ticketId, {
         status: newStatus as 'open' | 'in_progress' | 'resolved' | 'closed',
