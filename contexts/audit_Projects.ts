@@ -466,11 +466,9 @@ import type { AuditProject } from '@/types/audit';
     const queryStartTime = performance.now();
 
     try {
-      // Use a simpler query with only essential fields to avoid RLS issues
-
-      const {
+      // Try with favicon-related fields first
+      let {
         data,
-
         error,
       } = await supabase
         .from("audit_projects")
@@ -505,7 +503,17 @@ import type { AuditProject } from '@/types/audit';
 
             technologies_found,
 
-            cms_detected
+            cms_detected,
+
+            brand_data,
+
+            scraping_data,
+
+            meta_tags_data,
+
+            social_meta_tags_data,
+
+            detected_keys
 
           `
         )
@@ -513,6 +521,76 @@ import type { AuditProject } from '@/types/audit';
         .order("created_at", {
           ascending: false,
         });
+
+      // If query fails with column error, retry without optional fields
+      // Handle various error codes: PGRST116 (column doesn't exist), 42703 (PostgreSQL undefined column), or 400 with column error message
+      const isColumnError = error && (
+        error.code === 'PGRST116' || 
+        error.code === '42703' ||
+        error.code === 'P0001' ||
+        (error.message?.toLowerCase().includes('column') || 
+         error.message?.toLowerCase().includes('does not exist') ||
+         error.message?.toLowerCase().includes('unknown column') ||
+         error.message?.toLowerCase().includes('could not find'))
+      );
+      
+      if (isColumnError) {
+        console.warn('⚠️ Some columns may not exist in database, retrying without optional favicon fields');
+        
+        // Retry with only essential fields
+        const fallbackResult = await supabase
+          .from("audit_projects")
+          .select(
+            `
+
+              id,
+
+              site_url,
+
+              status,
+
+              progress,
+
+              last_audit_at,
+
+              issues_count,
+
+              score,
+
+              created_at,
+
+              updated_at,
+
+              total_pages,
+
+              total_links,
+
+              total_images,
+
+              total_meta_tags,
+
+              technologies_found,
+
+              cms_detected
+
+            `
+          )
+          .eq("user_id", user.id)
+          .order("created_at", {
+            ascending: false,
+          });
+        
+        // Add default values for missing favicon fields in fallback data
+        data = fallbackResult.data?.map((project: any) => ({
+          ...project,
+          brand_data: null,
+          scraping_data: null,
+          meta_tags_data: null,
+          social_meta_tags_data: null,
+          detected_keys: null,
+        })) || null;
+        error = fallbackResult.error;
+      }
 
       const queryEndTime = performance.now();
 
@@ -583,15 +661,21 @@ import type { AuditProject } from '@/types/audit';
         const dataSize = JSON.stringify(data).length;
       }
 
-      // Add default values for meta tags fields if they don't exist
+      // Add default values for fields if they don't exist
 
       const projectsWithDefaults =
         data?.map((project) => ({
           ...(project as any),
 
+          brand_data: (project as any).brand_data || null,
+
+          scraping_data: (project as any).scraping_data || null,
+
           meta_tags_data: (project as any).meta_tags_data || null,
 
           social_meta_tags_data: (project as any).social_meta_tags_data || null,
+
+          detected_keys: (project as any).detected_keys || null,
         })) || [];
 
       return {

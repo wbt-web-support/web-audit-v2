@@ -60,7 +60,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   refreshProjects: async () => {
     const { fetchFunction } = get();
     if (!fetchFunction) {
-      console.warn('No fetch function set in projects store');
+      // Silently return if fetch function not set yet (will be set by component)
       return;
     }
     

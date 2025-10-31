@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remove-console-logs": "node scripts/remove-console-logs.js",
+    "remove-console-logs:dry-run": "node scripts/remove-console-logs.js --dry-run"
   },
   "dependencies": {
     "@babel/generator": "^7.28.3",
