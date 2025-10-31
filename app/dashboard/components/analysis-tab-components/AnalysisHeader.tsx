@@ -170,8 +170,7 @@ export default function AnalysisHeader({
           <div className="min-w-0 flex items-center gap-4">
             <div>
               <FaviconDisplay
-                data={project}
-                siteUrl={project.site_url}
+                projectId={project.id}
                 size="xl"
                 className="mr-1 flex-shrink-0"
               />
