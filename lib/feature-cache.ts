@@ -79,6 +79,11 @@ class FeatureCache {
     this.saveToStorage()
   }
 
+  delete(key: string): void {
+    this.cache.delete(key)
+    this.saveToStorage()
+  }
+
   clear(): void {
     this.cache.clear()
     if (typeof window !== 'undefined') {

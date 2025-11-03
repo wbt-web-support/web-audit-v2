@@ -35,36 +35,93 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [cacheVersion, setCacheVersion] = useState(0) // Force re-evaluation when cache is cleared
+  const [hasAttemptedAnalysis, setHasAttemptedAnalysis] = useState(false) // Prevent multiple attempts
   const { user } = useAuth()
-  const { hasFeature, loading: planLoading } = useUserPlan()
+  const { hasFeature, loading: planLoading, refreshPlan, planInfo } = useUserPlan()
+  
+  // Debug: Log plan info when it changes
+  useEffect(() => {
+    console.log('[PerformanceTab] 📋 Plan Info Updated:', {
+      planInfo,
+      planType: planInfo?.plan_type,
+      canUseFeatures: planInfo?.can_use_features,
+      hasPerformanceMetrics: planInfo?.can_use_features?.includes('performance_metrics'),
+      planLoading
+    });
+  }, [planInfo, planLoading]);
   
   // Check if user has access to performance metrics with caching
   const hasFeatureAccess = useMemo(() => {
+    console.log('[PerformanceTab] 🔍 Checking feature access:', {
+      accessDenied,
+      userId: user?.id,
+      planLoading,
+      cacheVersion
+    });
+    
+    // If access was denied, don't re-check (prevents loop)
+    if (accessDenied) {
+      console.log('[PerformanceTab] ❌ Access denied flag is true, returning false');
+      return false;
+    }
+    
     const cacheKey = createCacheKey('performance_metrics', user?.id);
     
     // Return cached result if available
     const cachedResult = featureCache.get(cacheKey);
+    console.log('[PerformanceTab] 📦 Cache check:', {
+      cacheKey,
+      cachedResult,
+      isUndefined: cachedResult === undefined
+    });
+    
     if (cachedResult !== undefined) {
+      console.log('[PerformanceTab] ✅ Using cached result:', cachedResult);
       return cachedResult;
     }
     
     // If still loading, return null to show skeleton
     if (planLoading) {
+      console.log('[PerformanceTab] ⏳ Plan still loading, returning null');
       return null;
     }
     
     // Get fresh result and cache it
     const result = hasFeature('performance_metrics');
+    console.log('[PerformanceTab] 🔎 Fresh feature check result:', result);
     featureCache.set(cacheKey, result);
+    console.log('[PerformanceTab] 💾 Cached result:', result);
     return result;
-  }, [hasFeature, user?.id, planLoading]);
+  }, [hasFeature, user?.id, planLoading, cacheVersion, accessDenied]);
 
   // Update checking access state when feature access is determined
   useEffect(() => {
+    console.log('[PerformanceTab] 🎯 hasFeatureAccess changed:', {
+      hasFeatureAccess,
+      accessDenied,
+      isAnalyzing,
+      hasAttemptedAnalysis
+    });
+    
     if (hasFeatureAccess !== null) {
       setIsCheckingAccess(false);
+      
+      // Only clear access denied if we explicitly confirm access (not just from cache)
+      // This prevents clearing when accessDenied is set to prevent loops
+      if (hasFeatureAccess === true && accessDenied && !isAnalyzing) {
+        console.log('[PerformanceTab] ✅ Access restored, clearing denied state');
+        // Small delay to ensure state is stable
+        const timeoutId = setTimeout(() => {
+          setAccessDenied(false);
+          setHasAttemptedAnalysis(false); // Allow retry if access is restored
+        }, 100);
+        
+        return () => clearTimeout(timeoutId);
+      }
     }
-  }, [hasFeatureAccess]);
+  }, [hasFeatureAccess, accessDenied, isAnalyzing, hasAttemptedAnalysis]);
 
 
   const content = page.html_content || ''
@@ -112,15 +169,34 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     }
   }, [cachedAnalysis, page.performance_analysis])
 
-  // Clean up expired cache entries on mount
+  // Clean up expired cache entries on mount and verify access
   useEffect(() => {
     featureCache.clearExpired();
-  }, [])
+    
+    // If plan info is loaded and user has access, clear any stale access denied state
+    if (!planLoading && hasFeature('performance_metrics')) {
+      const cacheKey = createCacheKey('performance_metrics', user?.id);
+      const cachedValue = featureCache.get(cacheKey);
+      
+      // If cache says no access but plan says yes, clear cache and re-evaluate
+      if (cachedValue === false) {
+        featureCache.delete(cacheKey);
+        setCacheVersion(prev => prev + 1);
+        setAccessDenied(false);
+      }
+    }
+  }, [planLoading, hasFeature, user?.id])
 
   const performPerformanceAnalysis = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isAnalyzing) {
+      return;
+    }
+    
     try {
       setIsAnalyzing(true)
       setError(null)
+      setHasAttemptedAnalysis(true)
       // alert('Performing performance analysis...')
       // Call performance analysis API
       const response = await fetch('/api/performance-analysis', {
@@ -135,6 +211,39 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        
+        // Handle access denied error specifically
+        if (response.status === 403 || errorData.error === 'Access denied') {
+          console.error('[PerformanceTab] 🚫 Access denied from server:', {
+            status: response.status,
+            errorData,
+            userId: page.user_id,
+            pageId: page.id,
+            url: page.url
+          });
+          
+          // Set cache to false to prevent future attempts
+          const cacheKey = createCacheKey('performance_metrics', user?.id);
+          featureCache.set(cacheKey, false);
+          console.log('[PerformanceTab] 💾 Set cache to false for:', cacheKey);
+          
+          // Set access denied state to show upgrade card
+          setAccessDenied(true)
+          setError(null)
+          setIsAnalyzing(false)
+          
+          console.log('[PerformanceTab] 🚫 State updated:', {
+            accessDenied: true,
+            isAnalyzing: false,
+            hasAttemptedAnalysis: true
+          });
+          
+          // Don't refresh plan here - it causes infinite loop
+          // User can manually refresh or navigate away and back
+          
+          return
+        }
+        
         throw new Error(errorData.error || `Performance analysis API error: ${response.status}`)
       }
       // alert('Performing performance success')/
@@ -150,22 +259,49 @@ export default function PerformanceTab({ page, cachedAnalysis }: PerformanceTabP
     } finally {
       setIsAnalyzing(false)
     }
-  }, [page.id, page.url, page.user_id])
+  }, [page.id, page.url, page.user_id, user?.id])
 
   // Automatically perform analysis when component loads (if no cached data and user has access)
   useEffect(() => {
-    if (hasFeatureAccess && !performanceData && !isAnalyzing && !error) {
+    console.log('[PerformanceTab] 🔄 Auto-analysis check:', {
+      hasFeatureAccess,
+      performanceData: !!performanceData,
+      isAnalyzing,
+      error,
+      accessDenied,
+      hasAttemptedAnalysis,
+      shouldCall: hasFeatureAccess && !performanceData && !isAnalyzing && !error && !accessDenied && !hasAttemptedAnalysis
+    });
+    
+    // Don't auto-call if access was denied or already attempted (prevents infinite loop)
+    if (hasFeatureAccess && !performanceData && !isAnalyzing && !error && !accessDenied && !hasAttemptedAnalysis) {
+      console.log('[PerformanceTab] ▶️ Auto-triggering performance analysis');
       performPerformanceAnalysis();
     }
-  }, [hasFeatureAccess, performanceData, isAnalyzing, error, performPerformanceAnalysis])
+  }, [hasFeatureAccess, performanceData, isAnalyzing, error, accessDenied, hasAttemptedAnalysis, performPerformanceAnalysis])
 
   // Show skeleton loading while checking feature access
   if (isCheckingAccess || hasFeatureAccess === null) {
+    console.log('[PerformanceTab] ⏳ Showing skeleton loader:', { isCheckingAccess, hasFeatureAccess });
     return <SkeletonLoader type="performance" />;
   }
 
-  // Show upgrade card if user doesn't have access to performance metrics
-  if (hasFeatureAccess === false) {
+  // Show upgrade card if user doesn't have access to performance metrics or access was denied
+  console.log('[PerformanceTab] 🎨 Render decision:', {
+    hasFeatureAccess,
+    accessDenied,
+    showUpgradeCard: hasFeatureAccess === false || accessDenied,
+    planInfo: {
+      planType: planInfo?.plan_type,
+      features: planInfo?.can_use_features,
+      hasPerformanceMetrics: planInfo?.can_use_features?.includes('performance_metrics')
+    },
+    isAnalyzing,
+    hasAttemptedAnalysis,
+    performanceData: !!performanceData
+  });
+  
+  if (hasFeatureAccess === false || accessDenied) {
     return <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center space-x-4">
           <div className="text-blue-500">

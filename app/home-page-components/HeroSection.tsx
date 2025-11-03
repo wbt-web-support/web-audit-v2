@@ -12,19 +12,19 @@ export default function HeroSection() {
       <div className="absolute inset-0 w-full h-full z-10">
         <LightRays
           raysOrigin="bottom-center"
-          raysColor="#455bd6"
-          raysSpeed={1.2}
-          lightSpread={1}
-          rayLength={3}
+          raysColor="#2647b5"
+          raysSpeed={1.4}
+          lightSpread={0.8}
+          rayLength={4}
           followMouse={false}
           mouseInfluence={0.1}
-          noiseAmount={0.4}
-          distortion={0.04}
+          noiseAmount={0.2}
+          distortion={0.2}
           className="custom-rays"
         />
       </div>
-      <div className="absolute inset-0 w-full h-full z-0  left-1/2 -translate-x-1/2">
-         <Image src='/images/home-page/star.png' alt='hero-image' width={900} height={900} className="w-full h-full opacity-30" />
+      <div className="absolute inset-0  z-0  left-1/2 -translate-x-1/2 ">
+         <Image src='/images/home-page/star.png' alt='hero-image' width={1000} height={1000} className="w-full h-full opacity-30 " />
       </div>
 
       {/* Content Layer */}

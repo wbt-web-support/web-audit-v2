@@ -297,7 +297,7 @@ function DashboardContentWrapper() {
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-gray-50 overflow-x-hidden w-[100vw]">
       {/* Sidebar */}
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} activeTab={activeTab} onTabChange={handleTabChange} userProfile={userProfile} selectedProjectId={selectedProjectId} />
 

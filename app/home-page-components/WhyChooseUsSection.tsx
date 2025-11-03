@@ -1,304 +1,163 @@
-'use client';
+"use client";
 
-import React from 'react'
-import { motion } from 'framer-motion'
-import Image from 'next/image'
+import React from "react";
+import Image from "next/image";
+import { ClockIcon, CheckBadgeIcon, DocumentCheckIcon } from "@heroicons/react/24/outline";
 
 export default function WhyChooseUsSection() {
   return (
-    <motion.section 
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.8 }}
-      className="py-16 px-4 bg-slate-50"
-    >
-      <div className="max-w-7xl mx-auto">
-        {/* Heading and Paragraph */}
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center mb-12"
-        >
-          <motion.h2 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-6"
-          >
-            Why Choose Our <span className="text-blue-600">Web</span> Audit?
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed"
-          >
+    <section className="bg-[#f7f7f7] py-16 md:py-20 lg:py-24 px-4 md:px-8 lg:px-12">
+      <div className="max-w-[90rem] mx-auto">
+        {/* Heading Section */}
+        <div className="mb-12 md:mb-16 lg:mb-20 max-w-4xl">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium text-black mb-4 raleway leading-tight">
+            Why Choose Our Auditly?
+          </h2>
+          <p className="text-lg md:text-xl lg:text-2xl text-black/70 raleway">
             Get actionable insights that drive results
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
 
-        {/* Grid Section - Two rows with 50%-25%-25% layout */}
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="space-y-6"
-        >
-          {/* First Row */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 1.0 }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-6"
-          >
-            {/* Large box - 50% width (2 columns) */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 1.2 }}
-              className="md:col-span-2 bg-white rounded-xl p-6 border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.4 }}
-                className="text-xl font-semibold text-slate-900 mb-3"
-              >
-                Improve Rankings
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.6 }}
-                className="text-slate-600 leading-relaxed mb-4"
-              >
-                Boost SEO visibility with clear fixes.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.8 }}
-                className="w-full h-48 rounded-lg overflow-hidden"
-              >
-                <img 
-                  src="/images/home-page/sco.png" 
-                  alt="Performance Analysis Report" 
-                  className="w-full h-full object-contain"
-                />
-              </motion.div>
-            </motion.div>
+        {/* Bento Box Grid - 60/40 Split */}
+        <div className="flex flex-col gap-4 md:gap-5 lg:gap-6">
+          {/* Row 1: Improve Rankings (60%) + Protect Your Site (40%) */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
+            <div className="w-full md:w-[55%] flex">
+              <div className="bg-white text-black rounded-[20px]  flex flex-col gap-4 md:gap-2 h-full shadow-lg border border-slate-200">
+                <h3 className="font-semibold px-12 pt-12 text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
+                  Improve Rankings
+                </h3>
+                
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow px-12 text-black/70">
+                  Boost SEO visibility with clear fixes. Identify indexing
+                  issues and optimize metadata, structure, and internal links.
+                  Stay ahead of algorithm changes.
+                </p>
+                <div className="relative w-full min-h-[400px]  md:max-h-[450px] lg:max-h-[500px]  rounded-lg overflow-hidden ">
+                  <Image
+                    src="/images/home-page/image.png"
+                    alt="Performance and SEO scores dashboard"
+                     height={1000}
+                     width={1000}
+                    className="object-contain object-right w-[80%] absolute  right-0 shadow-lg rounded-tl-lg rounded-bl-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="w-full md:w-[45%] flex">
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 text-black rounded-[20px]  flex flex-col gap-4 md:gap-2 h-full shadow-md border border-slate-300">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight px-12 pt-12 ">
+                  Protect Your Site
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70 px-12">
+                  Spot security risks early. Detect vulnerabilities and malware
+                  before they become threats. Safeguard user data and maintain
+                  trust.
+                </p>
+                <div className="relative w-full max-h-[400px]   rounded-2xl overflow-hidden ">
+                  <Image
+                    src="/images/home-page/ProtectYourSite.png"
+                    alt="Performance and SEO scores dashboard"
+                     height={1000}
+                     width={1000}
+                    className="object-contain object-right w-full "
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* Two smaller boxes - 25% each (1 column each) */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 1.4 }}
-              className="md:col-span-1 bg-white rounded-xl  border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.6 }}
-                className="text-lg font-semibold text-slate-900 mb-1 p-4"
-              >
-                Protect Your Site
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.8 }}
-                className="text-slate-600 text-sm leading-relaxed mb-3 px-4"
-              >
-                Spot security risks before they hurt you.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 2.0 }}
-                className="w-full h-full rounded-lg overflow-hidden"
-              >
-                <Image 
-                  src="/images/home-page/ProtectYourSite.png" 
-                  alt="Protect Your Site Security Analysis" 
-                  width={300}
-                  height={128}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            </motion.div>
+          {/* Row 2: Save Time (40%) + Ensure Brand Consistency (60%) */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
+            <div className="w-full md:w-[45%] flex">
+              <div className="bg-slate-50 text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-sm border-2 border-slate-200">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight flex items-center gap-3">
+                  <ClockIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-black" />
+                  Save Time
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
+                  Automated crawling saves hours of manual work. Instantly
+                  detect issues across every page. Focus on strategic
+                  improvements instead of routine monitoring.
+                </p>
+              </div>
+            </div>
+            <div className="w-full md:w-[55%] flex">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full ">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight flex items-center gap-3">
+                  <CheckBadgeIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-black" />
+                  Ensure Consistency
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
+                  Check content, tone, and messaging. Maintain visual
+                  consistency across every page. Spot outdated brand assets and
+                  keep voice aligned with your brand identity.
+                </p>
+              </div>
+            </div>
+            <div className="w-full md:w-[55%] flex">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full ">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight flex items-center gap-3">
+                  <DocumentCheckIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-black" />
+                  Grammar Check 
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
+                  AI-powered grammar and content analysis for every page. Catch
+                  spelling errors, punctuation mistakes, and style issues
+                  automatically. Ensure professional, polished content across
+                  your entire website.
+                </p>
+              </div>
+            </div>
+          </div>
 
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 1.6 }}
-              className="md:col-span-1 bg-white rounded-xl p-4 border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 1.8 }}
-                className="text-lg font-semibold text-slate-900 mb-2"
-              >
-                Save Time
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 2.0 }}
-                className="text-slate-600 text-sm leading-relaxed mb-3"
-              >
-                Automated crawling saves hours of manual work.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 2.2 }}
-                className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center"
-              >
-                <span className="text-gray-500 text-xs">Image Placeholder</span>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-
-          {/* Second Row */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 2.4 }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-6"
-          >
-            {/* Large box - 50% width (2 columns) */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 2.6 }}
-              className="md:col-span-2 bg-white rounded-xl p-6 border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 2.8 }}
-                className="text-xl font-semibold text-slate-900 mb-3"
-              >
-                Ensure Brand Consistency
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.0 }}
-                className="text-slate-600 leading-relaxed mb-4"
-              >
-                Check content, tone, and messaging.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.2 }}
-                className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"
-              >
-                <span className="text-gray-500 text-sm">Image Placeholder</span>
-              </motion.div>
-            </motion.div>
-
-            {/* Two smaller boxes - 25% each (1 column each) */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 2.8 }}
-              className="md:col-span-1 bg-white rounded-xl p-4 border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.0 }}
-                className="text-lg font-semibold text-slate-900 mb-2"
-              >
-                Deliver Better UX
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.2 }}
-                className="text-slate-600 text-sm leading-relaxed mb-3"
-              >
-                Identify performance and accessibility issues.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.4 }}
-                className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center"
-              >
-                <span className="text-gray-500 text-xs">Image Placeholder</span>
-              </motion.div>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 3.0 }}
-              className="md:col-span-1 bg-white rounded-xl p-4 border border-slate-200"
-            >
-              <motion.h3 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.2 }}
-                className="text-lg font-semibold text-slate-900 mb-2"
-              >
-                Peace of Mind
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.4 }}
-                className="text-slate-600 text-sm leading-relaxed mb-3"
-              >
-                Regular audits ensure your site stays healthy.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 3.6 }}
-                className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center"
-              >
-                <span className="text-gray-500 text-xs">Image Placeholder</span>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        </motion.div>
+          {/* Row 3: Deliver Better UX (60%) + Peace of Mind (40%) */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
+            <div className="w-full md:w-[55%] flex">
+              <div className="bg-gradient-to-tr from-white to-slate-50 text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-md border border-slate-200">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
+                  Deliver Better UX
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
+                  Identify performance and accessibility issues. Optimize page
+                  speed for smoother browsing. Ensure every user can navigate
+                  easily and reduce friction points.
+                </p>
+                <div className="relative w-full min-h-[400px] md:max-h-[450px] lg:max-h-[500px] rounded-lg overflow-hidden">
+                  <Image
+                    src="/images/home-page/uiquality.png"
+                    alt="UI Quality Analysis dashboard"
+                    height={1000}
+                    width={1000}
+                    className="object-contain w-full h-full shadow-lg rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="w-full md:w-[45%] flex">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-lg ring-2 ring-slate-200 ring-offset-2">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
+                  SEO and Structure
+                </h3>
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
+                  Enhance search engine visibility with comprehensive SEO audits.
+                  Optimize metadata, improve crawlability, and boost rankings.
+                  Stay ahead with actionable insights for better search performance.
+                </p>
+                <div className="relative w-full min-h-[400px] md:max-h-[450px] lg:max-h-[500px] rounded-lg overflow-hidden">
+                  <Image
+                    src="/images/home-page/sco (2).png"
+                    alt="SEO and Structure Analysis dashboard"
+                    height={1000}
+                    width={1000}
+                    className="object-contain w-full h-full shadow-lg rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </motion.section>
-  )
+    </section>
+  );
 }

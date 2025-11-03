@@ -1,4 +1,5 @@
 import { supabase } from './supabase-client';
+import { supabaseAdmin } from './supabase';
 import { FEATURES } from './features';
 interface SupabaseError {
   message: string;
@@ -34,11 +35,19 @@ interface PlanData {
  */
 export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | null> {
   try {
-    // Check if user exists in database
-
-    const userQueryResult = await supabase.from('users').select('id, email, plan_type').eq('id', userId).maybeSingle();
+    console.log('[PlanValidation] 🔍 Getting user plan info for userId:', userId);
+    
+    // Check if user exists in database - use admin client for server-side operations
+    const userQueryResult = await supabaseAdmin.from('users').select('id, email, plan_type, plan_id').eq('id', userId).maybeSingle();
     let userExists = userQueryResult.data;
     const userExistsError = userQueryResult.error;
+    
+    console.log('[PlanValidation] 📊 User query result:', {
+      userExists: !!userExists,
+      plan_type: userExists?.plan_type,
+      plan_id: userExists?.plan_id,
+      error: userExistsError
+    });
     // If user doesn't exist, create them
     if (userExistsError || !userExists) {
       // Create user with default values
@@ -47,19 +56,20 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
         const {
           data: newUser,
           error: createError
-        } = await supabase.from('users').insert({
+        } = await supabaseAdmin.from('users').insert({
           id: userId,
           email: `user-${userId.slice(0, 8)}@example.com`,
           plan_type: 'free',
           role: 'user'
         }).select('id, plan_type, email').single();
         if (createError || !newUser) {
+          console.error('[PlanValidation] ⚠️ User creation failed, using fallback plans');
           // Since user creation failed, try to find Scale plan directly
           // (assuming the user should have Scale plan based on sidebar info)
           const {
             data: scalePlan,
             error: scaleError
-          } = (await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Scale').eq('is_active', true).single()) as {
+          } = (await supabaseAdmin.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Scale').eq('is_active', true).single()) as {
             data: PlanData | null;
             error: SupabaseError | null;
           };
@@ -68,7 +78,7 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
             const {
               data: freePlan,
               error: freeError
-            } = (await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Starter').eq('is_active', true).single()) as {
+            } = (await supabaseAdmin.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Starter').eq('is_active', true).single()) as {
               data: PlanData | null;
               error: SupabaseError | null;
             };
@@ -104,34 +114,61 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
       targetPlanType = 'Starter'; // Map 'free' to 'Starter' plan
     }
 
-    // Check what plans are available in the database
+    console.log('[PlanValidation] 🎯 Target plan type:', {
+      originalPlanType: userExists.plan_type,
+      targetPlanType,
+      userPlanId: userExists.plan_id
+    });
 
-    const {
-      data: allPlans,
-      error: allPlansError
-    } = await supabase.from('plans').select('id, name, plan_type, can_use_features').eq('is_active', true);
+    // Try to get plan by plan_id first if available (more accurate)
+    let planData: PlanData | null = null;
+    let planError: SupabaseError | null = null;
+    
+    if (userExists.plan_id) {
+      console.log('[PlanValidation] 🔑 Looking up plan by plan_id:', userExists.plan_id);
+      const result = await supabaseAdmin.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('id', userExists.plan_id).eq('is_active', true).single() as {
+        data: PlanData | null;
+        error: SupabaseError | null;
+      };
+      planData = result.data;
+      planError = result.error;
+      console.log('[PlanValidation] 📦 Plan by ID result:', {
+        found: !!planData,
+        planType: planData?.plan_type,
+        error: planError?.message
+      });
+    }
 
-    // Find the plan record based on the target plan type
-
-    const {
-      data: planData,
-      error: planError
-    } = (await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', targetPlanType).eq('is_active', true).single()) as {
-      data: PlanData | null;
-      error: SupabaseError | null;
-    };
+    // If plan_id lookup failed or no plan_id, try by plan_type
     if (planError || !planData) {
+      console.log('[PlanValidation] 🔄 Falling back to plan_type lookup:', targetPlanType);
+      const result = await supabaseAdmin.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', targetPlanType).eq('is_active', true).single() as {
+        data: PlanData | null;
+        error: SupabaseError | null;
+      };
+      planData = result.data;
+      planError = result.error;
+      console.log('[PlanValidation] 📦 Plan by type result:', {
+        found: !!planData,
+        planType: planData?.plan_type,
+        error: planError?.message
+      });
+    }
+    if (planError || !planData) {
+      console.error('[PlanValidation] ❌ Plan lookup failed, falling back to Starter plan');
       // Fallback to free plan
       const {
         data: freePlan,
         error: freeError
-      } = (await supabase.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Starter').eq('is_active', true).single()) as {
+      } = (await supabaseAdmin.from('plans').select('id, name, plan_type, can_use_features, max_projects').eq('plan_type', 'Starter').eq('is_active', true).single()) as {
         data: PlanData | null;
         error: SupabaseError | null;
       };
       if (freeError || !freePlan) {
+        console.error('[PlanValidation] ❌ Even Starter plan lookup failed:', freeError);
         return null;
       }
+      console.log('[PlanValidation] ✅ Using fallback Starter plan');
       return {
         plan_type: freePlan.plan_type,
         plan_id: freePlan.id,
@@ -140,6 +177,15 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
         max_projects: freePlan.max_projects || 1
       };
     }
+    
+    console.log('[PlanValidation] ✅ Returning plan:', {
+      plan_type: planData.plan_type,
+      plan_id: planData.id,
+      plan_name: planData.name,
+      featuresCount: planData.can_use_features?.length || 0,
+      hasPerformanceMetrics: planData.can_use_features?.includes('performance_metrics')
+    });
+    
     return {
       plan_type: planData.plan_type,
       plan_id: planData.id,

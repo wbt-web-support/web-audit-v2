@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { useUserPlan } from '@/hooks/useUserPlan'
 import FeatureUnavailableCard from '../FeatureUnavailableCard'
@@ -33,6 +33,7 @@ export default function PagesSection({
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [isRequestInProgress, setIsRequestInProgress] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Check if user has access to pages tab feature
   const hasPagesTabAccess = hasFeature('pages_tab')
@@ -107,16 +108,162 @@ export default function PagesSection({
     }
   }, [projectId, hasLoadedPages, pages.length, isLoading, isRequestInProgress, hasPagesTabAccess, fetchPages])
 
+  // Helper function to extract root domain (e.g., "github.com" from "shop.github.com")
+  const getRootDomain = (urlString: string): string | null => {
+    try {
+      const url = new URL(urlString)
+      const hostname = url.hostname
+      const parts = hostname.split('.')
+      
+      // Handle cases like "example.com" or "github.co.uk"
+      // Take last two parts for common TLDs, or last three for co.uk, com.au, etc.
+      if (parts.length >= 2) {
+        // Check for common two-part TLDs
+        const twoPartTlds = ['co.uk', 'com.au', 'co.nz', 'co.za', 'com.br', 'com.mx']
+        const lastTwo = parts.slice(-2).join('.')
+        if (twoPartTlds.includes(lastTwo) && parts.length >= 3) {
+          return parts.slice(-3).join('.')
+        }
+        return parts.slice(-2).join('.')
+      }
+      return hostname
+    } catch {
+      return null
+    }
+  }
+
+  // Find the primary (most common) root domain from all pages
+  const primaryRootDomain = useMemo((): string | null => {
+    if (pages.length === 0) return null
+    
+    const domainCounts = new Map<string, number>()
+    
+    pages.forEach(page => {
+      if (page.url) {
+        const rootDomain = getRootDomain(page.url)
+        if (rootDomain) {
+          domainCounts.set(rootDomain, (domainCounts.get(rootDomain) || 0) + 1)
+        }
+      }
+    })
+    
+    if (domainCounts.size === 0) return null
+    
+    // Find the domain with the highest count
+    let primaryDomain: string | null = null
+    let maxCount = 0
+    
+    domainCounts.forEach((count, domain) => {
+      if (count > maxCount) {
+        maxCount = count
+        primaryDomain = domain
+      }
+    })
+    
+    return primaryDomain
+  }, [pages])
+
+  // Helper function to check if a page is the home page
+  const isHomePage = useCallback((page: ScrapedPage, primaryRootDomain: string | null): boolean => {
+    if (!page.url || !primaryRootDomain) return false
+    
+    try {
+      const url = new URL(page.url)
+      const hostname = url.hostname
+      const path = url.pathname
+      
+      // Check if path is root "/" or empty
+      if (path !== '/' && path !== '') {
+        return false
+      }
+      
+      // Extract root domain from this URL
+      const rootDomain = getRootDomain(page.url)
+      if (!rootDomain) return false
+      
+      // Only consider it home if it matches the primary root domain
+      if (rootDomain !== primaryRootDomain) {
+        return false
+      }
+      
+      // Remove "www." if present for comparison
+      const hostnameWithoutWww = hostname.replace(/^www\./, '')
+      
+      // Check if hostname matches root domain (allowing only "www" as subdomain)
+      // This means "github.com" or "www.github.com" are home, but "shop.github.com" is not
+      if (hostnameWithoutWww === primaryRootDomain || hostname === `www.${primaryRootDomain}`) {
+        return true
+      }
+      
+      return false
+    } catch {
+      // If URL parsing fails, use regex to check if URL is just domain with optional trailing slash
+      const trimmedUrl = page.url.trim()
+      // Match: http(s)://domain (no subdomains except www) with optional trailing slash
+      // Examples: https://github.com, https://github.com/, https://www.github.com/
+      // But NOT: https://shop.github.com/
+      if (trimmedUrl.match(/^https?:\/\/(?:www\.)?[^\/\?#]+\.[^\/\?#]+\/?$/)) {
+        // Extract and compare root domain
+        const rootDomain = getRootDomain(trimmedUrl)
+        if (!rootDomain || rootDomain !== primaryRootDomain) return false
+        
+        try {
+          const url = new URL(trimmedUrl)
+          const hostname = url.hostname.replace(/^www\./, '')
+          return hostname === primaryRootDomain
+        } catch {
+          // Simple check: ensure no subdomain (except www) before root domain
+          const match = trimmedUrl.match(/^https?:\/\/(?:www\.)?([^\/\?#]+)/)
+          if (match) {
+            const domain = match[1]
+            // If domain doesn't contain additional dots before the TLD, it's likely root
+            const parts = domain.split('.')
+            // For domains like "github.com", parts.length should be 2
+            // For "shop.github.com", parts.length would be 3
+            if ((parts.length === 2 || (parts.length === 3 && parts[0] === 'www')) && getRootDomain(trimmedUrl) === primaryRootDomain) {
+              return true
+            }
+          }
+        }
+      }
+      
+      return false
+    }
+  }, [])
+
   // Filter and sort pages
   const filteredAndSortedPages = pages
     .filter(page => {
-      if (filterStatus === 'all') return true
-      if (filterStatus === 'success') return page.status_code && page.status_code >= 200 && page.status_code < 300
-      if (filterStatus === 'error') return !page.status_code || page.status_code >= 400
-      if (filterStatus === 'redirect') return page.status_code && page.status_code >= 300 && page.status_code < 400
+      // Status filter
+      if (filterStatus === 'all') {
+        // Continue to search filter
+      } else if (filterStatus === 'success') {
+        if (!(page.status_code && page.status_code >= 200 && page.status_code < 300)) return false
+      } else if (filterStatus === 'error') {
+        if (!(!page.status_code || page.status_code >= 400)) return false
+      } else if (filterStatus === 'redirect') {
+        if (!(page.status_code && page.status_code >= 300 && page.status_code < 400)) return false
+      }
+      
+      // Search filter (by name/title and URL)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim()
+        const titleMatch = (page.title || '').toLowerCase().includes(query)
+        const urlMatch = (page.url || '').toLowerCase().includes(query)
+        if (!titleMatch && !urlMatch) return false
+      }
+      
       return true
     })
     .sort((a, b) => {
+      // Prioritize home page - always show at top
+      const aIsHome = isHomePage(a, primaryRootDomain)
+      const bIsHome = isHomePage(b, primaryRootDomain)
+      
+      if (aIsHome && !bIsHome) return -1
+      if (!aIsHome && bIsHome) return 1
+      
+      // If both are home pages or neither are, continue with normal sorting
       let aValue: string | number, bValue: string | number
 
       switch (sortBy) {
@@ -151,7 +298,7 @@ export default function PagesSection({
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterStatus, sortBy, sortOrder, itemsPerPage])
+  }, [filterStatus, sortBy, sortOrder, itemsPerPage, searchQuery])
 
   // Show loading state while checking plan
   if (isLoadingPlan) {
@@ -209,6 +356,36 @@ export default function PagesSection({
 
       {/* Filters and Sorting */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+        {/* Search Input */}
+        <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 sm:flex-initial">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Search:</label>
+          <div className="flex items-center space-x-2 flex-1 sm:flex-initial">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or URL..."
+              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:w-48"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-2 py-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+                title="Clear search"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-gray-700">Filter:</label>
           <select
@@ -409,14 +586,7 @@ export default function PagesSection({
           {hasLoadedPages && (
             <p className="text-sm text-gray-500 mt-1">Data will persist when switching tabs</p>
           )}
-          <div className="text-xs text-gray-400 mt-2 space-y-1">
-            <div>Debug Info:</div>
-            <div>• hasLoadedPages: {hasLoadedPages.toString()}</div>
-            <div>• pages.length: {pages.length}</div>
-            <div>• isLoading: {isLoading.toString()}</div>
-            <div>• hasPagesTabAccess: {hasPagesTabAccess.toString()}</div>
-            <div>• scrapedPages.length: {scrapedPages?.length || 0}</div>
-          </div>
+         
           {projectId && (
             <div className="space-y-2">
               <div className="space-y-2">

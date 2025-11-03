@@ -64,8 +64,8 @@ interface PageData {
   updated_at: string
 }
 
-interface ProjectWithBrandData extends AuditProject {
-  brand_data?: BrandConsistencyData | null;
+interface ProjectWithBrandData extends Omit<AuditProject, 'brand_data'> {
+  brand_data: BrandConsistencyData | null;
   brand_consistency?: boolean;
 }
 
@@ -171,14 +171,24 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
 
   // Auto-start grammar analysis when page data is loaded
   useEffect(() => {
-    if (page?.id && page?.url && page?.html_content && !grammarAnalysis && !isGrammarAnalyzing) {
+    // Only start analysis if:
+    // 1. Page data is available
+    // 2. No analysis exists yet (neither cached nor in progress)
+    // 3. Not currently analyzing
+    // 4. No previous error (to prevent infinite retries on API failures)
+    // 5. User has feature access
+    if (page?.id && page?.url && page?.html_content && 
+        !page?.gemini_analysis && 
+        !grammarAnalysis && 
+        !isGrammarAnalyzing &&
+        !grammarAnalysisError) {
       // Check if user has access to grammar content analysis
       if (hasFeature('grammar_content_analysis')) {
-
         startGrammarAnalysis();
       }
     }
-  }, [page?.id, page?.url, page?.html_content, grammarAnalysis, isGrammarAnalyzing, hasFeature, startGrammarAnalysis]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page?.id, page?.url, page?.html_content, page?.gemini_analysis, grammarAnalysis, isGrammarAnalyzing, grammarAnalysisError]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -305,7 +315,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center overflow-x-hidden w-[100vw]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading page analysis...</p>
@@ -329,7 +339,8 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   const mockProject: AuditProject = project ? {
     ...project,
     score: 85, // You can calculate this based on page analysis
-    status: 'completed' as const
+    status: 'completed' as const,
+    brand_data: project.brand_data ?? null
   } : {
     id: 'mock',
     site_url: page?.url || 'Unknown URL',
@@ -366,6 +377,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     meta_tags_data: null,
     social_meta_tags_data: null,
     detected_keys: null,
+    brand_data: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
@@ -385,9 +397,15 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     // Create a mock scrapedPages array with the current page for the sections
     const scrapedPages = page ? [page] : []
 
+    // Convert ProjectWithBrandData to AuditProject for components that require it
+    const auditProject: AuditProject | null = project ? {
+      ...project,
+      brand_data: project.brand_data ?? null
+    } : null;
+
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab page={page} project={project} />
+        return <OverviewTab page={page} project={auditProject} />
       case 'links':
         return <LinksSection project={mockProject} scrapedPages={scrapedPages} originalScrapingData={undefined} />
       case 'images':
@@ -438,7 +456,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
       case 'accessibility':
         return page ? <AccessibilityTab page={page} /> : null
       default:
-        return <OverviewTab page={page} project={project} />
+        return <OverviewTab page={page} project={auditProject} />
     }
   }
 

@@ -77,8 +77,30 @@ export async function POST(request: NextRequest) {
 
     // Server-side plan validation for performance metrics
     if (userId) {
+      console.log('[API] 🔍 Checking feature access for user:', {
+        userId,
+        featureId: 'performance_metrics',
+        pageId,
+        url
+      });
+      
       const featureAccess = await checkFeatureAccess(userId, 'performance_metrics');
+      
+      console.log('[API] 📊 Feature access result:', {
+        hasAccess: featureAccess.hasAccess,
+        userPlan: featureAccess.userPlan,
+        allowedFeatures: featureAccess.allowedFeatures,
+        error: featureAccess.error
+      });
+      
       if (!featureAccess.hasAccess) {
+        console.error('[API] ❌ Access denied:', {
+          userId,
+          userPlan: featureAccess.userPlan,
+          error: featureAccess.error,
+          allowedFeatures: featureAccess.allowedFeatures
+        });
+        
         return NextResponse.json({
           error: 'Access denied',
           message: featureAccess.error,
@@ -88,6 +110,10 @@ export async function POST(request: NextRequest) {
           status: 403
         });
       }
+      
+      console.log('[API] ✅ Access granted for user:', userId);
+    } else {
+      console.warn('[API] ⚠️ No userId provided, skipping access check');
     }
     // Check if performance analysis already exists
     const {

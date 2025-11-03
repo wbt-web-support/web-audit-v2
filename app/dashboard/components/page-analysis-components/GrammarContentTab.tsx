@@ -59,10 +59,12 @@ export default function GrammarContentTab({
     }
     
     // Get fresh result and cache it
+    // Access hasFeature directly from the hook instead of depending on it
     const result = hasFeature('grammar_content_analysis');
     featureCache.set(cacheKey, result);
     return result;
-  }, [hasFeature, user?.id, planLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, planLoading]);
 
   // Update checking access state when feature access is determined
   useEffect(() => {

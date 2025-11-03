@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "remove-console-logs": "node scripts/remove-console-logs.js",
-    "remove-console-logs:dry-run": "node scripts/remove-console-logs.js --dry-run"
+    "remove-console-logs:dry-run": "node scripts/remove-console-logs.js --dry-run",
+    "download-tool-icons": "node scripts/download-tool-icons.js"
   },
   "dependencies": {
     "@babel/generator": "^7.28.3",

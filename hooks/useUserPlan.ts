@@ -263,9 +263,9 @@ export function useUserPlan(): UseUserPlanResult {
       setLoading(false);
     }
   };
-  const hasFeature = (featureId: string): boolean => {
+  const hasFeature = useCallback((featureId: string): boolean => {
     return planInfo?.can_use_features.includes(featureId) || false;
-  };
+  }, [planInfo?.can_use_features]);
   const canCreateProject = (): boolean => {
     if (!planInfo) return false;
     return planInfo.max_projects === -1 || planInfo.current_projects < planInfo.max_projects;
