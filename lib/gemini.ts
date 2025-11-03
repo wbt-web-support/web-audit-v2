@@ -75,7 +75,7 @@ export interface GeminiAnalysisResult {
 export async function analyzeContentWithGemini(content: string, url: string): Promise<GeminiAnalysisResult> {
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro'
+      model: 'gemini-2.5-flash-lite'
     });
     const prompt = `
 You are an expert content analyst specializing in grammar, consistency, and readability analysis. Analyze the following web page content and provide a comprehensive assessment.

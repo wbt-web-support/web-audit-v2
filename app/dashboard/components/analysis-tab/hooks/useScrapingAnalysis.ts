@@ -8,7 +8,40 @@ import { useProjectsStore } from '@/lib/stores/projectsStore';
 /** Minimal shape used from the user profile for feedback gating */
 type MinimalProfile = {
   projects?: number | null;
-  feedback_given?: boolean | null;
+  feedback_given?: boolean | string | null;
+};
+
+/** Helper function to check if feedback has been given, handles both boolean true and string "TRUE" (case-insensitive) */
+const hasGivenFeedback = (feedback_given: boolean | string | null | undefined): boolean => {
+  console.log('🔍 [DEBUG] hasGivenFeedback check:', {
+    value: feedback_given,
+    type: typeof feedback_given,
+    isNull: feedback_given === null,
+    isUndefined: feedback_given === undefined,
+    rawValue: JSON.stringify(feedback_given)
+  });
+  
+  if (feedback_given === null || feedback_given === undefined) {
+    console.log('🔍 [DEBUG] feedback_given is null/undefined, returning false');
+    return false;
+  }
+  if (typeof feedback_given === 'boolean') {
+    const result = feedback_given === true;
+    console.log('🔍 [DEBUG] feedback_given is boolean:', feedback_given, '→ result:', result);
+    return result;
+  }
+  if (typeof feedback_given === 'string') {
+    const upperValue = feedback_given.toUpperCase();
+    const result = upperValue === 'TRUE';
+    console.log('🔍 [DEBUG] feedback_given is string:', {
+      original: feedback_given,
+      uppercase: upperValue,
+      result: result
+    });
+    return result;
+  }
+  console.log('🔍 [DEBUG] feedback_given type not recognized, returning false');
+  return false;
 };
 /** Minimal shape used from scrape responses where only summary counts and favicons are read */
 type ScrapeResponseSummary = {
@@ -64,7 +97,17 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
   useEffect(() => {
     userProfileRef.current = userProfile;
+    console.log('🔍 [DEBUG] userProfile updated:', {
+      feedback_given: userProfile?.feedback_given,
+      type: typeof userProfile?.feedback_given,
+      rawValue: JSON.stringify(userProfile?.feedback_given)
+    });
   }, [userProfile]);
+
+  // Debug: Track feedback modal state changes
+  useEffect(() => {
+    console.log('🔍 [DEBUG] showFeedbackModal state changed to:', showFeedbackModal);
+  }, [showFeedbackModal]);
 
   // Update state helper
   const updateState = useCallback((updates: Partial<AnalysisTabState>) => {
@@ -73,6 +116,29 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       ...updates
     }));
   }, []);
+
+  // Fetch latest feedback_given directly from DB to avoid stale profile
+  const fetchLatestFeedbackGiven = useCallback(async (): Promise<boolean> => {
+    try {
+      if (!user?.id) {
+        return hasGivenFeedback(userProfileRef.current?.feedback_given);
+      }
+      const { data, error } = await supabase
+        .from('users')
+        .select('feedback_given')
+        .eq('id', user.id)
+        .single<{ feedback_given: boolean | string | null }>();
+      if (error) {
+        console.error('🔍 [DEBUG] Failed to fetch latest feedback_given:', error);
+        return hasGivenFeedback(userProfileRef.current?.feedback_given);
+      }
+      console.log('🔍 [DEBUG] Latest feedback_given from DB:', data?.feedback_given);
+      return hasGivenFeedback(data?.feedback_given);
+    } catch (err) {
+      console.error('🔍 [DEBUG] Unexpected error fetching latest feedback_given:', err);
+      return hasGivenFeedback(userProfileRef.current?.feedback_given);
+    }
+  }, [user?.id]);
 
   // Load scraped pages
   const loadScrapedPages = useCallback(async () => {
@@ -137,11 +203,25 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       try {
         const currentProfile = userProfileRef.current as MinimalProfile | null;
         const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
-        const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
-        if (projectCount >= 2 && !hasGivenFeedback) {
+        console.log('🔍 [DEBUG] Pre-scrape feedback check:', {
+          currentProfile: currentProfile ? { ...currentProfile, feedback_given: currentProfile.feedback_given } : null,
+          projectCount,
+          projectsLength: projects?.length,
+          profileProjects: currentProfile?.projects
+        });
+        const userHasGivenFeedback = await fetchLatestFeedbackGiven();
+        console.log('🔍 [DEBUG] Pre-scrape result:', {
+          userHasGivenFeedback,
+          projectCount,
+          shouldShowModal: projectCount >= 2 && !userHasGivenFeedback
+        });
+        if (projectCount >= 2 && !userHasGivenFeedback) {
+          console.log('🔍 [DEBUG] Setting feedback modal to TRUE (pre-scrape)');
           setShowFeedbackModal(true);
         }
-      } catch {}
+      } catch (error) {
+        console.error('🔍 [DEBUG] Error in pre-scrape feedback check:', error);
+      }
 
       // Call scraping API
       const scrapeResponse = await fetch('/api/scrape', {
@@ -163,7 +243,20 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         })
       });
       if (!scrapeResponse.ok) {
-        const errorData = await scrapeResponse.json().catch(() => ({}));
+        let errorData: { code?: string; message?: string; error?: string } = {};
+        try {
+          const text = await scrapeResponse.text();
+          errorData = text ? JSON.parse(text) : {};
+          console.log('🔍 [DEBUG] Scrape error response:', {
+            status: scrapeResponse.status,
+            statusText: scrapeResponse.statusText,
+            errorData,
+            rawText: text
+          });
+        } catch (parseError) {
+          console.error('🔍 [DEBUG] Failed to parse error response:', parseError);
+          errorData = {};
+        }
 
         // Handle specific error cases
         if (errorData.code === 'SERVICE_UNAVAILABLE') {
@@ -172,17 +265,21 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
         // Handle plan limit errors
         if (errorData.code === 'PROJECT_LIMIT_REACHED') {
-          throw new Error(`Project limit reached: ${errorData.message}`);
+          throw new Error(`Project limit reached: ${errorData.message || 'Unknown error'}`);
         }
 
         // Handle feature not available errors
         if (errorData.code === 'FEATURE_NOT_AVAILABLE') {
-          throw new Error(`Feature not available: ${errorData.message}`);
+          throw new Error(`Feature not available: ${errorData.message || 'Unknown error'}`);
         }
 
         // Handle authentication errors
-        if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH') {
-          console.error('❌ Authentication error:', errorData);
+        if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH' || scrapeResponse.status === 401) {
+          console.error('❌ Authentication error:', {
+            status: scrapeResponse.status,
+            errorData,
+            hasSession: !!session?.access_token
+          });
           // Try to refresh the session
           try {
             const {
@@ -265,11 +362,25 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
             try {
               const currentProfile = userProfileRef.current as MinimalProfile | null;
               const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
-              const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
-              if (projectCount >= 2 && !hasGivenFeedback) {
+              console.log('🔍 [DEBUG] Post-scrape feedback check (retry path):', {
+                currentProfile: currentProfile ? { ...currentProfile, feedback_given: currentProfile.feedback_given } : null,
+                projectCount,
+                projectsLength: projects?.length,
+                profileProjects: currentProfile?.projects
+              });
+              const userHasGivenFeedback = await fetchLatestFeedbackGiven();
+              console.log('🔍 [DEBUG] Post-scrape result (retry path):', {
+                userHasGivenFeedback,
+                projectCount,
+                shouldShowModal: projectCount >= 2 && !userHasGivenFeedback
+              });
+              if (projectCount >= 2 && !userHasGivenFeedback) {
+                console.log('🔍 [DEBUG] Setting feedback modal to TRUE (post-scrape retry path)');
                 setShowFeedbackModal(true);
               }
-            } catch {}
+            } catch (error) {
+              console.error('🔍 [DEBUG] Error in post-scrape feedback check (retry path):', error);
+            }
             return; // Success, exit early
           } catch (refreshError) {
             console.error('❌ Session refresh failed:', refreshError);
@@ -333,11 +444,29 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       try {
         const currentProfile = userProfileRef.current as MinimalProfile | null;
         const projectCount = (projects?.length || currentProfile?.projects || 0) as number;
-        const hasGivenFeedback = Boolean(currentProfile?.feedback_given);
-        if (projectCount >= 2 && !hasGivenFeedback) {
+        console.log('🔍 [DEBUG] Post-scrape feedback check (main path):', {
+          currentProfile: currentProfile ? { ...currentProfile, feedback_given: currentProfile.feedback_given } : null,
+          projectCount,
+          projectsLength: projects?.length,
+          profileProjects: currentProfile?.projects
+        });
+        const userHasGivenFeedback = await fetchLatestFeedbackGiven();
+        console.log('🔍 [DEBUG] Post-scrape result (main path):', {
+          userHasGivenFeedback,
+          projectCount,
+          shouldShowModal: projectCount >= 2 && !userHasGivenFeedback
+        });
+        if (projectCount >= 2 && !userHasGivenFeedback) {
+          console.log('🔍 [DEBUG] Setting feedback modal to TRUE (post-scrape main path)');
           setShowFeedbackModal(true);
+        } else {
+          console.log('🔍 [DEBUG] NOT showing feedback modal:', {
+            reason: projectCount < 2 ? 'projectCount < 2' : 'userHasGivenFeedback = true'
+          });
         }
-      } catch {}
+      } catch (error) {
+        console.error('🔍 [DEBUG] Error in post-scrape feedback check (main path):', error);
+      }
     } catch (error) {
       console.error('❌ Scraping error:', error);
 
@@ -373,19 +502,28 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
   ]);
 
   const confirmFeedback = useCallback(async (text?: string) => {
+    console.log('🔍 [DEBUG] confirmFeedback called with text:', text);
     try {
       if (user?.id) {
         const updates: { feedback_given: boolean; notes?: string } = { feedback_given: true };
         if (text && text.length > 0) {
           updates.notes = text;
         }
+        console.log('🔍 [DEBUG] Updating user with:', updates);
         await updateUser(user.id, updates);
+        console.log('🔍 [DEBUG] User updated successfully');
+      } else {
+        console.log('🔍 [DEBUG] No user ID, skipping update');
       }
-    } catch {}
+    } catch (error) {
+      console.error('🔍 [DEBUG] Error updating user feedback:', error);
+    }
+    console.log('🔍 [DEBUG] Setting feedback modal to false (confirmFeedback)');
     setShowFeedbackModal(false);
   }, [updateUser, user?.id]);
 
   const laterFeedback = useCallback(() => {
+    console.log('🔍 [DEBUG] laterFeedback called, setting feedback modal to false');
     setShowFeedbackModal(false);
   }, []);
 

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { supabase } from '@/lib/supabase-client';
+import FeedbackShowcase from './FeedbackShowcase';
 interface AdminUsersProps {
   userProfile: {
     id: string;
@@ -439,6 +440,9 @@ export default function AdminUsers({
       </motion.div>
 
       {/* Users Table */}
+      {/* Feedback Showcase */}
+      <FeedbackShowcase />
+
       <motion.div className="bg-white rounded-lg border border-gray-200 overflow-hidden" initial={{
       opacity: 0,
       y: 20
@@ -649,32 +653,7 @@ export default function AdminUsers({
           </div>
         </motion.div>
 
-        <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.5,
-        delay: 0.7
-      }}>
-          <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
-          <div className="space-y-2">
-            <button onClick={() => loadUsers(plans)} className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Refresh Users</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Export User Data</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">Bulk Actions</span>
-            </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
-              <span className="font-medium text-black">View Exceeded Limits</span>
-            </button>
-          </div>
-        </motion.div>
+        
       </div>
 
       {/* User Details Modal */}
