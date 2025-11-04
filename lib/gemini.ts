@@ -342,7 +342,7 @@ export interface GeminiImageAnalysisResult {
   };
 }
 
-export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string): Promise<GeminiImageAnalysisResult> {
+export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string, viewType: 'desktop' | 'mobile' = 'desktop'): Promise<GeminiImageAnalysisResult> {
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp'
@@ -359,12 +359,47 @@ export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string):
     const imageBase64 = Buffer.from(imageBuffer).toString('base64');
     const imageMimeType = imageResponse.headers.get('content-type') || 'image/png';
 
+    const viewContext = viewType === 'mobile' 
+      ? `This is a MOBILE view screenshot. You are analyzing a mobile-responsive web page. CRITICAL: Focus on mobile-specific aspects:
+- Touch targets: Are buttons and interactive elements at least 44x44px (iOS) or 48x48dp (Android)? Are they easily tappable?
+- Mobile navigation: Hamburger menus, bottom navigation, swipe gestures, mobile-friendly menu patterns
+- Content stacking: How content is organized vertically, scrolling behavior, fold content placement
+- Typography: Are font sizes readable on small screens? Is text large enough for mobile reading?
+- Spacing: Is there adequate spacing between touch targets? Can users easily tap without accidental clicks?
+- Mobile-first design patterns: Card layouts, collapsible sections, mobile-optimized forms
+- Thumb-friendly zones: Are important actions within easy thumb reach?
+- Loading states: Are there mobile-friendly loading indicators?
+- Form design: Are forms optimized for mobile input? Are inputs large enough?
+- Content prioritization: Is the most important content visible above the fold on mobile?
+- Mobile performance: Visual indicators of performance (image loading, layout shifts)`
+      : `This is a DESKTOP view screenshot. You are analyzing a desktop web page. CRITICAL: Focus on desktop-specific aspects:
+- Horizontal layout: Multi-column layouts, sidebars, desktop navigation patterns
+- Desktop navigation: Horizontal menus, dropdowns, mega menus, desktop menu patterns
+- Mouse interactions: Hover states, clickable areas, cursor indicators
+- Content width: Optimal reading width, content max-width, white space utilization
+- Desktop-specific features: Keyboard shortcuts hints, right-click menus, desktop tooltips
+- Multi-column content: Sidebars, content areas, desktop information architecture
+- Desktop typography: Font sizes appropriate for larger screens, line lengths, reading comfort
+- Desktop spacing: Generous whitespace, grid layouts, desktop-specific spacing patterns
+- Desktop CTAs: Prominent call-to-action buttons, desktop conversion optimization
+- Desktop performance: Visual indicators of performance on desktop`;
+
     const prompt = `
-You are an expert UI/UX designer and content analyst. Analyze the provided screenshot of a web page and provide an EXTREMELY COMPREHENSIVE and DETAILED assessment.
+You are an expert UI/UX designer and content analyst specializing in ${viewType === 'mobile' ? 'mobile-first design and mobile user experience' : 'desktop web design and desktop user experience'}. Analyze the provided screenshot of a web page and provide an EXTREMELY COMPREHENSIVE and DETAILED assessment.
 
 **Page URL:** ${pageUrl}
+**View Type:** ${viewType.toUpperCase()} view
 
 **CRITICAL: Provide maximum detail and analysis. This is not a brief overview - provide deep insights.**
+
+**Context:** ${viewContext}
+
+**IMPORTANT:** When analyzing the ${viewType} view, pay special attention to:
+- ${viewType === 'mobile' ? 'Touch-friendly elements (44px+ touch targets), mobile navigation patterns (hamburger menus, bottom nav), vertical scrolling patterns, content stacking, thumb-friendly zones, mobile-specific usability issues, and how content is optimized for smaller screens (375px-428px typical mobile widths)' : 'Desktop layout patterns (multi-column, sidebars), horizontal navigation (top menus, mega menus), desktop interactions (hover states, mouse interactions), multi-column structures, and how content is optimized for larger screens (1920px+ typical desktop widths)'}
+- How the design adapts to this specific viewport size
+- View-specific accessibility concerns (WCAG compliance for ${viewType} view)
+- View-specific performance and user experience considerations
+- ${viewType === 'mobile' ? 'Mobile-specific best practices: thumb zones, touch targets, mobile navigation patterns, mobile form design' : 'Desktop-specific best practices: mouse interactions, hover states, keyboard navigation, desktop information architecture'}
 
 **Analysis Requirements:**
 
@@ -375,7 +410,7 @@ You are an expert UI/UX designer and content analyst. Analyze the provided scree
    - Spacing: Evaluate whitespace, padding, margins, visual breathing room, consistency
    - Visual Hierarchy: Assess how well elements guide user attention, focal points, information architecture
    - Accessibility: Check for accessibility issues (contrast, text sizing, interactive elements, ARIA indicators)
-   - Mobile Responsiveness: Evaluate how the design appears on mobile (if visible), breakpoints, responsive patterns
+   - Mobile Responsiveness: ${viewType === 'mobile' ? 'Evaluate how well the mobile design is optimized, touch targets, mobile navigation patterns, and mobile-specific usability' : 'Evaluate how the design would adapt to mobile, breakpoints, responsive patterns, and mobile-friendliness indicators'}
    - Navigation: Assess navigation structure, menu design, user flow, breadcrumbs
    - Call-to-Action: Evaluate CTA visibility, placement, design, urgency, conversion optimization
 

@@ -1,7 +1,18 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+// Create Supabase clients
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// Create client with anon key for authentication
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Create service client for database operations (if needed)
+const supabaseServiceClient = createClient(supabaseUrl, supabaseServiceKey);
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -34,7 +45,8 @@ export async function POST(request: Request) {
       });
     }
     const token = authHeader.replace('Bearer ', '');
-    // Verify user and get user info
+    
+    // Verify user and get user info using anon key client
     const {
       data: {
         user

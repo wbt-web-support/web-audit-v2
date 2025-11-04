@@ -10,13 +10,19 @@ export async function POST(request: NextRequest) {
     const {
       pageId,
       imageUrl,
+      desktopUrl,
+      mobileUrl,
       pageUrl,
       userId
     } = requestBody;
 
-    if (!pageId || !imageUrl || !pageUrl) {
+    // Support both old format (imageUrl) and new format (desktopUrl, mobileUrl)
+    const desktopImageUrl = desktopUrl || imageUrl;
+    const mobileImageUrl = mobileUrl;
+
+    if (!pageId || !desktopImageUrl || !pageUrl) {
       return NextResponse.json({
-        error: 'Missing required fields: pageId, imageUrl, pageUrl'
+        error: 'Missing required fields: pageId, imageUrl (or desktopUrl), pageUrl'
       }, {
         status: 400
       });
@@ -77,8 +83,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Perform Gemini image analysis
-    const analysis = await analyzeImageWithGemini(imageUrl, pageUrl);
+    // Perform Gemini image analysis for both desktop and mobile
+    const desktopAnalysis = await analyzeImageWithGemini(desktopImageUrl, pageUrl, 'desktop');
+    
+    let mobileAnalysis = null;
+    if (mobileImageUrl) {
+      try {
+        mobileAnalysis = await analyzeImageWithGemini(mobileImageUrl, pageUrl, 'mobile');
+      } catch (mobileError) {
+        console.error('[API] Error analyzing mobile image, continuing with desktop only:', mobileError);
+        // Continue with desktop analysis only if mobile fails
+      }
+    }
+
+    // Combine analyses
+    const analysis = {
+      desktop: desktopAnalysis,
+      mobile: mobileAnalysis,
+      // Combined/aggregated scores (use desktop as primary, mobile as secondary reference)
+      ui_ux_score: mobileAnalysis ? Math.round((desktopAnalysis.ui_ux_score + mobileAnalysis.ui_ux_score) / 2) : desktopAnalysis.ui_ux_score,
+      content_score: mobileAnalysis ? Math.round((desktopAnalysis.content_score + mobileAnalysis.content_score) / 2) : desktopAnalysis.content_score,
+      overall_score: mobileAnalysis ? Math.round((desktopAnalysis.overall_score + mobileAnalysis.overall_score) / 2) : desktopAnalysis.overall_score,
+      summary: desktopAnalysis.summary,
+      analysis_timestamp: new Date().toISOString()
+    };
 
     // Save analysis to database
     const {

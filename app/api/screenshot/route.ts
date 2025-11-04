@@ -149,31 +149,70 @@ export async function POST(request: NextRequest) {
 
       const data = await response.json()
       
+      // Extract URLs even if success is false (partial success - desktop might still be available)
+      const desktopUrl = data.desktop?.screenshotUrl ||
+                        data.desktop?.url || 
+                        data.desktop?.imageUrl || 
+                        data.data?.desktop?.screenshotUrl ||
+                        data.data?.desktop?.url ||
+                        data.data?.desktop?.imageUrl ||
+                        data.screenshots?.desktop?.screenshotUrl ||
+                        data.screenshots?.desktop?.url || 
+                        data.screenshots?.desktop?.imageUrl || 
+                        data.data?.url || 
+                        data.data?.imageUrl || 
+                        data.data?.screenshotUrl || 
+                        data.url || 
+                        data.imageUrl || 
+                        data.screenshotUrl
+      
+      const mobileUrl = data.mobile?.screenshotUrl ||
+                       data.mobile?.url || 
+                       data.mobile?.imageUrl || 
+                       data.data?.mobile?.screenshotUrl ||
+                       data.data?.mobile?.url ||
+                       data.data?.mobile?.imageUrl ||
+                       data.screenshots?.mobile?.screenshotUrl ||
+                       data.screenshots?.mobile?.url || 
+                       data.screenshots?.mobile?.imageUrl
+      
       // Check if API returned an error response (success: false)
       if (data.success === false) {
         console.error('❌ Screenshot API returned error:', {
           error: data.error,
           message: data.message,
           errorType: data.errorType,
-          retryable: data.retryable
+          retryable: data.retryable,
+          desktopAvailable: !!desktopUrl,
+          mobileAvailable: !!mobileUrl
         })
         
-        return NextResponse.json(
-          {
-            error: data.error || 'Screenshot failed',
-            details: data.message || 'Unknown error occurred',
-            code: 'SCREENSHOT_API_ERROR',
-            errorType: data.errorType,
-            retryable: data.retryable
-          },
-          {
-            status: data.errorType === 'timeout' ? 504 : 500
-          }
-        )
+        // If desktop screenshot is available, return it with a warning about mobile failure
+        if (desktopUrl) {
+          console.warn('⚠️ Mobile screenshot failed, but desktop screenshot is available. Returning partial success.')
+          
+          // Continue processing with desktop only
+          // Don't return error - proceed to save and return desktop screenshot
+        } else {
+          // No desktop screenshot available - return error
+          return NextResponse.json(
+            {
+              error: data.error || 'Screenshot failed',
+              details: data.message || 'Unknown error occurred',
+              code: 'SCREENSHOT_API_ERROR',
+              errorType: data.errorType,
+              retryable: data.retryable
+            },
+            {
+              status: data.errorType === 'timeout' ? 504 : 500
+            }
+          )
+        }
       }
       
-      // Extract URL from nested data object (API returns: { success, message, data: { url, imageUrl, screenshotUrl } })
-      const imageUrl = data.data?.url || data.data?.imageUrl || data.data?.screenshotUrl || data.url || data.imageUrl || data.screenshotUrl
+      // URLs already extracted above (before checking success: false)
+      // Use desktop URL as primary if mobile not available
+      const imageUrl = desktopUrl
       
       if (!imageUrl) {
         console.error('❌ No image URL found in response:', data)
@@ -192,16 +231,48 @@ export async function POST(request: NextRequest) {
       // Save to database if pageId is provided
       if (body.pageId) {
         try {
+          // Try multiple possible locations for desktop and mobile data
+          const desktopData = data.desktop || data.data?.desktop || data.screenshots?.desktop || data.data
+          const mobileData = data.mobile || data.data?.mobile || data.screenshots?.mobile
+
           const pageImageData = {
-            url: imageUrl,
-            filename: data.data?.filename || null,
-            filePath: data.data?.filePath || null,
-            pageUrl: data.data?.pageUrl || body.url,
-            size: data.data?.size || null,
-            sizeKB: data.data?.sizeKB || null,
-            timestamp: data.data?.timestamp || new Date().toISOString(),
-            supabasePath: data.data?.supabasePath || null,
-            uploadError: data.data?.uploadError || null
+            desktop: {
+              url: desktopUrl,
+              screenshotUrl: desktopUrl, // Store screenshotUrl explicitly
+              filename: desktopData?.filename || null,
+              filePath: desktopData?.filePath || null,
+              pageUrl: desktopData?.pageUrl || desktopData?.url || data.data?.pageUrl || body.url,
+              size: desktopData?.size || null,
+              sizeKB: desktopData?.sizeKB || null,
+              timestamp: desktopData?.timestamp || new Date().toISOString(),
+              supabasePath: desktopData?.supabasePath || null,
+              uploadError: desktopData?.uploadError || null,
+              viewport: desktopData?.viewport || null
+            },
+            mobile: mobileUrl ? {
+              url: mobileUrl,
+              screenshotUrl: mobileUrl, // Store screenshotUrl explicitly
+              filename: mobileData?.filename || null,
+              filePath: mobileData?.filePath || null,
+              pageUrl: mobileData?.pageUrl || mobileData?.url || data.data?.pageUrl || body.url,
+              size: mobileData?.size || null,
+              sizeKB: mobileData?.sizeKB || null,
+              timestamp: mobileData?.timestamp || new Date().toISOString(),
+              supabasePath: mobileData?.supabasePath || null,
+              uploadError: mobileData?.uploadError || null,
+              viewport: mobileData?.viewport || null
+            } : null,
+            // Keep legacy format for backward compatibility
+            url: desktopUrl,
+            screenshotUrl: desktopUrl,
+            filename: desktopData?.filename || null,
+            filePath: desktopData?.filePath || null,
+            pageUrl: desktopData?.pageUrl || desktopData?.url || data.data?.pageUrl || body.url,
+            size: desktopData?.size || null,
+            sizeKB: desktopData?.sizeKB || null,
+            timestamp: desktopData?.timestamp || new Date().toISOString(),
+            supabasePath: desktopData?.supabasePath || null,
+            uploadError: desktopData?.uploadError || null
           }
 
           const { error: updateError } = await supabaseAdmin
@@ -213,7 +284,10 @@ export async function POST(request: NextRequest) {
             console.error('❌ Error saving page_image to database:', updateError)
             // Don't fail the request if database save fails, just log it
           } else {
-            console.log('✅ Screenshot saved to database for page:', body.pageId)
+            console.log('✅ Screenshots saved to database for page:', body.pageId, { 
+              desktop: !!desktopUrl, 
+              mobile: !!mobileUrl 
+            })
           }
         } catch (dbError) {
           console.error('❌ Error saving screenshot to database:', dbError)
@@ -221,10 +295,47 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Determine if this is a partial success (desktop OK, mobile failed)
+      const isPartialSuccess = desktopUrl && !mobileUrl && data.success === false
+      
       return NextResponse.json({
-        success: true,
-        url: imageUrl,
+        success: isPartialSuccess ? 'partial' : true, // Use 'partial' to indicate partial success
+        url: desktopUrl,
+        desktopUrl,
+        mobileUrl: mobileUrl || null,
+        desktop: desktopUrl ? {
+          screenshotUrl: desktopUrl,
+          url: desktopUrl,
+          ...data.desktop,
+          ...data.data?.desktop
+        } : null,
+        mobile: mobileUrl ? {
+          screenshotUrl: mobileUrl,
+          url: mobileUrl,
+          ...data.mobile,
+          ...data.data?.mobile
+        } : null,
+        screenshots: {
+          desktop: desktopUrl ? {
+            url: desktopUrl,
+            screenshotUrl: desktopUrl,
+            ...data.screenshots?.desktop,
+            ...data.desktop,
+            ...data.data?.desktop
+          } : null,
+          mobile: mobileUrl ? {
+            url: mobileUrl,
+            screenshotUrl: mobileUrl,
+            ...data.screenshots?.mobile,
+            ...data.mobile,
+            ...data.data?.mobile
+          } : null
+        },
+        // Include warning if mobile failed but desktop succeeded
+        warning: isPartialSuccess ? (data.message || 'Mobile screenshot failed, but desktop screenshot captured successfully') : undefined,
         data: data
+      }, {
+        status: 200 // Always return 200 for successful or partial success
       })
     } catch (fetchError: any) {
       clearTimeout(timeoutId)

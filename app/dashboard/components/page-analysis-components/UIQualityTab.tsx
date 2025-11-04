@@ -12,6 +12,19 @@ interface UIQualityTabProps {
       url?: string
       imageUrl?: string
       screenshotUrl?: string
+      desktop?: {
+        url?: string
+        imageUrl?: string
+        screenshotUrl?: string
+        [key: string]: any
+      }
+      mobile?: {
+        url?: string
+        imageUrl?: string
+        screenshotUrl?: string
+        [key: string]: any
+      } | null
+      [key: string]: any
     } | null
   }
 }
@@ -34,6 +47,18 @@ interface Recommendation {
 }
 
 interface ImageAnalysis {
+  desktop?: {
+    ui_ux_score: number
+    content_score: number
+    overall_score: number
+    [key: string]: any
+  }
+  mobile?: {
+    ui_ux_score: number
+    content_score: number
+    overall_score: number
+    [key: string]: any
+  } | null
   ui_ux_score: number
   content_score: number
   overall_score: number
@@ -126,6 +151,8 @@ interface ImageAnalysis {
 export default function UIQualityTab({ page }: UIQualityTabProps) {
   const content = page.html_content || ''
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
+  const [desktopScreenshotUrl, setDesktopScreenshotUrl] = useState<string | null>(null)
+  const [mobileScreenshotUrl, setMobileScreenshotUrl] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
   const [hasCheckedDatabase, setHasCheckedDatabase] = useState(false)
@@ -162,21 +189,65 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           })
         })
 
-      if (!screenshotResponse.ok) {
-        const errorData = await screenshotResponse.json().catch(() => ({}))
-        throw new Error(errorData.details || errorData.error || `Failed to capture screenshot: ${screenshotResponse.statusText}`)
+      // Parse response even if status is not ok, to check for partial success
+      let screenshotData: any = {}
+      try {
+        screenshotData = await screenshotResponse.json()
+      } catch (parseError) {
+        // If we can't parse JSON, try to get text
+        const errorText = await screenshotResponse.text().catch(() => '')
+        throw new Error(`Failed to parse screenshot response: ${errorText || screenshotResponse.statusText}`)
+      }
+      
+      // Extract desktop and mobile URLs from new format
+      // Support multiple formats: { desktop: { screenshotUrl }, mobile: { screenshotUrl }, data: { desktop: { screenshotUrl }, mobile: { screenshotUrl } }, screenshots: { desktop: { url }, mobile: { url } } }
+      const desktopUrl = screenshotData.desktop?.screenshotUrl ||
+                        screenshotData.desktop?.url ||
+                        screenshotData.desktopUrl || 
+                        screenshotData.data?.desktop?.screenshotUrl ||
+                        screenshotData.data?.desktop?.url ||
+                        screenshotData.screenshots?.desktop?.screenshotUrl ||
+                        screenshotData.screenshots?.desktop?.url ||
+                        screenshotData.url || 
+                        screenshotData.data?.url || 
+                        screenshotData.data?.imageUrl || 
+                        screenshotData.data?.screenshotUrl
+      
+      const mobileUrl = screenshotData.mobile?.screenshotUrl ||
+                       screenshotData.mobile?.url ||
+                       screenshotData.mobileUrl || 
+                       screenshotData.data?.mobile?.screenshotUrl ||
+                       screenshotData.data?.mobile?.url ||
+                       screenshotData.screenshots?.mobile?.screenshotUrl ||
+                       screenshotData.screenshots?.mobile?.url
+      
+      // If desktop URL exists, we can proceed even if there was an error or mobile failed
+      if (desktopUrl) {
+        // Log warning if mobile failed but desktop succeeded (non-blocking)
+        if (!mobileUrl && (screenshotData.success === 'partial' || screenshotData.success === false || !screenshotResponse.ok)) {
+          console.warn('⚠️ Mobile screenshot failed, but desktop screenshot succeeded. Proceeding with desktop only.')
+          // Show warning message if provided
+          if (screenshotData.warning) {
+            console.info('ℹ️', screenshotData.warning)
+          }
+          // Don't set this as a blocking error - just show a warning message
+          // The analysis will proceed with desktop only
+        }
+      } else {
+        // Only throw error if desktop URL is missing
+        if (!screenshotResponse.ok) {
+          const errorMsg = screenshotData.details || screenshotData.error || screenshotData.message || `Failed to capture screenshot: ${screenshotResponse.statusText}`
+          throw new Error(errorMsg)
+        }
+        throw new Error('Invalid response format: no desktop image URL found')
       }
 
-      const screenshotData = await screenshotResponse.json()
-      const imageUrl = screenshotData.url || screenshotData.data?.url || screenshotData.data?.imageUrl || screenshotData.data?.screenshotUrl
-      
-      if (!imageUrl) {
-          throw new Error('Invalid response format: no image URL found')
-        }
+      // Set both URLs
+      setDesktopScreenshotUrl(desktopUrl)
+      setMobileScreenshotUrl(mobileUrl || null)
+      setScreenshotUrl(desktopUrl) // Keep legacy for backward compatibility
 
-      setScreenshotUrl(imageUrl)
-
-      // Step 2: Analyze image immediately (no delay)
+      // Step 2: Analyze both images immediately (no delay)
       setCurrentStep('analyzing')
       const analysisResponse = await fetch('/api/image-analysis', {
         method: 'POST',
@@ -185,7 +256,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         },
         body: JSON.stringify({
           pageId: page.id,
-          imageUrl,
+          desktopUrl,
+          mobileUrl: mobileUrl || null,
           pageUrl: page.url,
           userId: null
         })
@@ -202,7 +274,15 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
       const analysisData = await analysisResponse.json()
       if (analysisData.analysis) {
-        setImageAnalysis(analysisData.analysis)
+        // Handle both new format (with desktop/mobile) and old format
+        const analysis = analysisData.analysis
+        if (analysis.desktop) {
+          // New format: use desktop analysis as primary, but keep both
+          setImageAnalysis(analysis)
+        } else {
+          // Old format: single analysis
+          setImageAnalysis(analysis)
+        }
       }
       
       setCurrentStep('complete')
@@ -227,11 +307,20 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
     setCurrentStep('idle')
 
     // Check database first - look for valid image URL and analysis
-    const existingImageUrl = page.page_image?.url || page.page_image?.imageUrl || page.page_image?.screenshotUrl
+    // Support both new format (desktop/mobile) and legacy format
+    const desktopImageUrl = page.page_image?.desktop?.screenshotUrl ||
+                           page.page_image?.desktop?.url || 
+                           page.page_image?.url || 
+                           page.page_image?.imageUrl || 
+                           page.page_image?.screenshotUrl
+    const mobileImageUrl = page.page_image?.mobile?.screenshotUrl ||
+                          page.page_image?.mobile?.url
     
-    if (existingImageUrl && typeof existingImageUrl === 'string' && existingImageUrl.trim() !== '') {
+    if (desktopImageUrl && typeof desktopImageUrl === 'string' && desktopImageUrl.trim() !== '') {
       // Image exists in database, use it
-      setScreenshotUrl(existingImageUrl)
+      setDesktopScreenshotUrl(desktopImageUrl)
+      setMobileScreenshotUrl(mobileImageUrl && typeof mobileImageUrl === 'string' ? mobileImageUrl : null)
+      setScreenshotUrl(desktopImageUrl) // Keep legacy for backward compatibility
       setHasCheckedDatabase(true)
       
       // Check if analysis also exists - if so, fetch it; otherwise trigger new analysis
@@ -528,155 +617,34 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           <div>
             <p className="text-gray-600">Comprehensive assessment of your page&apos;s user interface and structure</p>
           </div>
-          <div className="text-right">
+          {/* <div className="text-right">
             <div className="text-5xl font-bold text-blue-600">{overallScore}</div>
             <div className="text-sm text-gray-600">Overall Score</div>
             <div className="text-xs text-gray-500">Out of 100</div>
-          </div>
+          </div> */}
         </div>
         
-        {/* Processing Steps - Professional Loader */}
+        {/* Processing Steps - Simple Loader */}
         {processing && (
-          <div className="mt-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 p-8 shadow-lg">
-            <div className="max-w-lg mx-auto">
-              {/* Animated Header */}
-              <div className="flex flex-col items-center mb-8">
-                <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-blue-400 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                  <div className="relative animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
-            </div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Analyzing Your Page
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">Please wait while we process your page...</p>
-          </div>
+          <div className="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-6">
+            <div className="flex flex-col items-center space-y-4">
+              {/* Simple spinner */}
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
               
-              <div className="space-y-5">
-                {/* Step 1: Capturing */}
-                <div className={`relative overflow-hidden rounded-xl border-2 transition-all duration-500 ${
-                  currentStep === 'capturing' ? 'border-blue-500 bg-white shadow-lg scale-105' :
-                  currentStep === 'analyzing' || currentStep === 'complete' ? 'border-green-400 bg-green-50 shadow-md' :
-                  'border-gray-200 bg-gray-50'
-                }`}>
-                  {/* Progress bar for active step */}
-                  {currentStep === 'capturing' && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 animate-pulse"></div>
-                  )}
-                  
-                  <div className="p-5 flex items-center space-x-4">
-                    <div className={`relative flex-shrink-0 ${
-                      currentStep === 'capturing' ? 'animate-bounce' : ''
-                    }`}>
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                        currentStep === 'capturing' ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg ring-4 ring-blue-200' :
-                        currentStep === 'analyzing' || currentStep === 'complete' ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md' :
-                        'bg-gray-200 text-gray-400'
-                      }`}>
-                        {currentStep === 'capturing' ? (
-                          <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        ) : currentStep === 'analyzing' || currentStep === 'complete' ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        )}
-                      </div>
-                      {currentStep === 'capturing' && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-ping"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-base font-semibold transition-colors ${
-                        currentStep === 'capturing' ? 'text-blue-700' : 
-                        currentStep === 'analyzing' || currentStep === 'complete' ? 'text-green-700' : 
-                        'text-gray-500'
-                      }`}>
-                        {currentStep === 'capturing' && '📸 '}Capturing page screenshot
-                        {currentStep === 'analyzing' || currentStep === 'complete' ? ' ✓' : currentStep === 'capturing' ? '...' : ''}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Taking a high-quality snapshot of your page</div>
-                      {currentStep === 'capturing' && (
-                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {/* Step indicator */}
+              <div className="text-center">
+                <div className="text-base font-semibold text-blue-700">
+                  {currentStep === 'capturing' && 'Capturing page screenshot...'}
+                  {currentStep === 'analyzing' && 'AI analyzing your page...'}
+                  {currentStep === 'complete' && 'Analysis complete'}
                 </div>
-
-                {/* Step 2: Analyzing */}
-                <div className={`relative overflow-hidden rounded-xl border-2 transition-all duration-500 ${
-                  currentStep === 'analyzing' ? 'border-purple-500 bg-white shadow-lg scale-105' :
-                  currentStep === 'complete' ? 'border-green-400 bg-green-50 shadow-md' :
-                  'border-gray-200 bg-gray-50'
-                }`}>
-                  {/* Progress bar for active step */}
-                  {currentStep === 'analyzing' && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></div>
-                  )}
-                  
-                  <div className="p-5 flex items-center space-x-4">
-                    <div className={`relative flex-shrink-0 ${
-                      currentStep === 'analyzing' ? 'animate-pulse' : ''
-                    }`}>
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                        currentStep === 'analyzing' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg ring-4 ring-purple-200' :
-                        currentStep === 'complete' ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md' :
-                        'bg-gray-200 text-gray-400'
-                      }`}>
-                        {currentStep === 'analyzing' ? (
-                          <svg className="w-6 h-6 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                        ) : currentStep === 'complete' ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        )}
-                      </div>
-                      {currentStep === 'analyzing' && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full border-2 border-white animate-ping"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-base font-semibold transition-colors ${
-                        currentStep === 'analyzing' ? 'text-purple-700' : 
-                        currentStep === 'complete' ? 'text-green-700' : 
-                        'text-gray-500'
-                      }`}>
-                        {currentStep === 'analyzing' && '🤖 '}AI analyzing your page
-                        {currentStep === 'complete' ? ' ✓' : currentStep === 'analyzing' ? '...' : ''}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">Evaluating UI/UX design, content quality, and grammar</div>
-                      {currentStep === 'analyzing' && (
-                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ width: '85%' }}></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {currentStep === 'capturing' && 'Taking a high-quality snapshot of your page'}
+                  {currentStep === 'analyzing' && 'Evaluating UI/UX design and content quality'}
+                  {currentStep === 'complete' && 'Results ready'}
                 </div>
               </div>
 
-              {/* Animated dots indicator */}
-              <div className="flex justify-center space-x-2 mt-6">
-                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  currentStep === 'capturing' ? 'bg-blue-500 scale-125 animate-pulse' : 'bg-gray-300'
-                }`}></div>
-                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  currentStep === 'analyzing' ? 'bg-purple-500 scale-125 animate-pulse' : 
-                  currentStep === 'complete' ? 'bg-green-500' : 'bg-gray-300'
-                }`}></div>
-                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  currentStep === 'complete' ? 'bg-green-500 scale-125' : 'bg-gray-300'
-                }`}></div>
-              </div>
             </div>
           </div>
         )}
@@ -688,275 +656,313 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           </div>
         )}
 
-        {imageAnalysis && (
-          <div className="mt-6 space-y-6">
-            {/* Overall Score */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">AI-Powered Page Analysis</h3>
-                <div className="text-right">
-                  <div className="text-4xl font-bold text-blue-600">{imageAnalysis.overall_score}</div>
-                  <div className="text-sm text-gray-600">Overall Score</div>
+        {imageAnalysis && (() => {
+          // Use desktop analysis as primary, fallback to top-level if new format not available
+          const primaryAnalysis = imageAnalysis.desktop || imageAnalysis
+          return (
+          <div className="mt-6 space-y-8">
+            {/* Overall Score - Hero Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">AI-Powered Page Analysis</h2>
+                  <p className="text-lg text-gray-600 leading-relaxed">{primaryAnalysis.summary || imageAnalysis.summary}</p>
+                </div>
+                <div className="text-center md:text-right">
+                  <div className="text-6xl font-bold text-blue-600 mb-1">{imageAnalysis.overall_score}</div>
+                  <div className="text-base text-gray-600 font-medium">Overall Score</div>
                 </div>
               </div>
-              <p className="text-gray-700 mb-4">{imageAnalysis.summary}</p>
               
-              {/* Score Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">UI/UX Score</div>
-                  <div className="text-2xl font-bold text-gray-900">{imageAnalysis.ui_ux_score}</div>
+              {/* Score Grid - Secondary */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-100">
+                <div className="bg-blue-50 rounded-lg p-5">
+                  <div className="text-sm text-gray-600 mb-2 font-medium">UI/UX Score</div>
+                  <div className="text-3xl font-bold text-gray-900">{imageAnalysis.ui_ux_score}</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Content Score</div>
-                  <div className="text-2xl font-bold text-gray-900">{imageAnalysis.content_score}</div>
+                <div className="bg-blue-50 rounded-lg p-5">
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Content Score</div>
+                  <div className="text-3xl font-bold text-gray-900">{imageAnalysis.content_score}</div>
                 </div>
               </div>
             </div>
 
             {/* UI/UX Analysis */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">UI/UX Analysis</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-9 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.layout_score}</div>
-                  <div className="text-xs text-gray-600">Layout</div>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">UI/UX Analysis</h3>
+                {imageAnalysis.mobile && (
+                  <p className="text-sm text-gray-500">Desktop View Analysis</p>
+                )}
+              </div>
+              {primaryAnalysis.ui_ux_analysis && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.layout_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Layout</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.color_scheme_score}</div>
-                  <div className="text-xs text-gray-600">Colors</div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.color_scheme_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Colors</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.typography_score}</div>
-                  <div className="text-xs text-gray-600">Typography</div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.typography_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Typography</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.spacing_score}</div>
-                  <div className="text-xs text-gray-600">Spacing</div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.spacing_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Spacing</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.visual_hierarchy_score}</div>
-                  <div className="text-xs text-gray-600">Hierarchy</div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.visual_hierarchy_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Hierarchy</div>
                 </div>
-                {imageAnalysis.ui_ux_analysis.accessibility_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.accessibility_score}</div>
-                    <div className="text-xs text-gray-600">Accessibility</div>
+                {primaryAnalysis.ui_ux_analysis.accessibility_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.accessibility_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Accessibility</div>
                   </div>
                 )}
-                {imageAnalysis.ui_ux_analysis.mobile_responsiveness_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.mobile_responsiveness_score}</div>
-                    <div className="text-xs text-gray-600">Mobile</div>
+                {primaryAnalysis.ui_ux_analysis.mobile_responsiveness_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.mobile_responsiveness_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Mobile</div>
                   </div>
                 )}
-                {imageAnalysis.ui_ux_analysis.navigation_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.navigation_score}</div>
-                    <div className="text-xs text-gray-600">Navigation</div>
+                {primaryAnalysis.ui_ux_analysis.navigation_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.navigation_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Navigation</div>
                   </div>
                 )}
-                {imageAnalysis.ui_ux_analysis.call_to_action_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.ui_ux_analysis.call_to_action_score}</div>
-                    <div className="text-xs text-gray-600">CTA</div>
+                {primaryAnalysis.ui_ux_analysis.call_to_action_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.call_to_action_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">CTA</div>
                   </div>
                 )}
               </div>
+              )}
 
               {/* Detailed Metrics */}
-              {imageAnalysis.ui_ux_analysis.detailed_metrics && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-700 mb-3">Detailed Metrics</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {imageAnalysis.ui_ux_analysis.detailed_metrics.color_contrast_ratio && (
+              {primaryAnalysis.ui_ux_analysis?.detailed_metrics && (
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <h5 className="text-base font-semibold text-gray-900 mb-5">Detailed Metrics</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {primaryAnalysis.ui_ux_analysis.detailed_metrics.color_contrast_ratio && (
                 <div>
                         <span className="font-medium text-gray-700">Color Contrast:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.ui_ux_analysis.detailed_metrics.color_contrast_ratio}</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.ui_ux_analysis.detailed_metrics.color_contrast_ratio}</span>
                       </div>
                     )}
-                    {imageAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used && imageAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used.length > 0 && (
+                    {primaryAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used && primaryAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used.length > 0 && (
                       <div>
                         <span className="font-medium text-gray-700">Font Sizes:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used.join(', ')}</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.ui_ux_analysis.detailed_metrics.font_sizes_used.join(', ')}</span>
                       </div>
                     )}
-                    {imageAnalysis.ui_ux_analysis.detailed_metrics.spacing_consistency && (
+                    {primaryAnalysis.ui_ux_analysis.detailed_metrics.spacing_consistency && (
                       <div>
                         <span className="font-medium text-gray-700">Spacing:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.ui_ux_analysis.detailed_metrics.spacing_consistency}</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.ui_ux_analysis.detailed_metrics.spacing_consistency}</span>
                       </div>
                     )}
-                    {imageAnalysis.ui_ux_analysis.detailed_metrics.element_alignment && (
+                    {primaryAnalysis.ui_ux_analysis.detailed_metrics.element_alignment && (
                       <div>
                         <span className="font-medium text-gray-700">Alignment:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.ui_ux_analysis.detailed_metrics.element_alignment}</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.ui_ux_analysis.detailed_metrics.element_alignment}</span>
                       </div>
                     )}
-                    {imageAnalysis.ui_ux_analysis.detailed_metrics.visual_balance && (
+                    {primaryAnalysis.ui_ux_analysis.detailed_metrics.visual_balance && (
                       <div>
                         <span className="font-medium text-gray-700">Visual Balance:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.ui_ux_analysis.detailed_metrics.visual_balance}</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.ui_ux_analysis.detailed_metrics.visual_balance}</span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {imageAnalysis.ui_ux_analysis.strengths.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Strengths:</div>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {imageAnalysis.ui_ux_analysis.strengths.map((strength, idx) => (
-                      <li key={idx}>{strength}</li>
-                    ))}
-                    </ul>
-                </div>
-              )}
-
-              {imageAnalysis.ui_ux_analysis.issues.length > 0 && (
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">Issues:</div>
-                  <div className="space-y-2">
-                    {imageAnalysis.ui_ux_analysis.issues.map((issue, idx) => (
-                      <div key={idx} className={`p-3 rounded-lg border-l-4 ${
-                        issue.severity === 'high' ? 'border-red-400 bg-red-50' :
-                        issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50' :
-                        'border-blue-400 bg-blue-50'
-                      }`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{issue.description}</div>
-                            <div className="text-xs text-gray-600 mt-1">{issue.suggestion}</div>
-                            {issue.location && (
-                              <div className="text-xs text-gray-500 mt-1">Location: {issue.location}</div>
-                            )}
-                            {issue.impact && (
-                              <div className="text-xs text-gray-500 mt-1">Impact: {issue.impact}</div>
-                            )}
-                          </div>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            issue.severity === 'high' ? 'bg-red-100 text-red-800' :
-                            issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {issue.severity.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-            </div>
-          </div>
-        )}
-            </div>
-
-            {/* Content Analysis */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Content Analysis</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.readability_score}</div>
-                  <div className="text-xs text-gray-600">Readability</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.clarity_score}</div>
-                  <div className="text-xs text-gray-600">Clarity</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.structure_score}</div>
-                  <div className="text-xs text-gray-600">Structure</div>
-                </div>
-                {imageAnalysis.content_analysis.seo_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.seo_score}</div>
-                    <div className="text-xs text-gray-600">SEO</div>
-                  </div>
-                )}
-                {imageAnalysis.content_analysis.content_length_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.content_length_score}</div>
-                    <div className="text-xs text-gray-600">Length</div>
-                  </div>
-                )}
-                {imageAnalysis.content_analysis.heading_structure_score !== undefined && (
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{imageAnalysis.content_analysis.heading_structure_score}</div>
-                    <div className="text-xs text-gray-600">Headings</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content Detailed Metrics */}
-              {imageAnalysis.content_analysis.detailed_metrics && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-700 mb-3">Content Metrics</div>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                    {imageAnalysis.content_analysis.detailed_metrics.word_count_estimate !== undefined && (
-                      <div>
-                        <span className="font-medium text-gray-700">Words:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.content_analysis.detailed_metrics.word_count_estimate.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {imageAnalysis.content_analysis.detailed_metrics.heading_count !== undefined && (
-                      <div>
-                        <span className="font-medium text-gray-700">Headings:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.content_analysis.detailed_metrics.heading_count}</span>
-                      </div>
-                    )}
-                    {imageAnalysis.content_analysis.detailed_metrics.paragraph_count !== undefined && (
-                      <div>
-                        <span className="font-medium text-gray-700">Paragraphs:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.content_analysis.detailed_metrics.paragraph_count}</span>
-                      </div>
-                    )}
-                    {imageAnalysis.content_analysis.detailed_metrics.list_usage && (
-                      <div>
-                        <span className="font-medium text-gray-700">Lists:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.content_analysis.detailed_metrics.list_usage}</span>
-                      </div>
-                    )}
-                    {imageAnalysis.content_analysis.detailed_metrics.content_density && (
-                      <div>
-                        <span className="font-medium text-gray-700">Density:</span>
-                        <span className="ml-2 text-gray-600">{imageAnalysis.content_analysis.detailed_metrics.content_density}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {imageAnalysis.content_analysis.strengths.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Strengths:</div>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {imageAnalysis.content_analysis.strengths.map((strength, idx) => (
-                      <li key={idx}>{strength}</li>
+              {primaryAnalysis.ui_ux_analysis?.strengths && primaryAnalysis.ui_ux_analysis.strengths.length > 0 && (
+                <div className="mb-8 pb-8 border-b border-gray-200">
+                  <h5 className="text-base font-semibold text-gray-900 mb-4">Strengths</h5>
+                  <ul className="space-y-3">
+                    {primaryAnalysis.ui_ux_analysis.strengths.map((strength: string, idx: number) => (
+                      <li key={idx} className="flex items-start group">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-blue-200 transition-colors">
+                          <span className="text-blue-600 text-xs font-bold">✓</span>
+                        </span>
+                        <span className="text-sm text-gray-700 flex-1 leading-relaxed">{strength}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {imageAnalysis.content_analysis.issues.length > 0 && (
+              {primaryAnalysis.ui_ux_analysis?.issues && primaryAnalysis.ui_ux_analysis.issues.length > 0 && (
                 <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">Issues:</div>
-                  <div className="space-y-2">
-                    {imageAnalysis.content_analysis.issues.map((issue, idx) => (
-                      <div key={idx} className={`p-3 rounded-lg border-l-4 ${
-                        issue.severity === 'high' ? 'border-red-400 bg-red-50' :
-                        issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50' :
-                        'border-blue-400 bg-blue-50'
+                  <h5 className="text-base font-semibold text-gray-900 mb-5">Issues & Recommendations</h5>
+                  <div className="space-y-4">
+                    {primaryAnalysis.ui_ux_analysis.issues.map((issue: { type: string; severity: 'high' | 'medium' | 'low'; description: string; suggestion: string; location?: string; impact?: string }, idx: number) => (
+                      <div key={idx} className={`p-4 rounded-lg border-l-4 shadow-sm ${
+                        issue.severity === 'high' ? 'border-red-400 bg-red-50/50' :
+                        issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50/50' :
+                        'border-blue-400 bg-blue-50/50'
                       }`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{issue.description}</div>
-                            <div className="text-xs text-gray-600 mt-1">{issue.suggestion}</div>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="text-sm font-semibold text-gray-900 leading-snug">{issue.description}</div>
+                            <div className="text-xs text-gray-600 leading-relaxed">{issue.suggestion}</div>
+                            {(issue.location || issue.impact) && (
+                              <div className="flex flex-wrap gap-3 text-xs text-gray-500 pt-1">
+                                {issue.location && (
+                                  <span className="flex items-center">
+                                    <span className="mr-1">📍</span>
+                                    {issue.location}
+                                  </span>
+                                )}
+                                {issue.impact && (
+                                  <span className="flex items-center">
+                                    <span className="mr-1">⚡</span>
+                                    {issue.impact}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          <span className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide flex-shrink-0 ${
                             issue.severity === 'high' ? 'bg-red-100 text-red-800' :
                             issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-blue-100 text-blue-800'
                           }`}>
-                            {issue.severity.toUpperCase()}
+                            {issue.severity}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Content Analysis */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-8">Content Analysis</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.readability_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Readability</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.clarity_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Clarity</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.structure_score}</div>
+                  <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Structure</div>
+                </div>
+                {primaryAnalysis.content_analysis?.seo_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.seo_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">SEO</div>
+                  </div>
+                )}
+                {primaryAnalysis.content_analysis?.content_length_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.content_length_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Length</div>
+                  </div>
+                )}
+                {primaryAnalysis.content_analysis?.heading_structure_score !== undefined && (
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                    <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.heading_structure_score}</div>
+                    <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Headings</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Content Detailed Metrics */}
+              {primaryAnalysis.content_analysis?.detailed_metrics && (
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <h5 className="text-base font-semibold text-gray-900 mb-5">Content Metrics</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                    {primaryAnalysis.content_analysis.detailed_metrics.word_count_estimate !== undefined && (
+                      <div>
+                        <span className="font-medium text-gray-700">Words:</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.content_analysis.detailed_metrics.word_count_estimate.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {primaryAnalysis.content_analysis.detailed_metrics.heading_count !== undefined && (
+                      <div>
+                        <span className="font-medium text-gray-700">Headings:</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.content_analysis.detailed_metrics.heading_count}</span>
+                      </div>
+                    )}
+                    {primaryAnalysis.content_analysis.detailed_metrics.paragraph_count !== undefined && (
+                      <div>
+                        <span className="font-medium text-gray-700">Paragraphs:</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.content_analysis.detailed_metrics.paragraph_count}</span>
+                      </div>
+                    )}
+                    {primaryAnalysis.content_analysis.detailed_metrics.list_usage && (
+                      <div>
+                        <span className="font-medium text-gray-700">Lists:</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.content_analysis.detailed_metrics.list_usage}</span>
+                      </div>
+                    )}
+                    {primaryAnalysis.content_analysis.detailed_metrics.content_density && (
+                      <div>
+                        <span className="font-medium text-gray-700">Density:</span>
+                        <span className="ml-2 text-gray-600">{primaryAnalysis.content_analysis.detailed_metrics.content_density}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {primaryAnalysis.content_analysis?.strengths && primaryAnalysis.content_analysis.strengths.length > 0 && (
+                <div className="mb-8 pb-8 border-b border-gray-200">
+                  <h5 className="text-base font-semibold text-gray-900 mb-4">Content Strengths</h5>
+                  <ul className="space-y-3">
+                    {primaryAnalysis.content_analysis.strengths.map((strength: string, idx: number) => (
+                      <li key={idx} className="flex items-start group">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-blue-200 transition-colors">
+                          <span className="text-blue-600 text-xs font-bold">✓</span>
+                        </span>
+                        <span className="text-sm text-gray-700 flex-1 leading-relaxed">{strength}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {primaryAnalysis.content_analysis?.issues && primaryAnalysis.content_analysis.issues.length > 0 && (
+                <div>
+                  <h5 className="text-base font-semibold text-gray-900 mb-5">Content Issues</h5>
+                  <div className="space-y-4">
+                    {primaryAnalysis.content_analysis.issues.map((issue: { type: string; severity: 'high' | 'medium' | 'low'; description: string; suggestion: string; location?: string }, idx: number) => (
+                      <div key={idx} className={`p-4 rounded-lg border-l-4 shadow-sm ${
+                        issue.severity === 'high' ? 'border-red-400 bg-red-50/50' :
+                        issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50/50' :
+                        'border-blue-400 bg-blue-50/50'
+                      }`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="text-sm font-semibold text-gray-900 leading-snug">{issue.description}</div>
+                            <div className="text-xs text-gray-600 leading-relaxed">{issue.suggestion}</div>
+                            {issue.location && (
+                              <div className="text-xs text-gray-500 pt-1 flex items-center">
+                                <span className="mr-1">📍</span>
+                                {issue.location}
+                              </div>
+                            )}
+                          </div>
+                          <span className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide flex-shrink-0 ${
+                            issue.severity === 'high' ? 'bg-red-100 text-red-800' :
+                            issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {issue.severity}
                           </span>
                         </div>
                       </div>
@@ -967,55 +973,55 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             </div>
 
             {/* Design Patterns */}
-            {imageAnalysis.design_patterns && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Design Patterns & Best Practices</h4>
+            {primaryAnalysis.design_patterns && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8">Design Patterns & Best Practices</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {imageAnalysis.design_patterns.identified_patterns && imageAnalysis.design_patterns.identified_patterns.length > 0 && (
+                  {primaryAnalysis.design_patterns.identified_patterns && primaryAnalysis.design_patterns.identified_patterns.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-gray-700 mb-2">Identified Patterns:</div>
                       <div className="flex flex-wrap gap-2">
-                        {imageAnalysis.design_patterns.identified_patterns.map((pattern, idx) => (
+                        {primaryAnalysis.design_patterns.identified_patterns.map((pattern: string, idx: number) => (
                           <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{pattern}</span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {imageAnalysis.design_patterns.modern_design_elements && imageAnalysis.design_patterns.modern_design_elements.length > 0 && (
+                  {primaryAnalysis.design_patterns.modern_design_elements && primaryAnalysis.design_patterns.modern_design_elements.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-green-700 mb-2">Modern Elements:</div>
                       <div className="flex flex-wrap gap-2">
-                        {imageAnalysis.design_patterns.modern_design_elements.map((element, idx) => (
+                        {primaryAnalysis.design_patterns.modern_design_elements.map((element: string, idx: number) => (
                           <span key={idx} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">{element}</span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {imageAnalysis.design_patterns.outdated_elements && imageAnalysis.design_patterns.outdated_elements.length > 0 && (
+                  {primaryAnalysis.design_patterns.outdated_elements && primaryAnalysis.design_patterns.outdated_elements.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-red-700 mb-2">Outdated Elements:</div>
                       <div className="flex flex-wrap gap-2">
-                        {imageAnalysis.design_patterns.outdated_elements.map((element, idx) => (
+                        {primaryAnalysis.design_patterns.outdated_elements.map((element: string, idx: number) => (
                           <span key={idx} className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs">{element}</span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {imageAnalysis.design_patterns.best_practices_followed && imageAnalysis.design_patterns.best_practices_followed.length > 0 && (
+                  {primaryAnalysis.design_patterns.best_practices_followed && primaryAnalysis.design_patterns.best_practices_followed.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-gray-700 mb-2">Best Practices Followed:</div>
                       <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                        {imageAnalysis.design_patterns.best_practices_followed.map((practice, idx) => (
+                        {primaryAnalysis.design_patterns.best_practices_followed.map((practice: string, idx: number) => (
                           <li key={idx}>{practice}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {imageAnalysis.design_patterns.best_practices_missing && imageAnalysis.design_patterns.best_practices_missing.length > 0 && (
+                  {primaryAnalysis.design_patterns.best_practices_missing && primaryAnalysis.design_patterns.best_practices_missing.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-orange-700 mb-2">Missing Best Practices:</div>
                       <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                        {imageAnalysis.design_patterns.best_practices_missing.map((practice, idx) => (
+                        {primaryAnalysis.design_patterns.best_practices_missing.map((practice: string, idx: number) => (
                           <li key={idx}>{practice}</li>
                         ))}
                       </ul>
@@ -1026,40 +1032,40 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             )}
 
             {/* Brand Consistency */}
-            {imageAnalysis.brand_consistency && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Brand Consistency</h4>
-                {imageAnalysis.brand_consistency.score !== undefined && (
-                  <div className="mb-4">
-                    <div className="text-2xl font-bold text-gray-900">{imageAnalysis.brand_consistency.score}</div>
-                    <div className="text-sm text-gray-600">Consistency Score</div>
+            {primaryAnalysis.brand_consistency && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8">Brand Consistency</h3>
+                {primaryAnalysis.brand_consistency.score !== undefined && (
+                  <div className="mb-6 p-6 bg-blue-50 rounded-lg border border-blue-200/50 inline-block">
+                    <div className="text-4xl font-bold text-gray-900 mb-1">{primaryAnalysis.brand_consistency.score}</div>
+                    <div className="text-sm text-gray-600 font-medium">Consistency Score</div>
                   </div>
                 )}
                 <div className="space-y-3 mb-4">
-                  {imageAnalysis.brand_consistency.color_consistency && (
+                  {primaryAnalysis.brand_consistency.color_consistency && (
                     <div>
                       <div className="text-sm font-medium text-gray-700 mb-1">Color Consistency:</div>
-                      <div className="text-sm text-gray-600">{imageAnalysis.brand_consistency.color_consistency}</div>
+                      <div className="text-sm text-gray-600">{primaryAnalysis.brand_consistency.color_consistency}</div>
                     </div>
                   )}
-                  {imageAnalysis.brand_consistency.typography_consistency && (
+                  {primaryAnalysis.brand_consistency.typography_consistency && (
                     <div>
                       <div className="text-sm font-medium text-gray-700 mb-1">Typography Consistency:</div>
-                      <div className="text-sm text-gray-600">{imageAnalysis.brand_consistency.typography_consistency}</div>
+                      <div className="text-sm text-gray-600">{primaryAnalysis.brand_consistency.typography_consistency}</div>
                     </div>
                   )}
-                  {imageAnalysis.brand_consistency.style_consistency && (
+                  {primaryAnalysis.brand_consistency.style_consistency && (
                     <div>
                       <div className="text-sm font-medium text-gray-700 mb-1">Style Consistency:</div>
-                      <div className="text-sm text-gray-600">{imageAnalysis.brand_consistency.style_consistency}</div>
+                      <div className="text-sm text-gray-600">{primaryAnalysis.brand_consistency.style_consistency}</div>
                     </div>
                   )}
                 </div>
-                {imageAnalysis.brand_consistency.issues && imageAnalysis.brand_consistency.issues.length > 0 && (
+                {primaryAnalysis.brand_consistency.issues && primaryAnalysis.brand_consistency.issues.length > 0 && (
                   <div>
                     <div className="text-sm font-medium text-gray-700 mb-2">Consistency Issues:</div>
                     <div className="space-y-2">
-                      {imageAnalysis.brand_consistency.issues.map((issue, idx) => (
+                      {primaryAnalysis.brand_consistency.issues.map((issue: { description: string; suggestion: string }, idx: number) => (
                         <div key={idx} className="p-3 rounded-lg border-l-4 border-orange-400 bg-orange-50">
                           <div className="text-sm font-medium text-gray-900">{issue.description}</div>
                           <div className="text-xs text-gray-600 mt-1">{issue.suggestion}</div>
@@ -1072,51 +1078,51 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             )}
 
             {/* Detailed Summary */}
-            {imageAnalysis.detailed_summary && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Detailed Assessment</h4>
-                {imageAnalysis.detailed_summary.overall_assessment && (
+            {primaryAnalysis.detailed_summary && (
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-xl border border-blue-200 shadow-sm p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8">Detailed Assessment</h3>
+                {primaryAnalysis.detailed_summary.overall_assessment && (
                   <div className="mb-4">
                     <div className="text-sm font-medium text-gray-700 mb-2">Overall Assessment:</div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{imageAnalysis.detailed_summary.overall_assessment}</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{primaryAnalysis.detailed_summary.overall_assessment}</p>
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {imageAnalysis.detailed_summary.key_strengths && imageAnalysis.detailed_summary.key_strengths.length > 0 && (
+                  {primaryAnalysis.detailed_summary.key_strengths && primaryAnalysis.detailed_summary.key_strengths.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-green-700 mb-2">Key Strengths:</div>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {imageAnalysis.detailed_summary.key_strengths.map((strength, idx) => (
+                        {primaryAnalysis.detailed_summary.key_strengths.map((strength: string, idx: number) => (
                           <li key={idx}>{strength}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {imageAnalysis.detailed_summary.key_weaknesses && imageAnalysis.detailed_summary.key_weaknesses.length > 0 && (
+                  {primaryAnalysis.detailed_summary.key_weaknesses && primaryAnalysis.detailed_summary.key_weaknesses.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-red-700 mb-2">Key Weaknesses:</div>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {imageAnalysis.detailed_summary.key_weaknesses.map((weakness, idx) => (
+                        {primaryAnalysis.detailed_summary.key_weaknesses.map((weakness: string, idx: number) => (
                           <li key={idx}>{weakness}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {imageAnalysis.detailed_summary.quick_wins && imageAnalysis.detailed_summary.quick_wins.length > 0 && (
+                  {primaryAnalysis.detailed_summary.quick_wins && primaryAnalysis.detailed_summary.quick_wins.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-blue-700 mb-2">Quick Wins:</div>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {imageAnalysis.detailed_summary.quick_wins.map((win, idx) => (
+                        {primaryAnalysis.detailed_summary.quick_wins.map((win: string, idx: number) => (
                           <li key={idx}>{win}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {imageAnalysis.detailed_summary.long_term_improvements && imageAnalysis.detailed_summary.long_term_improvements.length > 0 && (
+                  {primaryAnalysis.detailed_summary.long_term_improvements && primaryAnalysis.detailed_summary.long_term_improvements.length > 0 && (
                     <div>
                       <div className="text-sm font-medium text-purple-700 mb-2">Long-term Improvements:</div>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {imageAnalysis.detailed_summary.long_term_improvements.map((improvement, idx) => (
+                        {primaryAnalysis.detailed_summary.long_term_improvements.map((improvement: string, idx: number) => (
                           <li key={idx}>{improvement}</li>
                         ))}
                       </ul>
@@ -1127,11 +1133,11 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             )}
 
             {/* Recommendations */}
-            {imageAnalysis.recommendations && imageAnalysis.recommendations.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Actionable Recommendations</h4>
+            {primaryAnalysis.recommendations && primaryAnalysis.recommendations.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8">Actionable Recommendations</h3>
                 <div className="space-y-4">
-                  {imageAnalysis.recommendations.map((rec, idx) => {
+                  {primaryAnalysis.recommendations.map((rec: string | { category?: string; priority?: 'high' | 'medium' | 'low'; title?: string; description?: string; impact?: string; effort?: 'low' | 'medium' | 'high' }, idx: number) => {
                     // Handle both old format (string) and new format (object)
                     if (typeof rec === 'string') {
                       return (
@@ -1181,34 +1187,11 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
 
-        {/* Screenshot in Small Box - Only show after analysis is complete */}
-        {screenshotUrl && !processing && currentStep === 'complete' && (
-          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900">Page Screenshot</h3>
-              {page.id && (
-                <button
-                  onClick={handleRetakeScreenshot}
-                  disabled={processing}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ArrowPathIcon className="w-3 h-3" />
-                  <span>Retake</span>
-                </button>
-              )}
-            </div>
-            <div className="rounded-lg overflow-hidden border border-gray-200 max-w-xs">
-              <img 
-                src={screenshotUrl} 
-                alt="Page screenshot" 
-                className="w-full h-auto max-h-48 object-contain"
-                onError={() => setProcessingError('Failed to load image')}
-              />
-            </div>
-          </div>
-        )}
+        {/* Screenshots - Only show after analysis is complete */}
+        
         
         {/* Quality Metrics Grid */}
         {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

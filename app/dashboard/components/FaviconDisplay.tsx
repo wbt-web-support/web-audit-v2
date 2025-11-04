@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase-client';
 
 interface FaviconDisplayProps {
@@ -12,6 +11,35 @@ interface FaviconDisplayProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   fallbackIcon?: React.ReactNode;
+}
+
+// Helper function to convert relative URLs to absolute URLs
+function resolveFaviconUrl(faviconUrl: string | null, siteUrl: string | null): string | null {
+  if (!faviconUrl) return null;
+  if (!siteUrl) return faviconUrl;
+
+  // If already absolute URL, return as is
+  if (faviconUrl.startsWith('http://') || faviconUrl.startsWith('https://')) {
+    return faviconUrl;
+  }
+
+  // If relative URL, resolve against site URL
+  try {
+    const baseUrl = new URL(siteUrl);
+    // Handle protocol-relative URLs (//example.com/favicon.ico)
+    if (faviconUrl.startsWith('//')) {
+      return `${baseUrl.protocol}${faviconUrl}`;
+    }
+    // Handle root-relative URLs (/favicon.ico)
+    if (faviconUrl.startsWith('/')) {
+      return `${baseUrl.protocol}//${baseUrl.hostname}${faviconUrl}`;
+    }
+    // Handle relative URLs (favicon.ico)
+    return new URL(faviconUrl, baseUrl).href;
+  } catch (error) {
+    console.warn('Error resolving favicon URL:', error);
+    return faviconUrl;
+  }
 }
 
 export default function FaviconDisplay({
@@ -27,8 +55,11 @@ export default function FaviconDisplay({
   }, [projectId, data]);
 
   const [brandData, setBrandData] = useState<any | null>(null);
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [currentFaviconIndex, setCurrentFaviconIndex] = useState(0);
+  const [faviconUrls, setFaviconUrls] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,14 +67,18 @@ export default function FaviconDisplay({
     async function loadBrandData() {
       if (!effectiveProjectId) {
         setBrandData(null);
+        setSiteUrl(null);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setImageError(false);
+      
+      // Fetch both brand_data and site_url
       const { data: row, error } = await supabase
         .from('audit_projects')
-        .select('brand_data')
+        .select('brand_data, site_url')
         .eq('id', effectiveProjectId)
         .single();
 
@@ -52,6 +87,7 @@ export default function FaviconDisplay({
       if (error) {
         console.error('Error fetching brand_data:', error);
         setBrandData(null);
+        setSiteUrl(null);
       } else {
         let parsed = row?.brand_data ?? null;
         // Handle JSON stored as string
@@ -63,7 +99,18 @@ export default function FaviconDisplay({
           }
         }
         setBrandData(parsed);
+        setSiteUrl(row?.site_url ?? null);
         
+        // Debug logging (only in development)
+        if (parsed && process.env.NODE_ENV === 'development') {
+          const favicons = parsed.favicons || parsed.summary?.favicons || [];
+          console.log('FaviconDisplay: Loaded brand_data', {
+            hasFavicons: favicons.length > 0,
+            faviconCount: favicons.length,
+            siteUrl: row?.site_url,
+            favicons: favicons.map((f: any) => ({ href: f.href, rel: f.rel, isDefault: f.isDefault }))
+          });
+        }
       }
       setIsLoading(false);
     }
@@ -75,9 +122,9 @@ export default function FaviconDisplay({
     };
   }, [effectiveProjectId]);
 
-  // Extract favicon URL from brand_data
-  const faviconUrl = useMemo(() => {
-    if (!brandData) return null;
+  // Extract favicon URLs from brand_data and resolve them to absolute URLs
+  const extractedFaviconUrls = useMemo(() => {
+    if (!brandData) return [];
 
     // Get favicons array (prefer direct favicons over summary.favicons)
     let favicons: any[] = [];
@@ -87,15 +134,26 @@ export default function FaviconDisplay({
       favicons = brandData.summary.favicons;
     }
 
-    if (favicons.length === 0) return null;
+    if (favicons.length === 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('FaviconDisplay: No favicons found in brand_data');
+      }
+      return [];
+    }
 
     // Filter out default favicons and find best match
     const nonDefault = favicons.filter((fav) => !fav.isDefault && fav.href);
     
-    if (nonDefault.length === 0) return null;
+    if (nonDefault.length === 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('FaviconDisplay: All favicons are marked as default');
+      }
+      return [];
+    }
 
     // Prefer PNG/SVG over ICO, and prefer "icon" over "apple-touch-icon"
     const priorityOrder = ['png', 'svg', 'webp', 'jpg', 'jpeg'];
+    const resolvedUrls: string[] = [];
     
     // First try to find by file extension priority
     for (const ext of priorityOrder) {
@@ -103,16 +161,55 @@ export default function FaviconDisplay({
         const href = fav.href?.toLowerCase() || '';
         return href.includes(`.${ext}`);
       });
-      if (favicon) return favicon.href;
+      if (favicon) {
+        const resolvedUrl = resolveFaviconUrl(favicon.href, siteUrl);
+        if (resolvedUrl && !resolvedUrls.includes(resolvedUrl)) {
+          resolvedUrls.push(resolvedUrl);
+        }
+      }
     }
 
     // If no priority format found, prefer "icon" over "apple-touch-icon"
     const iconFavicon = nonDefault.find((fav) => fav.rel === 'icon');
-    if (iconFavicon) return iconFavicon.href;
+    if (iconFavicon) {
+      const resolvedUrl = resolveFaviconUrl(iconFavicon.href, siteUrl);
+      if (resolvedUrl && !resolvedUrls.includes(resolvedUrl)) {
+        resolvedUrls.push(resolvedUrl);
+      }
+    }
 
-    // Return first non-default favicon
-    return nonDefault[0]?.href || null;
-  }, [brandData]);
+    // Add remaining non-default favicons
+    nonDefault.forEach((fav) => {
+      const resolvedUrl = resolveFaviconUrl(fav.href, siteUrl);
+      if (resolvedUrl && !resolvedUrls.includes(resolvedUrl)) {
+        resolvedUrls.push(resolvedUrl);
+      }
+    });
+
+    if (process.env.NODE_ENV === 'development' && resolvedUrls.length > 0) {
+      console.log('FaviconDisplay: Extracted favicon URLs', { 
+        count: resolvedUrls.length,
+        urls: resolvedUrls
+      });
+    }
+
+    return resolvedUrls;
+  }, [brandData, siteUrl]);
+
+  // Update favicon URLs when extracted URLs change
+  useEffect(() => {
+    if (extractedFaviconUrls.length > 0) {
+      setFaviconUrls(extractedFaviconUrls);
+      setCurrentFaviconIndex(0);
+      setImageError(false);
+    } else {
+      setFaviconUrls([]);
+      setCurrentFaviconIndex(0);
+    }
+  }, [extractedFaviconUrls]);
+
+  // Get current favicon URL
+  const faviconUrl = faviconUrls[currentFaviconIndex] || null;
 
 
 
@@ -125,7 +222,30 @@ export default function FaviconDisplay({
 
   const imageSize = size === 'sm' ? 16 : size === 'md' ? 20 : size === 'lg' ? 24 : 40;
 
-  const handleImageError = () => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // Try next favicon URL if available
+    if (currentFaviconIndex < faviconUrls.length - 1) {
+      const nextIndex = currentFaviconIndex + 1;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('FaviconDisplay: Trying next favicon', {
+          current: faviconUrl,
+          next: faviconUrls[nextIndex],
+          index: nextIndex,
+          total: faviconUrls.length
+        });
+      }
+      setCurrentFaviconIndex(nextIndex);
+      setImageError(false);
+      return;
+    }
+
+    // All favicons failed, show fallback
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('FaviconDisplay: All favicon URLs failed to load', {
+        urls: faviconUrls,
+        lastAttempted: faviconUrl
+      });
+    }
     setImageError(true);
     setIsLoading(false);
   };
@@ -145,6 +265,12 @@ export default function FaviconDisplay({
 
   // Show fallback if no favicon URL found, image error, no brandData, or no projectId
   if (!faviconUrl || imageError || !brandData || !effectiveProjectId) {
+    if (!faviconUrl && brandData && process.env.NODE_ENV === 'development') {
+      console.warn('FaviconDisplay: No favicon URL found despite having brand_data', {
+        brandData,
+        siteUrl
+      });
+    }
     return (
       <div className={`${sizeClasses[size]} ${className} bg-gray-200 rounded flex items-center justify-center`}>
         {fallbackIcon || (
@@ -156,9 +282,11 @@ export default function FaviconDisplay({
     );
   }
 
+  // Use regular img tag for better CORS handling with external favicons
+  // Next.js Image component can have issues with external domains
   return (
     <div className={`${sizeClasses[size]} ${className} relative`}>
-      <Image
+      <img
         src={faviconUrl}
         alt="Site favicon"
         width={imageSize}
@@ -166,7 +294,7 @@ export default function FaviconDisplay({
         className="rounded"
         onError={handleImageError}
         onLoad={handleImageLoad}
-        unoptimized
+        style={{ objectFit: 'contain' }}
       />
     </div>
   );
