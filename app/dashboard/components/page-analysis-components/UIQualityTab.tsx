@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
+import { useUserPlan } from '@/hooks/useUserPlan'
 
 interface UIQualityTabProps {
   page: {
@@ -150,6 +151,21 @@ interface ImageAnalysis {
 
 export default function UIQualityTab({ page }: UIQualityTabProps) {
   const content = page.html_content || ''
+  const { hasFeature, loading: planLoading, planInfo } = useUserPlan()
+  const hasScreenshotAccess = hasFeature('capture_screenshot')
+  
+  // Log plan features for debugging
+  useEffect(() => {
+    if (!planLoading && planInfo) {
+      console.log('UIQualityTab - Plan Features*****************************************************:', {
+        planType: planInfo.plan_type,
+        planName: planInfo.plan_name,
+        can_use_features: planInfo.can_use_features,
+        hasScreenshotAccess,
+        featuresCount: planInfo.can_use_features?.length || 0
+      })
+    }
+  }, [planLoading, planInfo, hasScreenshotAccess])
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
   const [desktopScreenshotUrl, setDesktopScreenshotUrl] = useState<string | null>(null)
   const [mobileScreenshotUrl, setMobileScreenshotUrl] = useState<string | null>(null)
@@ -161,6 +177,12 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
   // Unified process: Capture screenshot and analyze in one flow
   const processPageAnalysis = async (forceRetake: boolean = false) => {
+    // Check if user has access to screenshot feature
+    if (!hasScreenshotAccess) {
+      setProcessingError('Screenshot capture is a premium feature. Please upgrade your plan to access this feature.')
+      return
+    }
+
     if (!page.url || !page.id) {
       setProcessingError('No URL or page ID available')
         return
@@ -301,6 +323,9 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
   // Check if image exists in database first - only run when page.id changes
   useEffect(() => {
+    // Wait for plan loading to complete
+    if (planLoading) return
+
     // Reset check state when page changes
     setHasCheckedDatabase(false)
     setProcessingError(null)
@@ -317,14 +342,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                           page.page_image?.mobile?.url
     
     if (desktopImageUrl && typeof desktopImageUrl === 'string' && desktopImageUrl.trim() !== '') {
-      // Image exists in database, use it
+      // Image exists in database, use it (even if user doesn't have access, show existing screenshots)
       setDesktopScreenshotUrl(desktopImageUrl)
       setMobileScreenshotUrl(mobileImageUrl && typeof mobileImageUrl === 'string' ? mobileImageUrl : null)
       setScreenshotUrl(desktopImageUrl) // Keep legacy for backward compatibility
       setHasCheckedDatabase(true)
       
       // Check if analysis also exists - if so, fetch it; otherwise trigger new analysis
-      if (page.id && page.url) {
+      if (page.id && page.url && hasScreenshotAccess) {
         // Try to get existing analysis first
         fetch(`/api/image-analysis?pageId=${page.id}`)
           .then(res => res.json())
@@ -333,14 +358,22 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
               setImageAnalysis(data.analysis)
               setCurrentStep('complete')
             } else {
-              // No analysis exists, trigger it
+              // No analysis exists, trigger it (only if user has access)
               processPageAnalysis(false)
             }
           })
           .catch(() => {
-            // If check fails, trigger new analysis
-            processPageAnalysis(false)
+            // If check fails, trigger new analysis (only if user has access)
+            if (hasScreenshotAccess) {
+              processPageAnalysis(false)
+            }
           })
+      } else if (page.id && page.url && hasScreenshotAccess) {
+        // No image in database but user has access, start the full process
+        setHasCheckedDatabase(true)
+        processPageAnalysis(false)
+      } else {
+        setHasCheckedDatabase(true)
       }
       return
     }
@@ -354,11 +387,13 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       return
     }
 
-    // No image in database, start the full process
+    // No image in database, start the full process (only if user has access)
     setHasCheckedDatabase(true)
-    processPageAnalysis(false)
+    if (hasScreenshotAccess) {
+      processPageAnalysis(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page.id]) // Only depend on page.id to avoid re-running unnecessarily
+  }, [page.id, planLoading, hasScreenshotAccess]) // Depend on plan loading and access
   
   // Comprehensive HTML Structure Analysis
   const hasViewport = content.includes('viewport')
@@ -594,12 +629,29 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
     }
   }
 
+  // Show loading state while checking plan access
+  if (planLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't show premium card - show all non-AI data instead
+  // Only hide AI-powered screenshot analysis
+
   return (
     <div className="space-y-8">
       {/* Header with Reanalyze Button */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900">UI Quality Analysis</h2>
-        {(imageAnalysis || screenshotUrl) && (
+        {(imageAnalysis || screenshotUrl) && hasScreenshotAccess && (
           <button
             onClick={handleRetakeScreenshot}
             disabled={processing}
@@ -609,7 +661,46 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <span>{processing ? 'Reanalyzing...' : 'Reanalyze'}</span>
           </button>
         )}
+        {!hasScreenshotAccess && (imageAnalysis || screenshotUrl) && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Premium Feature - View Only</span>
+          </div>
+        )}
       </div>
+
+      {/* AI-Powered Screenshot Analysis Section - Premium Feature */}
+      {!hasScreenshotAccess && !imageAnalysis && !desktopScreenshotUrl && !screenshotUrl && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="text-blue-500">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">AI-Powered Screenshot Analysis</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Capture screenshots and get AI-powered UI/UX analysis of your web pages. This premium feature provides detailed visual design insights, content analysis, and actionable recommendations.
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-500">
+                  Feature: <span className="font-medium">Capture Screenshot 📸</span>
+                </div>
+                <button 
+                  onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Upgrade Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overall Quality Score */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
@@ -624,8 +715,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           </div> */}
         </div>
         
-        {/* Processing Steps - Simple Loader */}
-        {processing && (
+        {/* Processing Steps - Simple Loader - Only show if user has access */}
+        {processing && hasScreenshotAccess && (
           <div className="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-6">
             <div className="flex flex-col items-center space-y-4">
               {/* Simple spinner */}
@@ -649,14 +740,15 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           </div>
         )}
 
-        {processingError && (
+        {processingError && hasScreenshotAccess && (
           <div className="mt-6 bg-white rounded-lg border border-red-200 p-6">
             <div className="text-red-600 text-sm mb-2">Error processing page</div>
             <div className="text-red-500 text-xs">{processingError}</div>
           </div>
         )}
 
-        {imageAnalysis && (() => {
+        {/* AI Analysis Results - Only show if user has access */}
+        {imageAnalysis && hasScreenshotAccess && (() => {
           // Use desktop analysis as primary, fallback to top-level if new format not available
           const primaryAnalysis = imageAnalysis.desktop || imageAnalysis
           return (

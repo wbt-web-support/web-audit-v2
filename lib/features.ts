@@ -105,6 +105,14 @@ export const FEATURES: Feature[] = [
     icon: '📱',
     isCore: false
   },
+  {
+    id: 'capture_screenshot',
+    name: 'Capture Screenshot',
+    description: 'Capture and store screenshots of web pages for visual reference and analysis',
+    category: 'media',
+    icon: '📸',
+    isCore: false
+  },
 
   // Technical & Performance
   {
