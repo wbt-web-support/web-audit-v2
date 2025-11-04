@@ -73,6 +73,8 @@ interface UserProfile {
     is_external: boolean;
     response_time: number | null;
     performance_analysis: any | null; // Store PageSpeed Insights analysis results
+    page_image: any | null; // Store screenshot image data (JSON)
+    Image_gemini_analysis: any | null; // Store Gemini image analysis results (JSON) - Note: column name is case-sensitive
     created_at: string;
     updated_at: string;
   }

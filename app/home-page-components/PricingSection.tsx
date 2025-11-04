@@ -649,80 +649,78 @@ export default function PricingSection({
   return (
     <section
       id="pricing"
-      className={`  py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className} `}
+      className={`py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className} `}
     >
-      <div className=" max-w-[90rem] mx-auto   ">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-<div className="flex flex-col justify-start    ">
-     
+        <div className="flex flex-col justify-start">
+          <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20 max-w-4xl">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-black mb-3 sm:mb-4 raleway leading-tight">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-black/70 raleway">
+              Choose the plan that fits your needs. No hidden fees, no surprises.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            {/* Billing Cycle Toggle */}
+            {showBillingToggle && (
+              <div className="flex flex-col items-center gap-2 sm:gap-3 mb-6 sm:mb-8 w-full">
+                {/* Toggle Container */}
+                <div className="relative inline-flex items-center bg-gray-100 rounded-full p-1 sm:p-1.5">
+                  <button
+                    onClick={() => setBillingCycle("monthly")}
+                    className={`relative px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm md:text-base font-medium transition-all duration-200 z-10 focus:outline-none ${
+                      billingCycle === "monthly"
+                        ? "text-black"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Monthly
+                  </button>
 
-        <div className="mb-12 md:mb-16 lg:mb-20 max-w-4xl">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium text-black mb-4 raleway leading-tight">
-          Simple, Transparent Pricing
-          </h2>
-          <p className="text-lg md:text-xl lg:text-2xl text-black/70 raleway">
-          Choose the plan that fits your needs. No hidden fees, no surprises.
-          </p>
-        </div>
-        <div className="flex justify-center">
-          {/* Billing Cycle Toggle */}
-          {showBillingToggle && (
-            <div className="flex flex-col items-center gap-3 mb-8">
-              {/* Toggle Container */}
-              <div className="relative inline-flex items-center bg-gray-100 rounded-full p-1.5">
-                <button
-                  onClick={() => setBillingCycle("monthly")}
-                  className={`relative px-5 py-2 text-sm md:text-base font-medium transition-all duration-200 z-10 focus:outline-none ${
-                    billingCycle === "monthly"
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Monthly
-                </button>
+                  <button
+                    onClick={() => setBillingCycle("yearly")}
+                    className={`relative px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm md:text-base font-medium transition-all duration-200 z-10 focus:outline-none ${
+                      billingCycle === "yearly"
+                        ? "text-black"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Yearly
+                  </button>
 
-                <button
-                  onClick={() => setBillingCycle("yearly")}
-                  className={`relative px-5 py-2 text-sm md:text-base font-medium transition-all duration-200 z-10 focus:outline-none ${
-                    billingCycle === "yearly"
-                      ? "text-black"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Yearly
-                </button>
+                  {/* Active Background Slider */}
+                  <span
+                    className={`absolute top-1 sm:top-1.5 bottom-1 sm:bottom-1.5 rounded-full bg-white shadow-md transition-all duration-200 ${
+                      billingCycle === "yearly"
+                        ? "left-1/2 right-1 sm:right-1.5"
+                        : "left-1 sm:left-1.5 right-1/2"
+                    }`}
+                  />
+                </div>
 
-                {/* Active Background Slider */}
-                <span
-                  className={`absolute top-1.5 bottom-1.5 rounded-full bg-white shadow-md transition-all duration-200 ${
-                    billingCycle === "yearly"
-                      ? "left-1/2 right-1.5"
-                      : "left-1.5 right-1/2"
-                  }`}
-                />
+                {/* Save Badge */}
+                <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1 sm:px-4 sm:py-1.5">
+                  <span className="text-green-700 text-xs sm:text-sm font-semibold">
+                    Yearly 17% Save
+                  </span>
+                </div>
               </div>
-
-              {/* Save Badge */}
-              <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-1.5">
-                <span className="text-green-700 text-xs md:text-sm font-semibold">
-                  Yearly 17% Save
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </div>
         {/* Pricing Cards */}
 
         <div
-          className={`grid grid-cols-1 gap-6 max-w-7xl mx-auto ${
+          className={`grid grid-cols-1 gap-4 sm:gap-6 max-w-7xl mx-auto ${
             filteredPlans.length === 1
-              ? "md:grid-cols-1 max-w-md"
+              ? "sm:max-w-md"
               : filteredPlans.length === 2
-              ? "md:grid-cols-2"
+              ? "sm:grid-cols-2"
               : filteredPlans.length === 3
-              ? "md:grid-cols-3"
-              : "md:grid-cols-2 lg:grid-cols-3"
+              ? "sm:grid-cols-2 md:grid-cols-3"
+              : "sm:grid-cols-2 lg:grid-cols-3"
           }`}
         >
           {loadingPlans
@@ -749,9 +747,9 @@ export default function PricingSection({
             : filteredPlans.map((plan, index) => (
                 <div
                   key={plan.id || `${plan.name}_${plan.billing_cycle}_${index}`}
-                  className={`relative rounded-3xl p-4 ${
+                  className={`relative rounded-2xl sm:rounded-3xl p-3 sm:p-4 ${
                     plan.popular && plan.billing_cycle === billingCycle
-                      ? "bg-black text-white  scale-105"
+                      ? "bg-black text-white sm:scale-105"
                       : "bg-white text-black "
                   } border-2 ${
                     plan.popular && plan.billing_cycle === billingCycle
@@ -762,8 +760,8 @@ export default function PricingSection({
                   {/* Popular Badge */}
 
                   {plan.popular && plan.billing_cycle === billingCycle && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold ">
+                    <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-white text-black px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold">
                         Most Popular
                       </span>
                     </div>
@@ -771,8 +769,8 @@ export default function PricingSection({
 
                   {/* Current Plan Badge */}
                   {plan.planStatus === "current" && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold ">
+                    <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-gray-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold">
                         Current Plan
                       </span>
                     </div>
@@ -780,8 +778,8 @@ export default function PricingSection({
 
                   {/* Billing Change Badge */}
                   {plan.planStatus === "billing_change" && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold ">
+                    <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-gray-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold">
                         Switch Billing
                       </span>
                     </div>
@@ -789,8 +787,8 @@ export default function PricingSection({
 
                   {/* Upgrade/Downgrade Badge */}
                   {plan.planStatus === "upgrade_downgrade" && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className={`bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-semibold `}>
+                    <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                      <span className={`bg-gray-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold`}>
                         {plan.amount >
                         (plans.find((p) => p.plan_type === currentPlanType)
                           ?.amount || 0)
@@ -802,18 +800,18 @@ export default function PricingSection({
 
                   {/* Plan Header */}
 
-                  <div className={`p-8 rounded-3xl mb-8 ${
+                  <div className={`p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 md:mb-8 ${
                     plan.plan_type === "Growth" 
                       ? "bg-[#447BF8] text-white" 
                       : "bg-[#F4F4F4] text-black"
                   }`}>
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <div className="mb-4">
-                      <span className="text-5xl font-bold">{plan.price}</span>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h3>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{plan.price}</span>
 
                       {plan.plan_type !== "Starter" && (
                         <span
-                          className={`text-lg ml-2 ${
+                          className={`text-base sm:text-lg ml-2 ${
                             plan.popular && plan.billing_cycle === billingCycle
                               ? "text-gray-300"
                               : plan.plan_type === "Growth" 
@@ -827,7 +825,7 @@ export default function PricingSection({
                     </div>
 
                     <p
-                      className={`text-sm ${
+                      className={`text-xs sm:text-sm ${
                         plan.popular && plan.billing_cycle === billingCycle
                           ? "text-gray-300"
                           : "text-gray-600"
@@ -840,7 +838,7 @@ export default function PricingSection({
 <button
                     onClick={() => handlePayment(plan)}
                     disabled={loading === plan.id || !plan.canPurchase}
-                    className={`w-full py-4 mt-8 rounded-lg font-semibold transition-all duration-300 ${
+                    className={`w-full py-3 sm:py-4 mt-4 sm:mt-6 md:mt-8 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 ${
                       plan.popular && plan.billing_cycle === billingCycle
                         ? "bg-white text-black hover:bg-gray-100 disabled:bg-gray-300"
                         : plan.planStatus === "current"
@@ -855,14 +853,14 @@ export default function PricingSection({
 
                   {/* Features List */}
 
-                  <ul className="space-y-4 mb-8">
+                  <ul className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 md:mb-8">
                     {plan.features.map(
                       (feature: unknown, featureIndex: number) => {
                         const featureText = extractFeatureText(feature);
                         return (
                           <li key={featureIndex} className="flex items-start">
                             <span
-                              className={`text-lg mr-3 ${
+                              className={`text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0 mt-0.5 ${
                                 plan.popular &&
                                 plan.billing_cycle === billingCycle
                                   ? "text-white"
@@ -873,7 +871,7 @@ export default function PricingSection({
                             </span>
 
                             <span
-                              className={`text-sm ${
+                              className={`text-xs sm:text-sm ${
                                 plan.popular &&
                                 plan.billing_cycle === billingCycle
                                   ? "text-gray-300"
@@ -893,8 +891,8 @@ export default function PricingSection({
                   {/* Payment Success Message */}
 
                   {paymentSuccess && plan.plan_type !== "Starter" && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 text-sm text-center">
+                    <div className="mt-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-green-800 text-xs sm:text-sm text-center">
                         ✅ Payment successful! ID: {paymentSuccess}
                       </p>
                     </div>

@@ -247,6 +247,328 @@ Provide only the JSON response, no additional text or explanations.
     throw new Error('Failed to analyze content with AI');
   }
 }
+export interface GeminiImageAnalysisResult {
+  ui_ux_score: number;
+  content_score: number;
+  overall_score: number;
+  ui_ux_analysis: {
+    layout_score: number;
+    color_scheme_score: number;
+    typography_score: number;
+    spacing_score: number;
+    visual_hierarchy_score: number;
+    accessibility_score: number;
+    mobile_responsiveness_score: number;
+    navigation_score: number;
+    call_to_action_score: number;
+    issues: Array<{
+      type: 'layout' | 'color' | 'typography' | 'spacing' | 'hierarchy' | 'accessibility' | 'mobile' | 'navigation' | 'cta';
+      severity: 'high' | 'medium' | 'low';
+      description: string;
+      suggestion: string;
+      location?: string;
+      impact?: string;
+    }>;
+    strengths: string[];
+    detailed_metrics: {
+      color_contrast_ratio: string;
+      font_sizes_used: string[];
+      spacing_consistency: string;
+      element_alignment: string;
+      visual_balance: string;
+    };
+  };
+  content_analysis: {
+    readability_score: number;
+    clarity_score: number;
+    structure_score: number;
+    seo_score: number;
+    content_length_score: number;
+    heading_structure_score: number;
+    issues: Array<{
+      type: 'readability' | 'clarity' | 'structure' | 'formatting' | 'seo' | 'length' | 'headings';
+      severity: 'high' | 'medium' | 'low';
+      description: string;
+      suggestion: string;
+      location?: string;
+    }>;
+    strengths: string[];
+    detailed_metrics: {
+      word_count_estimate: number;
+      heading_count: number;
+      paragraph_count: number;
+      list_usage: string;
+      content_density: string;
+    };
+  };
+  design_patterns: {
+    identified_patterns: string[];
+    modern_design_elements: string[];
+    outdated_elements: string[];
+    best_practices_followed: string[];
+    best_practices_missing: string[];
+  };
+  brand_consistency: {
+    score: number;
+    color_consistency: string;
+    typography_consistency: string;
+    style_consistency: string;
+    issues: Array<{
+      description: string;
+      suggestion: string;
+    }>;
+  };
+  recommendations: Array<{
+    category: string;
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    impact: string;
+    effort: 'low' | 'medium' | 'high';
+  }>;
+  summary: string;
+  detailed_summary: {
+    overall_assessment: string;
+    key_strengths: string[];
+    key_weaknesses: string[];
+    quick_wins: string[];
+    long_term_improvements: string[];
+  };
+  analysis_timestamp: string;
+  token_usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
+}
+
+export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string): Promise<GeminiImageAnalysisResult> {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp'
+    });
+
+    // Fetch the image
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    // Convert ArrayBuffer to base64 (Node.js compatible)
+    const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+    const imageMimeType = imageResponse.headers.get('content-type') || 'image/png';
+
+    const prompt = `
+You are an expert UI/UX designer and content analyst. Analyze the provided screenshot of a web page and provide an EXTREMELY COMPREHENSIVE and DETAILED assessment.
+
+**Page URL:** ${pageUrl}
+
+**CRITICAL: Provide maximum detail and analysis. This is not a brief overview - provide deep insights.**
+
+**Analysis Requirements:**
+
+1. **UI/UX Analysis (0-100 score for each category with detailed metrics):**
+   - Layout: Evaluate visual layout, grid structure, alignment, organization, symmetry, balance
+   - Color Scheme: Assess color choices, contrast ratios, accessibility (WCAG compliance), visual appeal, color psychology
+   - Typography: Analyze font choices, sizes, hierarchy, readability, font pairing, line height, letter spacing
+   - Spacing: Evaluate whitespace, padding, margins, visual breathing room, consistency
+   - Visual Hierarchy: Assess how well elements guide user attention, focal points, information architecture
+   - Accessibility: Check for accessibility issues (contrast, text sizing, interactive elements, ARIA indicators)
+   - Mobile Responsiveness: Evaluate how the design appears on mobile (if visible), breakpoints, responsive patterns
+   - Navigation: Assess navigation structure, menu design, user flow, breadcrumbs
+   - Call-to-Action: Evaluate CTA visibility, placement, design, urgency, conversion optimization
+
+2. **Content Analysis (0-100 score for each category with detailed metrics):**
+   - Readability: How easy is the content to read, Flesch reading ease estimate, sentence complexity
+   - Clarity: How clear and well-organized is the content, information architecture
+   - Structure: Evaluate content organization, headings (H1-H6), sections, logical flow
+   - SEO Elements: Check for visible SEO elements (headings, meta indicators, structured content)
+   - Content Length: Assess if content is too short/long, appropriate for page type
+   - Heading Structure: Evaluate proper heading hierarchy and usage
+
+3. **Design Patterns Analysis:**
+   - Identify modern design patterns used (cards, hero sections, etc.)
+   - Note modern design elements (glassmorphism, gradients, animations, etc.)
+   - Identify outdated design elements
+   - Check best practices followed
+   - List missing best practices
+
+4. **Brand Consistency:**
+   - Evaluate color consistency across page
+   - Typography consistency
+   - Overall style consistency
+   - Brand identity alignment
+
+**Response Format (JSON only, no markdown - BE EXTREMELY DETAILED):**
+{
+  "ui_ux_score": number,
+  "content_score": number,
+  "overall_score": number,
+  "ui_ux_analysis": {
+    "layout_score": number,
+    "color_scheme_score": number,
+    "typography_score": number,
+    "spacing_score": number,
+    "visual_hierarchy_score": number,
+    "accessibility_score": number,
+    "mobile_responsiveness_score": number,
+    "navigation_score": number,
+    "call_to_action_score": number,
+    "issues": [
+      {
+        "type": "layout|color|typography|spacing|hierarchy|accessibility|mobile|navigation|cta",
+        "severity": "high|medium|low",
+        "description": "VERY detailed description with specific examples",
+        "suggestion": "specific, actionable improvement recommendation",
+        "location": "where on the page",
+        "impact": "explanation of impact on user experience"
+      }
+    ],
+    "strengths": ["detailed list of UI/UX strengths with specific examples"],
+    "detailed_metrics": {
+      "color_contrast_ratio": "estimated contrast ratios",
+      "font_sizes_used": ["list of font sizes observed"],
+      "spacing_consistency": "assessment of spacing consistency",
+      "element_alignment": "alignment quality assessment",
+      "visual_balance": "balance and symmetry assessment"
+    }
+  },
+  "content_analysis": {
+    "readability_score": number,
+    "clarity_score": number,
+    "structure_score": number,
+    "seo_score": number,
+    "content_length_score": number,
+    "heading_structure_score": number,
+    "issues": [
+      {
+        "type": "readability|clarity|structure|formatting|seo|length|headings",
+        "severity": "high|medium|low",
+        "description": "detailed description",
+        "suggestion": "specific improvement",
+        "location": "where on page"
+      }
+    ],
+    "strengths": ["detailed list of content strengths"],
+    "detailed_metrics": {
+      "word_count_estimate": number,
+      "heading_count": number,
+      "paragraph_count": number,
+      "list_usage": "assessment of list usage",
+      "content_density": "content density assessment"
+    }
+  },
+  "design_patterns": {
+    "identified_patterns": ["list of design patterns used"],
+    "modern_design_elements": ["modern elements present"],
+    "outdated_elements": ["outdated elements found"],
+    "best_practices_followed": ["best practices observed"],
+    "best_practices_missing": ["missing best practices"]
+  },
+  "brand_consistency": {
+    "score": number,
+    "color_consistency": "detailed assessment",
+    "typography_consistency": "detailed assessment",
+    "style_consistency": "detailed assessment",
+    "issues": [
+      {
+        "description": "consistency issue",
+        "suggestion": "how to fix"
+      }
+    ]
+  },
+  "recommendations": [
+    {
+      "category": "ui_ux|content|design|brand",
+      "priority": "high|medium|low",
+      "title": "recommendation title",
+      "description": "detailed description",
+      "impact": "impact on user experience",
+      "effort": "low|medium|high"
+    }
+  ],
+  "summary": "brief overall assessment",
+  "detailed_summary": {
+    "overall_assessment": "comprehensive assessment paragraph",
+    "key_strengths": ["detailed strengths"],
+    "key_weaknesses": ["detailed weaknesses"],
+    "quick_wins": ["quick improvements"],
+    "long_term_improvements": ["long-term improvements"]
+  },
+  "analysis_timestamp": "ISO timestamp"
+}
+
+Provide only the JSON response, no additional text or explanations. Be EXTREMELY detailed and comprehensive.
+`;
+
+    const imagePart = {
+      inlineData: {
+        data: imageBase64,
+        mimeType: imageMimeType
+      }
+    };
+
+    const startTime = Date.now();
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = await result.response;
+    const text = response.text();
+    const duration = Date.now() - startTime;
+
+    // Calculate token usage
+    let inputTokens: number;
+    let outputTokens: number;
+
+    try {
+      const usageMetadata = response.usageMetadata;
+      if (usageMetadata) {
+        inputTokens = usageMetadata.promptTokenCount || estimateTokenCount(prompt);
+        outputTokens = usageMetadata.candidatesTokenCount || estimateTokenCount(text);
+      } else {
+        inputTokens = estimateTokenCount(prompt);
+        outputTokens = estimateTokenCount(text);
+      }
+    } catch (e) {
+      inputTokens = estimateTokenCount(prompt);
+      outputTokens = estimateTokenCount(text);
+    }
+
+    const pricing = calculateGeminiCost(inputTokens, outputTokens);
+    console.log('[GEMINI] Image analysis token usage:', {
+      totalTokens: inputTokens + outputTokens,
+      inputTokens,
+      outputTokens,
+      totalCost: `$${pricing.totalCost.toFixed(6)}`,
+      duration: `${duration}ms`
+    });
+
+    // Clean the response text before parsing
+    let cleanedText = text.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    cleanedText = cleanedText.trim();
+
+    const analysisResult = JSON.parse(cleanedText) as GeminiImageAnalysisResult;
+    if (!analysisResult.analysis_timestamp) {
+      analysisResult.analysis_timestamp = new Date().toISOString();
+    }
+
+    analysisResult.token_usage = {
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      total_tokens: inputTokens + outputTokens
+    };
+
+    return analysisResult;
+  } catch (error) {
+    console.error('[GEMINI] Error analyzing image with Gemini:', error);
+    throw new Error('Failed to analyze image with AI');
+  }
+}
+
 export async function getGeminiAnalysisStatus(): Promise<boolean> {
   try {
     const model = genAI.getGenerativeModel({

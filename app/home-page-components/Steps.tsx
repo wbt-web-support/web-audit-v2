@@ -13,29 +13,19 @@ interface Step {
 const steps: Step[] = [
   {
     number: 1,
-    title: "Enter Your Website URL",
-    description: "Just paste your site link into the audit tool. No setup, no technical hassle.",
+    title: "Enter URL",
+    description: "Simply paste your website URL into the audit tool. No registration or setup required.",
     showButton: true,
   },
   {
     number: 2,
-    title: "Smart Crawling Engine Scans Your Site",
-    description: "Our system explores pages, hidden links, and assets the way search engines do.",
+    title: "Automated Analysis",
+    description: "Our system scans your website for SEO, performance, security, and accessibility issues.",
   },
   {
     number: 3,
-    title: "AI-Powered Analysis Runs Automatically",
-    description: "Advanced algorithms check SEO, security, performance, and content in real time.",
-  },
-  {
-    number: 4,
-    title: "Get Scores & Detailed Insights",
-    description: "Receive an easy-to-read dashboard with clear grades and issue breakdowns.",
-  },
-  {
-    number: 5,
-    title: "Fix Issues with Guided Steps",
-    description: "Follow prioritized recommendations with actionable fixes tailored to your site.",
+    title: "Get Results",
+    description: "Receive detailed insights and actionable recommendations to improve your website.",
   },
 ];
 
@@ -46,7 +36,7 @@ export default function Steps() {
         {/* Header Section */}
         <div className="text-center mb-8 md:mb-12 lg:mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-3 md:mb-4">
-            Audit in 5 Simple Steps
+            Audit in 3 Simple Steps
           </h2>
           <p className="text-base md:text-lg lg:text-xl text-gray-600">
             From URL input to insights in under 60 seconds
@@ -54,7 +44,7 @@ export default function Steps() {
         </div>
 
         {/* Steps Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
           {steps.map((step) => (
             <div
               key={step.number}

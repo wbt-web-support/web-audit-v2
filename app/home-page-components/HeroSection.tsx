@@ -52,7 +52,7 @@ export default function HeroSection() {
         </div>
       </div>
     </div>
-    <div className="iamges mx-auto -mt-46 max-w-[90rem] bg-[#D9D9D9] rounded-t-lg px-6 pt-6 relative z-[60]">
+    <div className="iamges mx-auto -mt-46 max-w-[90rem] bg-[#D9D9D9] rounded-t-lg px-6 pt-6 relative z-[60] hidden lg:block">
       <Image src='/images/home-page/hero-sec.png' alt='hero-image' width={1200} height={1200} className='rounded-t-lg shadow-lg w-full' />
     </div>
     </div>

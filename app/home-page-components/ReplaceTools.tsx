@@ -255,55 +255,36 @@ const auditly360Price = "$19 Per Month";
 export default function ReplaceTools() {
   return (
     <div className="relative">
-    <section className="relative max-w-[90rem] overflow-hidden mx-auto px-4 md:px-8 lg:px-12 py-12 md:py-16 lg:py-20 ">
-      <div className="relative">
-        {/* Dark Blue Top Section */}
-        <div className="relative z-10 bg-[#2F00FF] rounded-t-3xl h-24 md:h-32 lg:h-40"></div>
-        
-        {/* White Table Section */}
-        <div className="relative   mx-auto bg-white rounded-b-3xl  -mt-1">
-        <div className=" relative z-20 -top-20 w-[90%] mx-auto bg-slate-100 rounded-3xl  -mt-1">
-          <div className="overflow-x-auto">
-            <table className="w-[90%] mx-auto">
-              {/* Header Row */}
-              <thead>
-                <tr className="border-b-2 border-green-500">
-                  <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                    Features
-                  </th>
-                  <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                    Replaces
-                  </th>
-                  <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                    Other Tools
-                  </th>
-                  <th className="text-right px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                    <div className="flex items-center justify-end gap-2 md:gap-3">
-                      <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0">
-                        <div className="absolute left-0 top-0 w-1/2 h-full bg-blue-500"></div>
-                        <div className="absolute right-0 top-0 w-1/2 h-full bg-black"></div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm md:text-base lg:text-lg font-semibold">Auditly</div>
-                        <div className="text-sm md:text-base lg:text-lg font-semibold">360</div>
-                      </div>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
+      <section className="relative max-w-[90rem] overflow-hidden mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:py-20">
+        <div className="relative">
+          {/* Dark Blue Top Section */}
+          <div className="relative z-10 bg-[#2F00FF] rounded-t-2xl sm:rounded-t-3xl h-20 sm:h-24 md:h-32 lg:h-40"></div>
+          
+          {/* Content Container */}
+          <div className="relative mx-auto bg-white rounded-b-2xl sm:rounded-b-3xl -mt-1">
+            <div className="relative z-20 -top-16 sm:-top-20 w-[95%] sm:w-[90%] mx-auto bg-slate-100 rounded-2xl sm:rounded-3xl -mt-1 p-4 sm:p-6 md:p-8">
               
-              {/* Body Rows */}
-              <tbody>
+              {/* Mobile Cards View - Visible on small screens only */}
+              <div className="md:hidden space-y-4">
                 {features.map((row, index) => (
-                  <tr
+                  <div
                     key={index}
-                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm"
                   >
-                    <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg text-gray-800 font-medium">
-                      {row.feature}
-                    </td>
-                    <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6">
-                      <div className="grid grid-cols-3 gap-2 max-w-fit">
+                    {/* Feature Header */}
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex-1 pr-2">
+                        {row.feature}
+                      </h3>
+                      <CheckCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                    </div>
+
+                    {/* Tools Replaced */}
+                    <div className="mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs sm:text-sm text-gray-500 font-medium">Replaces:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
                         {row.replaces.length > 0 ? (
                           row.replaces.map((tool, toolIndex) => {
                             const icon = toolIcons[tool];
@@ -311,49 +292,163 @@ export default function ReplaceTools() {
                             return <ToolIconDisplay key={toolIndex} icon={icon} />;
                           })
                         ) : (
-                          <span className="text-gray-400 text-sm">—</span>
+                          <span className="text-gray-400 text-xs sm:text-sm">—</span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg text-gray-800 text-right">
-                      {row.unique ? (
-                        <span className="text-gray-600 italic">{row.otherToolsPrice}</span>
-                      ) : (
-                        <span>{row.otherToolsPrice}</span>
-                      )}
-                    </td>
-                    <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6">
-                      <div className="flex justify-end">
-                        <CheckCircleIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-green-500 flex-shrink-0" />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                
-                {/* Summary Row */}
-                <tr className="border-t-2 border-gray-300 bg-gray-50">
-                  <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                    Overall Price
-                  </td>
-                  <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6"></td>
-                  <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800 text-right">
-                    {totalOtherToolsPrice}
-                  </td>
-                  <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-right">
-                    <div className="inline-block bg-gray-100 px-4 py-2 md:px-6 md:py-3 rounded-lg border border-gray-200">
-                      <span className="text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                        {auditly360Price}
-                      </span>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+
+                    {/* Price Comparison */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 mb-1">Other Tools</span>
+                        <span className="text-sm sm:text-base font-semibold text-gray-700">
+                          {row.unique ? (
+                            <span className="italic text-gray-600">{row.otherToolsPrice}</span>
+                          ) : (
+                            row.otherToolsPrice
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-gray-500 mb-1">Auditly 360</span>
+                        <span className="text-xs sm:text-sm font-medium text-green-600">✓ Included</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Mobile Summary Card */}
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-gray-200 mt-6">
+                  <div className="text-center mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-1">
+                      Total Cost Comparison
+                    </h3>
+                  </div>
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200">
+                      <div className="text-center">
+                        <div className="text-xs sm:text-sm text-gray-500 mb-1 font-medium">
+                          Multiple Tools Combined
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                          {totalOtherToolsPrice}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-gray-50 rounded-lg p-3 sm:p-4 border-2 border-blue-200 relative">
+                      <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                          Best Value
+                        </span>
+                      </div>
+                      <div className="text-center mt-2">
+                        <div className="text-xs sm:text-sm text-gray-600 mb-1 font-medium">
+                          Auditly 360
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {auditly360Price}
+                        </div>
+                        <div className="text-xs sm:text-sm text-green-600 font-semibold mt-1">
+                          Save 96%+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop Table View - Hidden on small screens, visible on md and up */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  {/* Header Row */}
+                  <thead>
+                    <tr className="border-b-2 border-green-500">
+                      <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                        Features
+                      </th>
+                      <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                        Replaces
+                      </th>
+                      <th className="text-left px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                        Other Tools
+                      </th>
+                      <th className="text-right px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                        <div className="flex items-center justify-end gap-2 md:gap-3">
+                          <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0">
+                            <div className="absolute left-0 top-0 w-1/2 h-full bg-blue-500"></div>
+                            <div className="absolute right-0 top-0 w-1/2 h-full bg-black"></div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm md:text-base lg:text-lg font-semibold">Auditly</div>
+                            <div className="text-sm md:text-base lg:text-lg font-semibold">360</div>
+                          </div>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  
+                  {/* Body Rows */}
+                  <tbody>
+                    {features.map((row, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg text-gray-800 font-medium">
+                          {row.feature}
+                        </td>
+                        <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6">
+                          <div className="flex flex-wrap gap-2 max-w-fit">
+                            {row.replaces.length > 0 ? (
+                              row.replaces.map((tool, toolIndex) => {
+                                const icon = toolIcons[tool];
+                                if (!icon) return null;
+                                return <ToolIconDisplay key={toolIndex} icon={icon} />;
+                              })
+                            ) : (
+                              <span className="text-gray-400 text-sm">—</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg text-gray-800 text-right">
+                          {row.unique ? (
+                            <span className="text-gray-600 italic">{row.otherToolsPrice}</span>
+                          ) : (
+                            <span>{row.otherToolsPrice}</span>
+                          )}
+                        </td>
+                        <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6">
+                          <div className="flex justify-end">
+                            <CheckCircleIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-green-500 flex-shrink-0" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    
+                    {/* Summary Row */}
+                    <tr className="border-t-2 border-gray-300 bg-gray-50">
+                      <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                        Overall Price
+                      </td>
+                      <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6"></td>
+                      <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800 text-right">
+                        {totalOtherToolsPrice}
+                      </td>
+                      <td className="px-4 md:px-6 lg:px-8 py-4 md:py-6 text-right">
+                        <div className="inline-block bg-gray-100 px-4 py-2 md:px-6 md:py-3 rounded-lg border border-gray-200">
+                          <span className="text-sm md:text-base lg:text-lg font-semibold text-gray-800">
+                            {auditly360Price}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
-        </div>
-      </div>
-    </section>
+      </section>
     </div>
   );
 }

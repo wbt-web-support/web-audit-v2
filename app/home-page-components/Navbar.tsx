@@ -7,6 +7,7 @@ export default function Navbar() {
   const [isHeroSection, setIsHeroSection] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const items = [
     {
@@ -124,6 +125,8 @@ export default function Navbar() {
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Close mobile menu when link is clicked
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -145,41 +148,196 @@ export default function Navbar() {
     : 'bg-blue-600 border border-blue-600 text-white hover:bg-blue-700';
 
   return (
-    <div 
-      className={`max-w-[90rem] mx-auto flex justify-between items-center fixed top-0 left-0 right-0 z-[100] mt-8 px-4 md:px-8 transition-opacity duration-300 ease-in-out ${
-        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
-    >
-      <Link 
-        href="#home" 
-        onClick={(e) => handleSmoothScroll(e, '#home')} 
-        className={`${logoClasses} text-2xl font-bold cursor-pointer transition-colors duration-300`}
+    <>
+      <style jsx>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes bounceIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.3) translateY(20px);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
+      <div 
+        className={`max-w-[90rem] mx-auto flex justify-between items-center fixed top-0 left-0 right-0 z-[100] mt-2 sm:mt-4 md:mt-8 px-3 sm:px-4 md:px-6 lg:px-8 transition-all duration-500 ease-in-out ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
       >
-        Auditly360
-      </Link>
-      <div className={`Items justify-between py-4 px-8 md:px-16 ${navbarClasses} gap-8 md:gap-12 flex flex-row rounded-2xl transition-all duration-300`}>
-        {items.map((item) => (
-          <Link 
-            href={item.href} 
-            key={item.name} 
-            onClick={(e) => handleSmoothScroll(e, item.href)}
-            className={`text-sm md:text-md font-medium ${textClasses} transition-colors duration-300 cursor-pointer`}
-          >
-            {item.name}
-          </Link>
-        ))}
-      </div>
-      <div className="get-started-button cursor-pointer hidden md:block">
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          className={`${buttonClasses} px-6 md:px-8 py-2.5 md:py-4 rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap`}
+        {/* Logo */}
+        <Link 
+          href="#home" 
+          onClick={(e) => handleSmoothScroll(e, '#home')} 
+          className={`${logoClasses} text-lg sm:text-xl md:text-2xl font-bold cursor-pointer transition-all duration-300 z-[101] relative group hover:scale-105 active:scale-95`}
         >
-          Get Started
+          <span className="relative inline-block">
+            <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 rounded-lg"></span>
+            <span className="relative">Auditly360</span>
+          </span>
+        </Link>
+
+        {/* Desktop Navigation - Hidden on mobile */}
+        <div className={`hidden md:flex items-center justify-between py-2 md:py-3 px-4 md:px-8 lg:px-12 ${navbarClasses} gap-4 lg:gap-8 xl:gap-12 rounded-xl md:rounded-2xl transition-all duration-300 hover:shadow-lg`}>
+          {items.map((item, index) => (
+            <Link 
+              href={item.href} 
+              key={item.name} 
+              onClick={(e) => handleSmoothScroll(e, item.href)}
+              className={`group relative text-xs md:text-sm lg:text-base font-medium ${textClasses} transition-all duration-300 cursor-pointer whitespace-nowrap py-1 overflow-hidden`}
+              style={{
+                animation: `fadeInDown 0.5s ease-out ${index * 0.1}s both`
+              }}
+            >
+              <span className="relative z-10">{item.name}</span>
+              <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
+              <span className={`absolute inset-0 ${isHeroSection ? 'bg-white/5' : 'bg-blue-50'} scale-0 group-hover:scale-100 transition-transform duration-300 rounded-md -z-10`}></span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop Button - Hidden on mobile */}
+        <div className="get-started-button cursor-pointer hidden md:block">
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setIsMobileMenuOpen(false);
+            }}
+            className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
+          >
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
+            <span className="relative z-10 font-semibold">Get Started</span>
+          </button>
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className={`md:hidden z-[101] p-2 rounded-lg transition-all duration-300 hover:scale-110 active:scale-95 ${
+            isHeroSection 
+              ? 'text-white hover:bg-white/10' 
+              : 'text-gray-800 hover:bg-gray-100'
+          }`}
+          aria-label="Toggle menu"
+        >
+          <div className="relative w-6 h-6">
+            <span className={`absolute top-0 left-0 w-full h-0.5 ${isHeroSection ? 'bg-white' : 'bg-gray-800'} transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2.5' : ''}`}></span>
+            <span className={`absolute top-2.5 left-0 w-full h-0.5 ${isHeroSection ? 'bg-white' : 'bg-gray-800'} transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
+            <span className={`absolute top-5 left-0 w-full h-0.5 ${isHeroSection ? 'bg-white' : 'bg-gray-800'} transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2.5' : ''}`}></span>
+          </div>
         </button>
       </div>
-    </div>
+
+      {/* Mobile Menu Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-[99] md:hidden transition-opacity duration-300 ${
+          isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      {/* Mobile Menu - Simple Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[280px] sm:w-[300px] ${navbarClasses} z-[100] md:hidden transform transition-transform duration-300 ease-out shadow-xl ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
+            <Link 
+              href="#home" 
+              onClick={(e) => {
+                handleSmoothScroll(e, '#home');
+                setIsMobileMenuOpen(false);
+              }} 
+              className={`${logoClasses} text-lg font-bold`}
+            >
+              Auditly360
+            </Link>
+            
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`p-2 rounded-lg transition-colors duration-200 ${
+                isHeroSection 
+                  ? 'text-white hover:bg-white/10' 
+                  : 'text-gray-800 hover:bg-gray-100'
+              }`}
+              aria-label="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Menu Items */}
+          <nav className="flex-1 py-4 overflow-y-auto">
+            {items.map((item) => (
+              <Link 
+                href={item.href} 
+                key={item.name} 
+                onClick={(e) => handleSmoothScroll(e, item.href)}
+                className={`block px-6 py-3 ${textClasses} transition-colors duration-200 hover:bg-gray-100/50`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Get Started Button */}
+          <div className="p-4 border-t border-gray-200/50">
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setIsMobileMenuOpen(false);
+              }}
+              className={`${buttonClasses} w-full px-6 py-3 rounded-lg text-base font-medium transition-colors duration-200`}
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
