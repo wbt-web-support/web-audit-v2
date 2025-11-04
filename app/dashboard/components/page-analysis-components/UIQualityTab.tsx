@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { useUserPlan } from '@/hooks/useUserPlan'
 
@@ -175,6 +175,33 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [currentStep, setCurrentStep] = useState<'idle' | 'capturing' | 'analyzing' | 'complete'>('idle')
 
+  // Refs to prevent duplicate API calls and handle cleanup
+  const isProcessingRef = useRef(false)
+  const currentPageIdRef = useRef<string | undefined>(undefined)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const hasInitializedRef = useRef<string | undefined>(undefined) // Track which pages have been initialized
+  const processingCheckIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Helper to persist processing state in sessionStorage
+  const setProcessingState = (pageId: string | undefined, isProcessing: boolean) => {
+    if (typeof window === 'undefined') return
+    if (isProcessing && pageId) {
+      sessionStorage.setItem(`ui-quality-processing-${pageId}`, 'true')
+      sessionStorage.setItem(`ui-quality-processing-page-id`, pageId)
+    } else {
+      if (pageId) {
+        sessionStorage.removeItem(`ui-quality-processing-${pageId}`)
+      }
+      sessionStorage.removeItem('ui-quality-processing-page-id')
+    }
+  }
+
+  // Helper to check if processing state exists in sessionStorage
+  const getProcessingState = (pageId: string): boolean => {
+    if (typeof window === 'undefined') return false
+    return sessionStorage.getItem(`ui-quality-processing-${pageId}`) === 'true'
+  }
+
   // Unified process: Capture screenshot and analyze in one flow
   const processPageAnalysis = async (forceRetake: boolean = false) => {
     // Check if user has access to screenshot feature
@@ -188,6 +215,31 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         return
       }
 
+    // Prevent duplicate calls - if already processing the same page, skip
+    if (isProcessingRef.current && !forceRetake) {
+      if (currentPageIdRef.current === page.id) {
+        console.log('Already processing this page, skipping duplicate call')
+        return
+      }
+    }
+
+    // Abort previous request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new AbortController for this request
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
+    // Mark as processing and update page ID
+    isProcessingRef.current = true
+    currentPageIdRef.current = page.id
+    hasInitializedRef.current = page.id // Mark as initialized to prevent re-triggering
+    
+    // Persist processing state to survive tab switches
+    setProcessingState(page.id, true)
+
     setProcessing(true)
     setProcessingError(null)
     setCurrentStep('capturing')
@@ -195,6 +247,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
     try {
       // Step 1: Capture screenshot
+      // Note: Not using abort signal to allow requests to continue when component unmounts
       setCurrentStep('capturing')
       const screenshotResponse = await fetch('/api/screenshot', {
           method: 'POST',
@@ -209,6 +262,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             },
             priority: 1
           })
+          // Removed signal to allow requests to continue in background
         })
 
       // Parse response even if status is not ok, to check for partial success
@@ -270,6 +324,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       setScreenshotUrl(desktopUrl) // Keep legacy for backward compatibility
 
       // Step 2: Analyze both images immediately (no delay)
+      // Note: Not using abort signal to allow requests to continue when component unmounts
       setCurrentStep('analyzing')
       const analysisResponse = await fetch('/api/image-analysis', {
         method: 'POST',
@@ -283,6 +338,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           pageUrl: page.url,
           userId: null
         })
+        // Removed signal to allow requests to continue in background
       })
 
       if (!analysisResponse.ok) {
@@ -308,12 +364,26 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       }
       
       setCurrentStep('complete')
+      
+      // Clear processing state from sessionStorage on success
+      setProcessingState(page.id, false)
       } catch (error) {
+      // Log and show error
       console.error('Error processing page analysis:', error)
       setProcessingError(error instanceof Error ? error.message : 'Failed to process page analysis')
       setCurrentStep('complete')
+      
+      // Clear processing state from sessionStorage on error
+      setProcessingState(page.id, false)
       } finally {
+      // Reset processing state
       setProcessing(false)
+      isProcessingRef.current = false
+      
+      // Clear abort controller if it's the current one
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null
+      }
     }
   }
 
@@ -321,15 +391,60 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
     processPageAnalysis(true)
   }
 
-  // Check if image exists in database first - only run when page.id changes
+  // Check if image exists in database - only load existing data, don't trigger new analysis
   useEffect(() => {
     // Wait for plan loading to complete
     if (planLoading) return
 
-    // Reset check state when page changes
-    setHasCheckedDatabase(false)
-    setProcessingError(null)
-    setCurrentStep('idle')
+    // Check sessionStorage for processing state when component mounts/remounts
+    if (page.id && hasScreenshotAccess) {
+      const wasProcessing = getProcessingState(page.id)
+      
+      if (wasProcessing) {
+        // We were processing this page - restore processing state and start polling
+        isProcessingRef.current = true
+        currentPageIdRef.current = page.id
+        setProcessing(true)
+        setCurrentStep('analyzing')
+        
+        // Immediately check if analysis completed while away
+        fetch(`/api/image-analysis?pageId=${page.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.analysis) {
+              // Analysis completed while away - update state
+              setImageAnalysis(data.analysis)
+              setCurrentStep('complete')
+              setProcessing(false)
+              isProcessingRef.current = false
+              hasInitializedRef.current = page.id
+              setProcessingState(page.id, false)
+            }
+            // If no analysis, polling will continue below
+          })
+          .catch(() => {
+            // Silently fail - polling will continue
+          })
+      }
+    }
+
+    // Abort any ongoing requests for previous page (only on page change, not unmount)
+    if (abortControllerRef.current && currentPageIdRef.current !== page.id && currentPageIdRef.current !== undefined) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+      isProcessingRef.current = false
+      setProcessingState(currentPageIdRef.current, false)
+    }
+
+    // Reset check state when page changes (only if it's a different page)
+    if (currentPageIdRef.current !== page.id) {
+      setHasCheckedDatabase(false)
+      setProcessingError(null)
+      if (!getProcessingState(page.id || '')) {
+        setCurrentStep('idle')
+      }
+      hasInitializedRef.current = undefined // Reset initialization flag for new page
+    }
 
     // Check database first - look for valid image URL and analysis
     // Support both new format (desktop/mobile) and legacy format
@@ -348,7 +463,12 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       setScreenshotUrl(desktopImageUrl) // Keep legacy for backward compatibility
       setHasCheckedDatabase(true)
       
-      // Check if analysis also exists - if so, fetch it; otherwise trigger new analysis
+      // Mark as initialized since we found image in database
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = page.id
+      }
+      
+      // Check if analysis also exists - if so, fetch it (but don't trigger new analysis automatically)
       if (page.id && page.url && hasScreenshotAccess) {
         // Try to get existing analysis first
         fetch(`/api/image-analysis?pageId=${page.id}`)
@@ -357,28 +477,18 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             if (data.analysis) {
               setImageAnalysis(data.analysis)
               setCurrentStep('complete')
-            } else {
-              // No analysis exists, trigger it (only if user has access)
-              processPageAnalysis(false)
+              hasInitializedRef.current = page.id // Mark as initialized since we have analysis
             }
+            // If no analysis exists, user can manually trigger it via button
           })
           .catch(() => {
-            // If check fails, trigger new analysis (only if user has access)
-            if (hasScreenshotAccess) {
-              processPageAnalysis(false)
-            }
+            // Silently fail - user can manually trigger analysis if needed
           })
-      } else if (page.id && page.url && hasScreenshotAccess) {
-        // No image in database but user has access, start the full process
-        setHasCheckedDatabase(true)
-        processPageAnalysis(false)
-      } else {
-        setHasCheckedDatabase(true)
       }
       return
     }
 
-    // No valid image in database - check if we can fetch one
+    // No valid image in database
     if (!page.url || !page.id) {
       if (!page.url) {
         setProcessingError('No URL available')
@@ -387,13 +497,86 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       return
     }
 
-    // No image in database, start the full process (only if user has access)
+    // No image in database - user can manually start the process
     setHasCheckedDatabase(true)
-    if (hasScreenshotAccess) {
-      processPageAnalysis(false)
+
+    // Cleanup function - only abort when page.id changes, not on unmount
+    // This allows analysis to continue in background when switching tabs
+    return () => {
+      // Only abort if page.id changed (handled above in the effect)
+      // Don't abort on unmount - let requests complete in background
+      // The abort for page changes is already handled above
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page.id, planLoading, hasScreenshotAccess]) // Depend on plan loading and access
+
+  // Poll for completion when processing - checks if analysis completed in background
+  // This works even if component was unmounted and remounted
+  useEffect(() => {
+    // Check both processing state and sessionStorage
+    const shouldPoll = (processing || getProcessingState(page.id || '')) && 
+                      page.id && 
+                      hasScreenshotAccess &&
+                      currentPageIdRef.current === page.id
+
+    if (!shouldPoll) {
+      // Clear any existing interval
+      if (processingCheckIntervalRef.current) {
+        clearInterval(processingCheckIntervalRef.current)
+        processingCheckIntervalRef.current = null
+      }
+      return
+    }
+
+    // Ensure processing state is set
+    if (!processing) {
+      setProcessing(true)
+    }
+
+    // Poll every 3 seconds to check if analysis completed
+    const pollInterval = setInterval(() => {
+      // Double-check we should still be polling
+      if (!getProcessingState(page.id || '') && !isProcessingRef.current) {
+        clearInterval(pollInterval)
+        processingCheckIntervalRef.current = null
+        return
+      }
+
+      if (currentPageIdRef.current !== page.id) {
+        clearInterval(pollInterval)
+        processingCheckIntervalRef.current = null
+        return
+      }
+
+      fetch(`/api/image-analysis?pageId=${page.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.analysis) {
+            // Analysis completed - update state
+            setImageAnalysis(data.analysis)
+            setCurrentStep('complete')
+            setProcessing(false)
+            isProcessingRef.current = false
+            hasInitializedRef.current = page.id
+            setProcessingState(page.id, false)
+            clearInterval(pollInterval)
+            processingCheckIntervalRef.current = null
+          }
+        })
+        .catch(() => {
+          // Silently fail - keep polling
+        })
+    }, 3000) // Poll every 3 seconds
+
+    processingCheckIntervalRef.current = pollInterval
+
+    return () => {
+      if (processingCheckIntervalRef.current) {
+        clearInterval(processingCheckIntervalRef.current)
+        processingCheckIntervalRef.current = null
+      }
+    }
+  }, [processing, page.id, hasScreenshotAccess])
   
   // Comprehensive HTML Structure Analysis
   const hasViewport = content.includes('viewport')
@@ -648,20 +831,36 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
   return (
     <div className="space-y-8">
-      {/* Header with Reanalyze Button */}
+      {/* Header with Start/Reanalyze Button */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900">UI Quality Analysis</h2>
-        {(imageAnalysis || screenshotUrl) && hasScreenshotAccess && (
-          <button
-            onClick={handleRetakeScreenshot}
-            disabled={processing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
-          >
-            <ArrowPathIcon className={`w-5 h-5 ${processing ? 'animate-spin' : ''}`} />
-            <span>{processing ? 'Reanalyzing...' : 'Reanalyze'}</span>
-          </button>
+        {hasScreenshotAccess && (
+          <>
+            {!imageAnalysis && !screenshotUrl && !desktopScreenshotUrl && !processing && (
+              <button
+                onClick={() => processPageAnalysis(false)}
+                disabled={processing || !page.url || !page.id}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                </svg>
+                <span>Start Analysis</span>
+              </button>
+            )}
+            {(imageAnalysis || screenshotUrl || desktopScreenshotUrl) && (
+              <button
+                onClick={handleRetakeScreenshot}
+                disabled={processing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+              >
+                <ArrowPathIcon className={`w-5 h-5 ${processing ? 'animate-spin' : ''}`} />
+                <span>{processing ? 'Reanalyzing...' : 'Reanalyze'}</span>
+              </button>
+            )}
+          </>
         )}
-        {!hasScreenshotAccess && (imageAnalysis || screenshotUrl) && (
+        {!hasScreenshotAccess && (imageAnalysis || screenshotUrl || desktopScreenshotUrl) && (
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -697,6 +896,37 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                   Upgrade Plan
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start Analysis Prompt - Show when user has access but no analysis yet */}
+      {hasScreenshotAccess && !imageAnalysis && !desktopScreenshotUrl && !screenshotUrl && !processing && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-8 mb-8">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="text-blue-500">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Start AI-Powered Analysis</h3>
+              <p className="text-gray-600 mb-6 max-w-md">
+                Get comprehensive UI/UX analysis of your page with AI-powered insights on design, content, accessibility, and more.
+              </p>
+              <button
+                onClick={() => processPageAnalysis(false)}
+                disabled={!page.url || !page.id}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed mx-auto"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Start Analysis</span>
+              </button>
             </div>
           </div>
         </div>
