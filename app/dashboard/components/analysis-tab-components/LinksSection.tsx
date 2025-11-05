@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../analysis-tab/types'
+import { useSupabase } from '@/contexts/SupabaseContext'
 
 // Override the ScrapedPage type to accept any performance_analysis type
 interface ScrapedPageOverride extends Omit<ScrapedPage, 'performance_analysis'> {
@@ -33,6 +34,7 @@ interface LinkData {
 
 
 export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
+  const { updateScrapedPage, user } = useSupabase()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
@@ -70,6 +72,45 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
 
   // State to track link statuses
   const [linkStatuses, setLinkStatuses] = useState<Record<string, 'working' | 'broken' | 'unknown'>>({})
+
+  // Load existing link statuses from database on mount
+  useEffect(() => {
+    const loadExistingStatuses = async () => {
+      if (!scrapedPages || scrapedPages.length === 0) return
+
+      const statusMap: Record<string, 'working' | 'broken' | 'unknown'> = {}
+
+      scrapedPages.forEach(page => {
+        if (!page.links) return
+
+        let pageLinks: any[] = []
+        if (typeof page.links === 'string') {
+          try {
+            pageLinks = JSON.parse(page.links)
+          } catch {
+            pageLinks = Array.isArray(page.links) ? page.links : []
+          }
+        } else if (Array.isArray(page.links)) {
+          pageLinks = page.links
+        }
+
+        pageLinks.forEach((link: any) => {
+          const linkUrl = link.url || link.href || ''
+          if (linkUrl && link.status) {
+            statusMap[linkUrl] = link.status
+          } else if (linkUrl && link.isBroken !== undefined) {
+            statusMap[linkUrl] = link.isBroken ? 'broken' : 'working'
+          }
+        })
+      })
+
+      if (Object.keys(statusMap).length > 0) {
+        setLinkStatuses(statusMap)
+      }
+    }
+
+    loadExistingStatuses()
+  }, [scrapedPages])
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -179,6 +220,104 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return allLinks
   }, [scrapedPages, project.site_url, originalScrapingData])
 
+  // Function to update link statuses in database
+  const updateLinkStatusesInDB = useCallback(async (
+    statusUpdates: Array<{ url: string; status: 'working' | 'broken' | 'unknown' }>
+  ) => {
+    if (!user || !updateScrapedPage || statusUpdates.length === 0) {
+      return
+    }
+
+    // Create a map from page URL to page ID
+    const pageUrlToIdMap = new Map<string, string>()
+    scrapedPages.forEach(page => {
+      if (page.url && page.id) {
+        pageUrlToIdMap.set(page.url, page.id)
+      }
+    })
+
+    // Group status updates by page_url
+    const updatesByPage = new Map<string, Array<{ url: string; status: 'working' | 'broken' | 'unknown' }>>()
+    
+    statusUpdates.forEach(update => {
+      const link = links.find(l => l.url === update.url)
+      if (link && link.page_url) {
+        if (!updatesByPage.has(link.page_url)) {
+          updatesByPage.set(link.page_url, [])
+        }
+        updatesByPage.get(link.page_url)!.push(update)
+      }
+    })
+
+    // Update each affected page
+    const updatePromises = Array.from(updatesByPage.entries()).map(async ([pageUrl, updates]) => {
+      const pageId = pageUrlToIdMap.get(pageUrl)
+      if (!pageId) {
+        console.warn(`Page ID not found for URL: ${pageUrl}`)
+        return
+      }
+
+      // Find the scraped page
+      const scrapedPage = scrapedPages.find(p => p.id === pageId)
+      if (!scrapedPage) {
+        console.warn(`Scraped page not found for ID: ${pageId}`)
+        return
+      }
+
+      try {
+        // Parse existing links
+        let pageLinks: any[] = []
+        if (scrapedPage.links) {
+          if (typeof scrapedPage.links === 'string') {
+            try {
+              pageLinks = JSON.parse(scrapedPage.links)
+            } catch {
+              pageLinks = Array.isArray(scrapedPage.links) ? scrapedPage.links : []
+            }
+          } else if (Array.isArray(scrapedPage.links)) {
+            pageLinks = scrapedPage.links
+          }
+        }
+
+        // Update link statuses in the array
+        const updatedLinks = pageLinks.map((link: any) => {
+          const linkUrl = link.url || link.href || ''
+          const update = updates.find(u => {
+            // Normalize URLs for comparison
+            const normalizedUpdateUrl = u.url.replace(/\/$/, '')
+            const normalizedLinkUrl = linkUrl.replace(/\/$/, '')
+            return normalizedUpdateUrl === normalizedLinkUrl
+          })
+          
+          if (update) {
+            return {
+              ...link,
+              status: update.status,
+              isBroken: update.status === 'broken'
+            }
+          }
+          return link
+        })
+
+        // Update the page in database
+        const { error } = await updateScrapedPage(pageId, {
+          links: updatedLinks
+        })
+
+        if (error) {
+          console.error(`Error updating links for page ${pageId}:`, error)
+        } else {
+          console.log(`✅ Updated ${updates.length} link status(es) for page ${pageUrl}`)
+        }
+      } catch (error) {
+        console.error(`Error processing links for page ${pageId}:`, error)
+      }
+    })
+
+    // Wait for all database updates to complete
+    await Promise.all(updatePromises)
+  }, [user, updateScrapedPage, scrapedPages, links])
+
   // Function to check all links for broken status in batches of 50
   const checkAllLinksBroken = useCallback(async () => {
     setCheckingBrokenLinks(true)
@@ -208,12 +347,22 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
         const batchResults = await Promise.all(batchPromises)
         
         // Update status map with batch results
+        const batchStatusUpdates: Array<{ url: string; status: 'working' | 'broken' | 'unknown' }> = []
         batchResults.forEach(result => {
           statusMap[result.url] = result.status
+          batchStatusUpdates.push(result)
         })
         
         // Update state after each batch so UI shows progress
         setLinkStatuses(prev => ({ ...prev, ...statusMap }))
+        
+        // Update database with batch results
+        try {
+          await updateLinkStatusesInDB(batchStatusUpdates)
+        } catch (dbError) {
+          console.error('Error updating database:', dbError)
+          // Continue processing even if DB update fails
+        }
         
         // Small delay between batches to avoid overwhelming the server
         if (i + batchSize < totalLinks) {
@@ -225,7 +374,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     } finally {
       setCheckingBrokenLinks(false)
     }
-  }, [links, checkLinkBroken])
+  }, [links, checkLinkBroken, updateLinkStatusesInDB])
 
   // Filter links based on selected criteria
   const filteredLinks = useMemo(() => {
