@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { detectKeysInPages } from '@/lib/key-detection';
+import { supabase } from '@/lib/supabase-client';
 interface ScrapingServiceProps {
   projectId: string | null;
   scrapingData: ScrapingData;
@@ -122,6 +123,7 @@ export default function ScrapingService({
 }: ScrapingServiceProps) {
   const {
     createScrapedPages,
+    createScrapedImages,
     updateAuditProject,
     processMetaTagsData,
     getAuditProject
@@ -488,7 +490,9 @@ export default function ScrapingService({
           is_external: false,
           // Main page is not external
           response_time: scrapingData.responseTime || null,
-          performance_analysis: null // Add missing required property
+          performance_analysis: null, // Add missing required property
+          page_image: null, // Screenshot image data (will be added later)
+          Image_gemini_analysis: null // Gemini image analysis (will be added later)
         };
       }).filter(Boolean); // Remove any null entries
 
@@ -512,9 +516,12 @@ export default function ScrapingService({
 
       // Log the exact data structure being sent
 
+      let savedPages: any[] | null = null;
       const {
+        data: pagesData,
         error: pagesError
       } = await createScrapedPages(filteredPages);
+      
       if (pagesError) {
         console.error('❌ Error saving scraped pages:', {
           error: pagesError,
@@ -535,10 +542,12 @@ export default function ScrapingService({
 
         let successCount = 0;
         let _errorCount = 0;
+        let savedPagesList: any[] = [];
         for (const pageData of scrapedPagesData) {
           if (!pageData) continue;
           try {
             const {
+              data: singlePageData,
               error: singlePageError
             } = await createScrapedPages([pageData]);
             if (singlePageError) {
@@ -546,6 +555,9 @@ export default function ScrapingService({
               _errorCount++;
             } else {
               successCount++;
+              if (singlePageData && singlePageData[0]) {
+                savedPagesList.push(singlePageData[0]);
+              }
             }
           } catch (err) {
             console.error(`❌ Exception saving individual page ${pageData.url}:`, err);
@@ -556,7 +568,127 @@ export default function ScrapingService({
           onScrapingComplete(false);
           return;
         }
-      } else {}
+        // Use savedPagesList for image saving if bulk insert failed
+        savedPages = savedPagesList.length > 0 ? savedPagesList : null;
+      } else {
+        savedPages = pagesData;
+      }
+
+      // Save images to separate table after pages are saved
+      if (savedPages && savedPages.length > 0) {
+        try {
+          // Create a map of page URL to page ID for quick lookup
+          const pageUrlToIdMap = new Map<string, string>();
+          savedPages.forEach((page: any) => {
+            if (page && page.url && page.id) {
+              pageUrlToIdMap.set(page.url, page.id);
+            }
+          });
+
+          // Extract all images from scraped pages and prepare them for database
+          const imagesToSave: Array<{
+            scraped_page_id: string;
+            audit_project_id: string | null;
+            original_url: string;
+            alt_text: string | null;
+            title_text: string | null;
+            width: number | null;
+            height: number | null;
+            type: string | null;
+            size_bytes: number | null;
+            scan_results: any | null;
+            extra_metadata: any | null;
+          }> = [];
+
+          scrapingData.pages.forEach((page: PageData) => {
+            const pageId = pageUrlToIdMap.get(page.url);
+            if (!pageId || !page.images || !Array.isArray(page.images)) {
+              return;
+            }
+
+            page.images.forEach((image: ImageData) => {
+              // Extract image type from URL if available
+              const imageUrl = image.src || '';
+              let imageType: string | null = null;
+              if (imageUrl) {
+                const match = imageUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?|$)/i);
+                if (match) {
+                  imageType = match[1].toLowerCase();
+                }
+              }
+
+              imagesToSave.push({
+                scraped_page_id: pageId,
+                audit_project_id: projectId,
+                original_url: imageUrl,
+                alt_text: image.alt || null,
+                title_text: image.title || null,
+                width: image.width || null,
+                height: image.height || null,
+                type: imageType,
+                size_bytes: null, // Can be populated later if needed
+                scan_results: null, // Can be populated later with scan results
+                extra_metadata: null, // Can store additional metadata here
+              });
+            });
+          });
+
+          // Save images to database if there are any
+          if (imagesToSave.length > 0) {
+            console.log(`📸 Preparing to save ${imagesToSave.length} images to scraped_images table`);
+            
+            try {
+              // Use API route to bypass RLS policies
+              const session = await supabase.auth.getSession();
+              const token = session.data.session?.access_token;
+
+              if (!token) {
+                console.error('❌ No access token available for image saving');
+                // Don't fail the entire process if images fail to save
+                return;
+              }
+
+              const response = await fetch('/api/scraped-images', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  images: imagesToSave
+                })
+              });
+
+              const result = await response.json();
+
+              if (!response.ok || result.error) {
+                console.error('❌ Error saving scraped images via API:', {
+                  error: result.error,
+                  message: result.message,
+                  details: result.details,
+                  code: result.code,
+                  imagesCount: imagesToSave.length,
+                  sampleImage: imagesToSave[0],
+                  status: response.status
+                });
+                // Don't fail the entire process if images fail to save
+              } else {
+                const savedCount = result.inserted || result.data?.length || 0;
+                console.log(`✅ Successfully saved ${savedCount} out of ${imagesToSave.length} images to scraped_images table`);
+                if (savedCount < imagesToSave.length) {
+                  console.warn(`⚠️ Only ${savedCount} images were saved, expected ${imagesToSave.length}`);
+                }
+              }
+            } catch (apiError) {
+              console.error('❌ Exception calling scraped-images API:', apiError);
+              // Don't fail the entire process if images fail to save
+            }
+          }
+        } catch (imagesException) {
+          console.error('❌ Exception saving images:', imagesException);
+          // Don't fail the entire process if images fail to save
+        }
+      }
 
       // Process meta tags data from homepage
 
@@ -720,7 +852,7 @@ export default function ScrapingService({
       console.error('❌ Error processing scraping data:', error);
       onScrapingComplete(false);
     }
-  }, [createScrapedPages, updateAuditProject, processMetaTagsData, getAuditProject, onScrapingComplete]);
+  }, [createScrapedPages, createScrapedImages, updateAuditProject, processMetaTagsData, getAuditProject, onScrapingComplete]);
 
   // Process data when component receives it using useEffect
   useEffect(() => {

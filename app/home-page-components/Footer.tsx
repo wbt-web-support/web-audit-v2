@@ -23,16 +23,16 @@ const navColumns: NavColumn[] = [
   {
     title: "Support",
     links: [
-      { label: "Help Center", href: "#help" },
-      { label: "Contact", href: "#contact" },
+      // { label: "Help Center", href: "#help" },
+      { label: "Contact", href: "/contact" },
       // { label: "Status", href: "#status" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "#privacy" },
-      { label: "Terms", href: "#terms" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
       
     ],
   },
@@ -182,7 +182,7 @@ export default function Footer() {
           <div className="flex items-center gap-3 md:gap-4">
             
             <Link 
-              href="#contact"
+              href="/contact"
               className="bg-white text-black font-semibold px-5 md:px-6 py-2.5 md:py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap inline-block cursor-pointer"
             >
               Contact Us

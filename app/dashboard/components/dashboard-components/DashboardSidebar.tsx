@@ -218,7 +218,7 @@ export default function DashboardSidebar({
                 <p className="text-sm font-medium text-black">
                   {displayName}
                 </p>
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
                     {userProfile?.role || 'user'}
                   </p>
@@ -229,7 +229,7 @@ export default function DashboardSidebar({
                   {isAdmin === false && !roleLoading && userProfile?.role === 'admin' && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
                       Role Pending
                     </span>}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -257,9 +257,9 @@ export default function DashboardSidebar({
               </div> : planInfo ? <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Current Plan</span>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${planInfo.plan_type === 'Starter' ? 'bg-green-100 text-green-700' : planInfo.plan_type === 'Growth' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                  {/* <span className={`text-xs px-2 py-1 rounded-full font-medium ${planInfo.plan_type === 'Starter' ? 'bg-green-100 text-green-700' : planInfo.plan_type === 'Growth' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                     {planInfo.plan_name || 'Unknown Plan'}
-                  </span>
+                  </span> */}
                 </div>
                 <div className='text-sm font-medium text-black mb-1'>
                   {planInfo.plan_name || 'Unknown Plan'}
@@ -333,7 +333,7 @@ export default function DashboardSidebar({
                 <p className="text-sm font-medium text-black">
                   {displayName}
                 </p>
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
                     {userProfile?.role || 'user'}
                   </p>
@@ -344,7 +344,7 @@ export default function DashboardSidebar({
                   {isAdmin === false && !roleLoading && userProfile?.role === 'admin' && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
                       Role Pending
                     </span>}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -369,9 +369,9 @@ export default function DashboardSidebar({
               </div> : planInfo ? <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Current Plan</span>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${planInfo.plan_type === 'Starter' ? 'bg-green-100 text-green-700' : planInfo.plan_type === 'Growth' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                  {/* <span className={`text-xs px-2 py-1 rounded-full font-medium ${planInfo.plan_type === 'Starter' ? 'bg-green-100 text-green-700' : planInfo.plan_type === 'Growth' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                     {planInfo.plan_name || 'Unknown Plan'}
-                  </span>
+                  </span> */}
                 </div>
                 <div className='text-sm font-medium text-black mb-1'>
                   {planInfo.plan_name || 'Unknown Plan'}

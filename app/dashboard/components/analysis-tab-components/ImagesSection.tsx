@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../analysis-tab/types'
+import { useSupabase } from '@/contexts/SupabaseContext'
+import { supabase } from '@/lib/supabase-client'
+import { useUserPlan } from '@/hooks/useUserPlan'
 
 // Override the ScrapedPage type to accept any performance_analysis type
 interface ScrapedPageOverride extends Omit<ScrapedPage, 'performance_analysis'> {
@@ -37,14 +40,35 @@ interface ImageData {
   fullTag?: string
   isBroken?: boolean
   loadError?: boolean
+  extra_metadata?: {
+    id?: string
+    scraped_page_id?: string
+    audit_project_id?: string
+    size_bytes?: number | null
+    scan_results?: any
+    open_web_ninja_data?: any
+    created_at?: string
+    updated_at?: string
+  }
 }
 
 export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
+  const { getScrapedImages } = useSupabase()
+  const { hasFeature } = useUserPlan()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [scrapedImagesData, setScrapedImagesData] = useState<any[]>([])
+  const [scanningImages, setScanningImages] = useState<Set<string>>(new Set())
+  const [showActionsTooltip, setShowActionsTooltip] = useState(false)
+  const [scanResults, setScanResults] = useState<Record<string, any>>({})
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  
+  // Check if user has image scan feature
+  const hasImageScanFeature = hasFeature('Image_scane')
   
   // Filter states
   const [selectedImageType, setSelectedImageType] = useState<string>('all')
@@ -116,21 +140,112 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     }
   }
 
-  // Extract images from original scraping data or HTML content
+  // Fetch images from scraped_images table
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (!project?.id) return
+      
+      setIsLoading(true)
+      try {
+        const { data, error } = await getScrapedImages(project.id)
+        
+        if (error) {
+          console.error('❌ Error fetching scraped images:', error)
+          // Fall back to parsing from scraped_pages if database fetch fails
+          setScrapedImagesData([])
+        } else {
+          setScrapedImagesData(data || [])
+        }
+      } catch (err) {
+        console.error('❌ Exception fetching scraped images:', err)
+        setScrapedImagesData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchImages()
+  }, [project?.id, getScrapedImages])
+
+  // Convert scraped_images data to ImageData format
   const images = useMemo(() => {
     setIsProcessing(true)
     const allImages: ImageData[] = []
     
-    // First, try to extract from original scraping data
-    if (originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
-      
-      
+    // First, try to use images from scraped_images table
+    if (scrapedImagesData && scrapedImagesData.length > 0) {
+      scrapedImagesData.forEach((img: any) => {
+        const src = img.original_url || ''
+        const alt = img.alt_text || null
+        const title = img.title_text || null
+        const width = img.width || undefined
+        const height = img.height || undefined
+        const type = img.type || getImageType(src)
+        const pageUrl = img.scraped_pages?.url || ''
+        
+        if (src) {
+          // Filter out localhost URLs
+          if (src.includes('localhost') || src.includes('127.0.0.1')) {
+            return
+          }
+          
+          // Convert relative URLs to absolute
+          let absoluteUrl = src
+          if (!src.startsWith('http')) {
+            const baseUrl = project.site_url || 'https://example.com'
+            if (src.startsWith('/')) {
+              absoluteUrl = `${baseUrl}${src}`
+            } else {
+              absoluteUrl = `${baseUrl}/${src}`
+            }
+          }
+          
+          // Convert HTTP to HTTPS
+          if (absoluteUrl.startsWith('http://')) {
+            absoluteUrl = absoluteUrl.replace('http://', 'https://')
+          }
+          
+          // Load existing scan results from database if available
+          const existingScanData = img.open_web_ninja_data || img.scan_results
+          if (existingScanData) {
+            const uniqueKey = img.id || absoluteUrl
+            setScanResults(prev => ({
+              ...prev,
+              [uniqueKey]: existingScanData
+            }))
+          }
+          
+          allImages.push({
+            url: absoluteUrl,
+            src: absoluteUrl,
+            alt: alt,
+            alt_text: alt,
+            title: title,
+            title_text: title,
+            width: width,
+            height: height,
+            type: type,
+            page_url: pageUrl,
+            // Store the full scraped image record for future actions
+            extra_metadata: {
+              id: img.id,
+              scraped_page_id: img.scraped_page_id,
+              audit_project_id: img.audit_project_id,
+              size_bytes: img.size_bytes,
+              scan_results: img.scan_results,
+              open_web_ninja_data: img.open_web_ninja_data,
+              created_at: img.created_at,
+              updated_at: img.updated_at
+            }
+          })
+        }
+      })
+    }
+    
+    // Fallback: If no images from database, try to extract from original scraping data
+    if (allImages.length === 0 && originalScrapingData?.pages && Array.isArray(originalScrapingData.pages)) {
       originalScrapingData.pages.forEach((page: ScrapedPageOverride) => {
-        
-        
         if (page.images && Array.isArray(page.images)) {
-          
-          
           page.images.forEach((img: ImageData) => {
             let src = img.src || img.url || ''
             let alt = img.alt || img.altText || img.alt_text || null
@@ -140,12 +255,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             
             // If we have fullTag, parse it to extract more accurate data
             if (img.fullTag) {
-              
-              
               const parsedData = parseImageFromFullTag(img.fullTag)
               if (parsedData) {
-                
-                
                 // Use parsed values if available, fallback to original values
                 if (parsedData.src) src = parsedData.src
                 if (parsedData.alt !== null) alt = parsedData.alt
@@ -154,8 +265,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 if (parsedData.height !== null) height = parsedData.height
               }
             }
-            
-            
             
             if (src) {
               // Filter out localhost URLs
@@ -179,8 +288,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                 absoluteUrl = absoluteUrl.replace('http://', 'https://')
               }
               
-              
-              
               allImages.push({
                 url: absoluteUrl,
                 alt: alt,
@@ -196,17 +303,11 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
       })
     }
     
-    // If no images found in scraping data, fall back to HTML parsing
+    // Final fallback: Parse from HTML content
     if (allImages.length === 0 && scrapedPages && scrapedPages.length > 0) {
-      
-      
       scrapedPages.forEach((page: ScrapedPageOverride) => {
-        
-        
-        
         if (page.html_content) {
           try {
-            // Create a temporary DOM parser to extract images
             if (typeof DOMParser === 'undefined') {
               console.warn('DOMParser not available in this environment')
               return
@@ -215,13 +316,10 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             const doc = parser.parseFromString(page.html_content, 'text/html')
             const imgElements = doc.querySelectorAll('img')
             
-            
-            
             imgElements.forEach((img: HTMLImageElement) => {
               const src = img.src || img.getAttribute('src') || ''
               const alt = img.alt || img.getAttribute('alt') || null
               const title = img.title || img.getAttribute('title') || null
-              
               
               if (src) {
                 // Filter out localhost URLs
@@ -245,8 +343,6 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   absoluteUrl = absoluteUrl.replace('http://', 'https://')
                 }
                 
-                
-                
                 allImages.push({
                   url: absoluteUrl,
                   alt: alt,
@@ -261,22 +357,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           } catch (error) {
             console.warn('❌ Error parsing HTML for images:', error)
           }
-        } else {
-          
         }
       })
     }
     
-    
-    
-    
-    // Debug: Log images with and without alt text
-    // const withAlt = allImages.filter(img => img.alt && img.alt.trim() !== '')
-    // const withoutAlt = allImages.filter(img => !img.alt || img.alt.trim() === '')
-    
     setIsProcessing(false)
     return allImages
-  }, [scrapedPages, project.site_url, originalScrapingData])
+  }, [scrapedImagesData, scrapedPages, project.site_url, originalScrapingData])
 
   // Filter images based on selected criteria
   const filteredImages = useMemo(() => {
@@ -340,20 +427,216 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
     setSelectedImage(null)
   }
 
+  // Handle image scanning
+  const handleScanImage = async (e: React.MouseEvent, image: ImageData) => {
+    e.stopPropagation() // Prevent event bubbling
+    e.preventDefault() // Prevent any default behavior
+    
+    // Check if user has access to image scan feature
+    if (!hasImageScanFeature) {
+      alert('Reverse Image Search is not available in your current plan. Please upgrade to access this feature.')
+      return
+    }
+    
+    const imageId = image.extra_metadata?.id || image.url || ''
+    const uniqueKey = image.extra_metadata?.id || image.url || ''
+    
+    if (!uniqueKey || !image.url) {
+      console.warn('❌ Cannot scan image: missing image URL')
+      return
+    }
+
+    // Log image details for debugging
+    console.log('🔍 Starting image scan:', {
+      imageId: image.extra_metadata?.id || 'NO_ID',
+      hasDatabaseId: !!image.extra_metadata?.id,
+      imageUrl: image.url?.substring(0, 50),
+      scrapedPageId: image.extra_metadata?.scraped_page_id
+    })
+
+    setScanningImages(prev => new Set(prev).add(uniqueKey))
+    
+    try {
+      // Get session token for API call
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
+
+      if (!token) {
+        console.error('❌ No access token available')
+        return
+      }
+
+      // Call reverse image search API
+      let response: Response;
+      let result: any;
+      
+      try {
+        const requestBody = {
+          imageUrl: image.url,
+          imageId: image.extra_metadata?.id || null,
+          limit: 20,
+          safe_search: 'blur'
+        }
+        
+        console.log('📤 Sending scan request:', {
+          hasImageId: !!requestBody.imageId,
+          imageId: requestBody.imageId
+        })
+        
+        response = await fetch('/api/reverse-image-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        })
+
+        // Try to parse JSON response
+        try {
+          result = await response.json()
+        } catch (parseError) {
+          const textResponse = await response.text()
+          console.error('❌ Failed to parse JSON response:', {
+            status: response.status,
+            statusText: response.statusText,
+            textResponse: textResponse.substring(0, 200),
+            parseError
+          })
+          
+          throw new Error(`Invalid JSON response from server: ${textResponse.substring(0, 100)}`)
+        }
+      } catch (fetchError) {
+        console.error('❌ Network error calling reverse-image-search API:', {
+          error: fetchError,
+          message: fetchError instanceof Error ? fetchError.message : String(fetchError),
+          imageUrl: image.url?.substring(0, 50)
+        })
+        return
+      }
+
+      if (!response.ok || result.error) {
+        console.error('❌ Error scanning image:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: result.error || 'Unknown error',
+          message: result.message || 'No error message',
+          details: result.details || 'No details',
+          code: result.code || 'NO_CODE',
+          fullResponse: result
+        })
+        
+        // Handle feature access denied errors
+        if (response.status === 403 || result.code === 'FEATURE_ACCESS_DENIED') {
+          alert(`Access Denied: ${result.message || 'Reverse Image Search is not available in your current plan. Please upgrade to access this feature.'}`)
+          return
+        }
+        
+        // Handle rate limit errors specifically
+        if (response.status === 429 || result.code === 'RATE_LIMIT_EXCEEDED') {
+          const retryAfter = result.retryAfter || 5
+          alert(`Rate limit reached. Please wait ${retryAfter} seconds before scanning more images.`)
+          return
+        }
+        
+        // Show user-friendly error for other errors
+        if (result.message || result.error) {
+          alert(`Error scanning image: ${result.message || result.error}`)
+        }
+        
+        return
+      }
+
+      // Store scan results
+      if (result.data) {
+        setScanResults(prev => ({
+          ...prev,
+          [uniqueKey]: result.data
+        }))
+        // Auto-expand the row to show results
+        setExpandedRows(prev => new Set(prev).add(uniqueKey))
+        
+        // If image has database ID, update the extra_metadata
+        if (image.extra_metadata?.id) {
+          image.extra_metadata.open_web_ninja_data = result.data
+        }
+        
+        // Check if save was successful
+        if (result.saveError) {
+          console.error('❌ Scan completed but save to database failed:', result.saveError)
+          // Show user-friendly error (you could add a toast notification here)
+        } else if (result.imageId) {
+          console.log('✅ Scan results saved to database for image:', result.imageId)
+          
+          // Refresh images from database to get updated data
+          if (project?.id) {
+            console.log('🔄 Refreshing images data after scan save...')
+            try {
+              const { data: refreshedImages, error: refreshError } = await getScrapedImages(project.id)
+              if (!refreshError && refreshedImages) {
+                setScrapedImagesData(refreshedImages)
+                console.log('✅ Images data refreshed, open_web_ninja_data should now be available')
+              } else if (refreshError) {
+                console.warn('⚠️ Could not refresh images data:', refreshError)
+              }
+            } catch (refreshErr) {
+              console.warn('⚠️ Exception refreshing images:', refreshErr)
+            }
+          }
+        } else {
+          console.warn('⚠️ No imageId - scan results will not persist in database. Image may not be in scraped_images table yet.')
+        }
+      }
+
+      console.log('✅ Image scan completed:', {
+        uniqueKey,
+        hasData: !!result.data,
+        imageId: result.imageId,
+        dataSaved: !result.saveError && !!result.imageId,
+        saveError: result.saveError
+      })
+    } catch (error) {
+      console.error('❌ Error scanning image:', error)
+    } finally {
+      setScanningImages(prev => {
+        const next = new Set(prev)
+        next.delete(uniqueKey)
+        return next
+      })
+    }
+  }
+
+  // Toggle scan results display
+  const toggleScanResults = (e: React.MouseEvent, imageKey: string) => {
+    e.stopPropagation()
+    setExpandedRows(prev => {
+      const next = new Set(prev)
+      if (next.has(imageKey)) {
+        next.delete(imageKey)
+      } else {
+        next.add(imageKey)
+      }
+      return next
+    })
+  }
+
   return (
     <div className="bg-white rounded-lg  border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Images Analysis</h3>
         <div className="text-sm text-gray-500">
-          {isProcessing ? (
+          {isLoading || isProcessing ? (
             <span className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-              Processing images...
+              {isLoading ? 'Loading images...' : 'Processing images...'}
             </span>
           ) : (
             <>
               Showing {startIndex + 1}-{Math.min(endIndex, filteredImages.length)} of {filteredImages.length} images
               {filteredImages.length !== stats.total && ` (${stats.total} total)`}
+              {scrapedImagesData.length > 0 && (
+                <span className="ml-2 text-green-600">• From database</span>
+              )}
             </>
           )}
         </div>
@@ -466,11 +749,44 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Page
                   </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 cursor-pointer tracking-wider relative group"
+                    onMouseEnter={() => setShowActionsTooltip(true)}
+                    onMouseLeave={() => setShowActionsTooltip(false)}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Actions
+                      <svg 
+                        className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 transition-colors" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    {showActionsTooltip && (
+                      <div className="absolute z-50 top-full right-0 mt-1 w-64 p-3 bg-white text-black text-xs rounded-lg shadow-lg pointer-events-none">
+                        
+                        <p className="text-black font-medium mb-1">Search Image Usage</p>
+                        <p className="text-black text-xs leading-relaxed">
+                          Click the "Scan Image" button to search where this image is used across the website and analyze its usage.
+                        </p>
+                      </div>
+                    )}
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedImages.map((img, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
+                {paginatedImages.map((img, index) => {
+                  // Create a unique key combining multiple identifiers
+                  const uniqueKey = img.extra_metadata?.id 
+                    ? `img-${img.extra_metadata.id}`
+                    : `img-${index}-${img.url || 'unknown'}-${img.page_url || ''}`;
+                  
+                  return (
+                  <React.Fragment key={uniqueKey}>
+                    <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div 
                         className="w-16 h-16 bg-gray-100 rounded border overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
@@ -534,8 +850,189 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                         </a>
                       </div>
                     </td>
-                  </tr>
-                ))}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-2">
+                        {/* Show "Scan Image" button only if feature is available and no existing data */}
+                        {hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
+                         !img.extra_metadata?.open_web_ninja_data && (
+                          <button
+                            onClick={(e) => handleScanImage(e, img)}
+                            disabled={scanningImages.has(img.extra_metadata?.id || img.url || '')}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                            title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
+                          >
+                            {scanningImages.has(img.extra_metadata?.id || img.url || '') ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                Scanning...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Scan Image
+                              </>
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Show feature unavailable message if feature is not in plan */}
+                        {!hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
+                         !img.extra_metadata?.open_web_ninja_data && (
+                          <div className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Upgrade Required
+                          </div>
+                        )}
+                        
+                        {/* Show "Show Results" button if scan data exists (always show if data exists, regardless of feature access) */}
+                        {(scanResults[img.extra_metadata?.id || img.url || ''] || img.extra_metadata?.open_web_ninja_data) && (
+                          <button
+                            onClick={(e) => {
+                              // Load data from database if not already loaded
+                              const uniqueKey = img.extra_metadata?.id || img.url || ''
+                              if (!scanResults[uniqueKey] && img.extra_metadata?.open_web_ninja_data) {
+                                setScanResults(prev => ({
+                                  ...prev,
+                                  [uniqueKey]: img.extra_metadata?.open_web_ninja_data
+                                }))
+                              }
+                              toggleScanResults(e, uniqueKey)
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                          >
+                            {expandedRows.has(img.extra_metadata?.id || img.url || '') ? (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                                Hide Results
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                                Show Results
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    </tr>
+                    
+                    {/* Expanded row with scan results */}
+                    {expandedRows.has(img.extra_metadata?.id || img.url || '') && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                          <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-4">Reverse Image Search Results</h4>
+                            {(() => {
+                              const uniqueKey = img.extra_metadata?.id || img.url || ''
+                              const scanData = scanResults[uniqueKey] || img.extra_metadata?.open_web_ninja_data
+                              
+                              if (!scanData) return <p className="text-xs text-gray-500">No results available</p>
+                              
+                              // Handle the new API response structure
+                              const results = scanData?.data || scanData?.data?.matches || scanData?.matches || []
+                              
+                              if (results.length === 0) {
+                                return <p className="text-xs text-gray-500">No matches found</p>
+                              }
+                              
+                              return (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-700 mb-4">
+                                    Found {results.length} {results.length === 1 ? 'match' : 'matches'}
+                                  </p>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+                                    {results.map((match: any, idx: number) => (
+                                      <div 
+                                        key={idx} 
+                                        className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                      >
+                                        {/* Image */}
+                                        {match.image && (
+                                          <div className="w-full h-40 bg-gray-100 overflow-hidden">
+                                            <Image
+                                              src={match.image}
+                                              alt={match.title || 'Match image'}
+                                              width={match.image_width || 300}
+                                              height={match.image_height || 200}
+                                              className="w-full h-full object-cover"
+                                              onError={(e) => {
+                                                const target = e.currentTarget
+                                                target.style.display = 'none'
+                                                const parent = target.parentElement
+                                                if (parent) {
+                                                  parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">Image not available</div>'
+                                                }
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {/* Content */}
+                                        <div className="p-3">
+                                          {/* Domain with logo */}
+                                          <div className="flex items-center gap-2 mb-2">
+                                            {match.logo && (
+                                              <img 
+                                                src={match.logo} 
+                                                alt={match.domain || 'Domain logo'}
+                                                className="w-4 h-4 rounded"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none'
+                                                }}
+                                              />
+                                            )}
+                                            <span className="text-xs text-gray-500 truncate">
+                                              {match.domain || 'Unknown domain'}
+                                            </span>
+                                            {match.date && (
+                                              <span className="text-xs text-gray-400 ml-auto">
+                                                {match.date}
+                                              </span>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Title */}
+                                          {match.title && (
+                                            <h5 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2">
+                                              {match.title}
+                                            </h5>
+                                          )}
+                                          
+                                          {/* Link */}
+                                          {match.link && (
+                                            <a
+                                              href={match.link}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-blue-600 hover:text-blue-800 truncate block"
+                                              title={match.link}
+                                            >
+                                              View Source →
+                                            </a>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -629,6 +1126,207 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                           {img.page_url}
                         </a>
                       </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="relative">
+                      <label 
+                        className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1.5 group"
+                        onMouseEnter={() => setShowActionsTooltip(true)}
+                        onMouseLeave={() => setShowActionsTooltip(false)}
+                      >
+                        Actions
+                        <svg 
+                          className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </label>
+                      {showActionsTooltip && (
+                        <div className="absolute z-50 top-full left-0 mt-1 w-64 p-3 bg-red-900 text-white text-xs rounded-lg shadow-lg pointer-events-none">
+                          <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                          <p className="text-white font-medium mb-1">Search Image Usage</p>
+                          <p className="text-gray-300 text-xs leading-relaxed">
+                            Click the "Scan Image" button to search where this image is used across the website and analyze its usage.
+                          </p>
+                        </div>
+                      )}
+                      <div className="mt-1 space-y-2">
+                        {/* Show "Scan Image" button only if feature is available and no existing data */}
+                        {hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
+                         !img.extra_metadata?.open_web_ninja_data && (
+                          <button
+                            onClick={(e) => handleScanImage(e, img)}
+                            disabled={scanningImages.has(img.extra_metadata?.id || img.url || '')}
+                            className="w-full sm:w-auto px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                            title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
+                          >
+                            {scanningImages.has(img.extra_metadata?.id || img.url || '') ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                Scanning...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Scan Image
+                              </>
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Show feature unavailable message if feature is not in plan */}
+                        {!hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
+                         !img.extra_metadata?.open_web_ninja_data && (
+                          <div className="w-full px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Upgrade Required
+                          </div>
+                        )}
+                        
+                        {/* Show "Show Results" button if scan data exists (always show if data exists, regardless of feature access) */}
+                        {(scanResults[img.extra_metadata?.id || img.url || ''] || img.extra_metadata?.open_web_ninja_data) && (
+                          <button
+                            onClick={(e) => {
+                              // Load data from database if not already loaded
+                              const uniqueKey = img.extra_metadata?.id || img.url || ''
+                              if (!scanResults[uniqueKey] && img.extra_metadata?.open_web_ninja_data) {
+                                setScanResults(prev => ({
+                                  ...prev,
+                                  [uniqueKey]: img.extra_metadata?.open_web_ninja_data
+                                }))
+                              }
+                              toggleScanResults(e, uniqueKey)
+                            }}
+                            className="w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                          >
+                            {expandedRows.has(img.extra_metadata?.id || img.url || '') ? (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                                Hide Results
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                                Show Results
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Expanded scan results */}
+                      {expandedRows.has(img.extra_metadata?.id || img.url || '') && (
+                        <div className="mt-3 bg-white rounded-lg border border-gray-200 p-4">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-4">Reverse Image Search Results</h4>
+                          {(() => {
+                            const uniqueKey = img.extra_metadata?.id || img.url || ''
+                            const scanData = scanResults[uniqueKey] || img.extra_metadata?.open_web_ninja_data
+                            
+                            if (!scanData) return <p className="text-xs text-gray-500">No results available</p>
+                            
+                            // Handle the new API response structure
+                            const results = scanData?.data || scanData?.data?.matches || scanData?.matches || []
+                            
+                            if (results.length === 0) {
+                              return <p className="text-xs text-gray-500">No matches found</p>
+                            }
+                            
+                            return (
+                              <div>
+                                <p className="text-xs font-medium text-gray-700 mb-4">
+                                  Found {results.length} {results.length === 1 ? 'match' : 'matches'}
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                                  {results.map((match: any, idx: number) => (
+                                    <div 
+                                      key={idx} 
+                                      className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                    >
+                                      {/* Image */}
+                                      {match.image && (
+                                        <div className="w-full h-40 bg-gray-100 overflow-hidden">
+                                          <Image
+                                            src={match.image}
+                                            alt={match.title || 'Match image'}
+                                            width={match.image_width || 300}
+                                            height={match.image_height || 200}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              const target = e.currentTarget
+                                              target.style.display = 'none'
+                                              const parent = target.parentElement
+                                              if (parent) {
+                                                parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">Image not available</div>'
+                                              }
+                                            }}
+                                          />
+                                        </div>
+                                      )}
+                                      
+                                      {/* Content */}
+                                      <div className="p-3">
+                                        {/* Domain with logo */}
+                                        <div className="flex items-center gap-2 mb-2">
+                                          {match.logo && (
+                                            <img 
+                                              src={match.logo} 
+                                              alt={match.domain || 'Domain logo'}
+                                              className="w-4 h-4 rounded"
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none'
+                                              }}
+                                            />
+                                          )}
+                                          <span className="text-xs text-gray-500 truncate">
+                                            {match.domain || 'Unknown domain'}
+                                          </span>
+                                          {match.date && (
+                                            <span className="text-xs text-gray-400 ml-auto">
+                                              {match.date}
+                                            </span>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Title */}
+                                        {match.title && (
+                                          <h5 className="text-xs font-medium text-gray-900 mb-2 line-clamp-2">
+                                            {match.title}
+                                          </h5>
+                                        )}
+                                        
+                                        {/* Link */}
+                                        {match.link && (
+                                          <a
+                                            href={match.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-600 hover:text-blue-800 truncate block"
+                                            title={match.link}
+                                          >
+                                            View Source →
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

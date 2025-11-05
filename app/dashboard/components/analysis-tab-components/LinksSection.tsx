@@ -4,6 +4,8 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { AuditProject } from '@/types/audit'
 import { ScrapedPage } from '../analysis-tab/types'
 import { useSupabase } from '@/contexts/SupabaseContext'
+import { useUserPlan } from '@/hooks/useUserPlan'
+import { supabase } from '@/lib/supabase-client'
 
 // Override the ScrapedPage type to accept any performance_analysis type
 interface ScrapedPageOverride extends Omit<ScrapedPage, 'performance_analysis'> {
@@ -35,10 +37,14 @@ interface LinkData {
 
 export default function LinksSection({ project, scrapedPages, originalScrapingData }: LinksSectionProps) {
   const { updateScrapedPage, user } = useSupabase()
+  const { hasFeature } = useUserPlan()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  
+  // Check if user has broken links check feature
+  const hasBrokenLinksFeature = hasFeature('broken_links_check')
   
   // Filter states
   const [selectedLinkType, setSelectedLinkType] = useState<string>('all')
@@ -48,16 +54,33 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   // Function to check if a link is broken using API endpoint
   const checkLinkBroken = useCallback(async (linkUrl: string): Promise<boolean> => {
     try {
+      // Get session token for API call
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) {
+        console.error('❌ No access token available for link check')
+        return true // Assume broken if no auth
+      }
+
       // Use API endpoint to check link status (bypasses CORS)
       const response = await fetch('/api/check-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ url: linkUrl }),
       })
       
       if (!response.ok) {
+        // Handle feature access denied
+        if (response.status === 403) {
+          const errorData = await response.json().catch(() => ({}))
+          console.warn('Feature access denied for link check:', errorData)
+          return true // Assume broken if access denied
+        }
+        
         console.warn(`API check failed for ${linkUrl}:`, response.status)
         return true // Assume broken if API fails
       }
@@ -320,6 +343,12 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
 
   // Function to check all links for broken status in batches of 50
   const checkAllLinksBroken = useCallback(async () => {
+    // Check if user has access to broken links check feature
+    if (!hasBrokenLinksFeature) {
+      alert('Broken Links Check is not available in your current plan. Please upgrade to access this feature.')
+      return
+    }
+    
     setCheckingBrokenLinks(true)
     try {
       const batchSize = 50
@@ -374,7 +403,7 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     } finally {
       setCheckingBrokenLinks(false)
     }
-  }, [links, checkLinkBroken, updateLinkStatusesInDB])
+  }, [links, checkLinkBroken, updateLinkStatusesInDB, hasBrokenLinksFeature])
 
   // Filter links based on selected criteria
   const filteredLinks = useMemo(() => {
@@ -681,20 +710,29 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
           {/* Check Broken Links Button */}
           <div className="lg:w-48">
             <label className="block text-sm font-medium text-gray-700 mb-2">Link Status</label>
-            <button
-              onClick={checkAllLinksBroken}
-              disabled={checkingBrokenLinks || links.length === 0}
-              className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-colors"
-            >
-              {checkingBrokenLinks ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Checking...
-                </span>
-              ) : (
-                'Check Broken Links'
-              )}
-            </button>
+            {hasBrokenLinksFeature ? (
+              <button
+                onClick={checkAllLinksBroken}
+                disabled={checkingBrokenLinks || links.length === 0}
+                className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-colors"
+              >
+                {checkingBrokenLinks ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Checking...
+                  </span>
+                ) : (
+                  'Check Broken Links'
+                )}
+              </button>
+            ) : (
+              <div className="w-full px-3 py-2 text-sm font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Broken Links Check is not available in your current plan">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Upgrade Required
+              </div>
+            )}
           </div>
 
         </div>

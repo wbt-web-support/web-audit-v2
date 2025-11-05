@@ -447,9 +447,8 @@ const activeRequests = new Map<
             ? JSON.stringify(pageWithoutSocialTags.links)
             : null,
 
-          images: pageWithoutSocialTags.images
-            ? JSON.stringify(pageWithoutSocialTags.images)
-            : null,
+          // Images are now saved in separate scraped_images table
+          images: null,
 
           // Filter out null values from arrays to avoid malformed array literals
 
@@ -804,4 +803,369 @@ const activeRequests = new Map<
     }
   };
 
-export { createScrapedPage, getScrapedPages, getScrapedPage, updateScrapedPage, deleteScrapedPage, createScrapedPages };
+  // Scraped Images CRUD operations
+  interface ScrapedImageData {
+    scraped_page_id: string;
+    audit_project_id: string | null;
+    user_id: string;
+    original_url: string;
+    alt_text: string | null;
+    title_text: string | null;
+    width: number | null;
+    height: number | null;
+    type: string | null;
+    size_bytes: number | null;
+    scan_results: any | null;
+    extra_metadata: any | null;
+  }
+
+  // Input type for createScrapedImages (user_id is added automatically)
+  interface ScrapedImageInput {
+    scraped_page_id: string;
+    audit_project_id: string | null;
+    original_url: string;
+    alt_text?: string | null;
+    title_text?: string | null;
+    width?: number | null;
+    height?: number | null;
+    type?: string | null;
+    size_bytes?: number | null;
+    scan_results?: any | null;
+    extra_metadata?: any | null;
+  }
+
+  const createScrapedImages = async (
+    user: User | null,
+    imagesData: ScrapedImageInput[]
+  ) => {
+    if (!user) {
+      return {
+        data: null,
+        error: {
+          message: "No user logged in",
+        },
+      };
+    }
+
+    if (!imagesData || imagesData.length === 0) {
+      return {
+        data: null,
+        error: {
+          message: "No images data provided",
+        },
+      };
+    }
+
+    try {
+      // Sanitize and validate image data
+      const sanitizeString = (value: string | null | undefined) => {
+        if (typeof value !== "string") return value ?? null;
+        return value.replace(/\u0000/g, "");
+      };
+
+      const cleanedImages = imagesData.map((image) => ({
+        scraped_page_id: image.scraped_page_id,
+        audit_project_id: image.audit_project_id,
+        user_id: user.id,
+        original_url: sanitizeString(image.original_url) || "",
+        alt_text: sanitizeString(image.alt_text),
+        title_text: sanitizeString(image.title_text),
+        width: image.width ?? null,
+        height: image.height ?? null,
+        type: sanitizeString(image.type),
+        size_bytes: image.size_bytes ?? null,
+        scan_results: image.scan_results ? JSON.stringify(image.scan_results) : null,
+        extra_metadata: image.extra_metadata ? JSON.stringify(image.extra_metadata) : null,
+      }));
+
+      // Validate required fields
+      const validationErrors: string[] = [];
+      cleanedImages.forEach((image, index) => {
+        if (!image.scraped_page_id) {
+          validationErrors.push(`Image ${index}: Missing scraped_page_id`);
+        }
+        if (!image.original_url) {
+          validationErrors.push(`Image ${index}: Missing original_url`);
+        }
+        if (!image.user_id) {
+          validationErrors.push(`Image ${index}: Missing user_id`);
+        }
+      });
+
+      if (validationErrors.length > 0) {
+        console.error("❌ Validation errors for images:", validationErrors);
+        return {
+          data: null,
+          error: {
+            message: "Validation failed",
+            details: validationErrors,
+          },
+        };
+      }
+
+      // Insert images in batches to avoid overwhelming the database
+      const batchSize = 100;
+      const allResults: any[] = [];
+      let hasError = false;
+      let lastError: any = null;
+
+      // Test database connection first
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from("scraped_images")
+          .select("id")
+          .limit(1);
+
+        if (testError) {
+          console.error("❌ Database connection test failed for scraped_images:", {
+            error: testError,
+            message: testError.message,
+            details: testError.details,
+            hint: testError.hint,
+            code: testError.code,
+          });
+
+          // Check for specific error types
+          if (
+            testError.message?.includes('relation "scraped_images" does not exist') ||
+            testError.code === "PGRST301"
+          ) {
+            return {
+              data: null,
+              error: {
+                message: "scraped_images table does not exist",
+                code: "TABLE_NOT_EXISTS",
+                details: testError,
+              },
+            };
+          }
+
+          if (
+            testError.message?.includes("permission denied") ||
+            testError.message?.includes("RLS")
+          ) {
+            return {
+              data: null,
+              error: {
+                message: "Permission denied - check RLS policies for scraped_images table",
+                code: "PERMISSION_DENIED",
+                details: testError,
+              },
+            };
+          }
+        }
+      } catch (connectionError) {
+        console.error("❌ Database connection exception for scraped_images:", connectionError);
+        return {
+          data: null,
+          error: {
+            message: "Database connection exception",
+            details: connectionError,
+          },
+        };
+      }
+
+      for (let i = 0; i < cleanedImages.length; i += batchSize) {
+        const batch = cleanedImages.slice(i, i + batchSize);
+        try {
+          // Log sample data for debugging
+          if (i === 0) {
+            console.log("📸 Sample image data being inserted:", {
+              sample: batch[0],
+              totalInBatch: batch.length,
+              totalImages: cleanedImages.length
+            });
+          }
+
+          const { data, error } = await supabase
+            .from("scraped_images")
+            .insert(batch)
+            .select();
+
+          if (error) {
+            // Check if error is empty (common with RLS policies)
+            const isEmptyError = !error.message && Object.keys(error).length === 0;
+            
+            console.error(`❌ Error inserting image batch ${i / batchSize + 1}:`, {
+              error,
+              message: error.message || (isEmptyError ? "Empty error object (likely RLS policy issue)" : "Unknown error"),
+              details: error.details,
+              hint: error.hint,
+              code: error.code,
+              batchSize: batch.length,
+              batchIndex: i,
+              sampleImage: batch[0],
+              isEmptyError,
+              fullError: JSON.stringify(error, null, 2)
+            });
+
+            // If it's an empty error, it's likely RLS
+            if (isEmptyError) {
+              return {
+                data: null,
+                error: {
+                  message: "RLS policy issue - check database permissions for scraped_images table",
+                  code: "RLS_POLICY_ISSUE",
+                  details: "Empty error object typically indicates RLS policy blocking the insert",
+                },
+              };
+            }
+
+            hasError = true;
+            lastError = error;
+            // Continue with next batch even if one fails
+          } else if (data) {
+            allResults.push(...data);
+            console.log(`✅ Successfully inserted batch ${i / batchSize + 1} with ${batch.length} images`);
+          }
+        } catch (batchError) {
+          console.error(`❌ Exception inserting image batch ${i / batchSize + 1}:`, {
+            error: batchError,
+            message: batchError instanceof Error ? batchError.message : String(batchError),
+            stack: batchError instanceof Error ? batchError.stack : undefined,
+            batchSize: batch.length,
+            sampleImage: batch[0]
+          });
+          hasError = true;
+          lastError = batchError;
+        }
+      }
+
+      if (hasError && allResults.length === 0) {
+        return {
+          data: null,
+          error: lastError || {
+            message: "Failed to insert images",
+          },
+        };
+      }
+
+      return {
+        data: allResults,
+        error: hasError ? lastError : null,
+      };
+    } catch (error) {
+      console.error("❌ Exception creating scraped images:", error);
+      return {
+        data: null,
+        error: {
+          message: "Unexpected error occurred",
+          details: error,
+        },
+      };
+    }
+  };
+
+  // Get scraped images for a project
+  const getScrapedImages = async (
+    user: User | null,
+    auditProjectId: string
+  ): Promise<{
+    data: any[] | null;
+    error: any;
+  }> => {
+    if (!user) {
+      return {
+        data: null,
+        error: {
+          message: "No user logged in",
+        },
+      };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("scraped_images")
+        .select(`
+          *,
+          scraped_pages (
+            id,
+            url,
+            title
+          )
+        `)
+        .eq("audit_project_id", auditProjectId)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching scraped images:", error);
+        return {
+          data: null,
+          error,
+        };
+      }
+
+      return {
+        data,
+        error: null,
+      };
+    } catch (error) {
+      console.error("Error fetching scraped images:", error);
+      return {
+        data: null,
+        error: {
+          message: "Unexpected error occurred",
+          details: error,
+        },
+      };
+    }
+  };
+
+  // Get scraped images for a specific page
+  const getScrapedImagesByPage = async (
+    user: User | null,
+    scrapedPageId: string
+  ): Promise<{
+    data: any[] | null;
+    error: any;
+  }> => {
+    if (!user) {
+      return {
+        data: null,
+        error: {
+          message: "No user logged in",
+        },
+      };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("scraped_images")
+        .select(`
+          *,
+          scraped_pages (
+            id,
+            url,
+            title
+          )
+        `)
+        .eq("scraped_page_id", scrapedPageId)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching scraped images by page:", error);
+        return {
+          data: null,
+          error,
+        };
+      }
+
+      return {
+        data,
+        error: null,
+      };
+    } catch (error) {
+      console.error("Error fetching scraped images by page:", error);
+      return {
+        data: null,
+        error: {
+          message: "Unexpected error occurred",
+          details: error,
+        },
+      };
+    }
+  };
+
+export { createScrapedPage, getScrapedPages, getScrapedPage, updateScrapedPage, deleteScrapedPage, createScrapedPages, createScrapedImages, getScrapedImages, getScrapedImagesByPage };

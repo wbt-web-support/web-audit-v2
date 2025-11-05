@@ -36,6 +36,9 @@ import {
   updateScrapedPage as updateScrapedPageRaw,
   deleteScrapedPage as deleteScrapedPageRaw,
   createScrapedPages as createScrapedPagesRaw,
+  createScrapedImages as createScrapedImagesRaw,
+  getScrapedImages as getScrapedImagesRaw,
+  getScrapedImagesByPage as getScrapedImagesByPageRaw,
 } from './supabase-scraping';
 import {
   processMetaTagsData as processMetaTagsDataRaw,
@@ -558,6 +561,24 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       >[]
     ) =>
       createScrapedPagesRaw(user, pagesData),
+    createScrapedImages: async (imagesData: Array<{
+      scraped_page_id: string;
+      audit_project_id: string | null;
+      original_url: string;
+      alt_text?: string | null;
+      title_text?: string | null;
+      width?: number | null;
+      height?: number | null;
+      type?: string | null;
+      size_bytes?: number | null;
+      scan_results?: any | null;
+      extra_metadata?: any | null;
+    }>) =>
+      createScrapedImagesRaw(user, imagesData),
+    getScrapedImages: async (auditProjectId: string) =>
+      getScrapedImagesRaw(user, auditProjectId),
+    getScrapedImagesByPage: async (scrapedPageId: string) =>
+      getScrapedImagesByPageRaw(user, scrapedPageId),
     // Meta Tags processing
     processMetaTagsData: async (auditProjectId: string) =>
       processMetaTagsDataRaw(user, auditProjectId),

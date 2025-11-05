@@ -179,6 +179,30 @@ interface UserProfile {
       data: ScrapedPage[] | null;
       error: any;
     }>;
+    createScrapedImages: (imagesData: Array<{
+      scraped_page_id: string;
+      audit_project_id: string | null;
+      original_url: string;
+      alt_text?: string | null;
+      title_text?: string | null;
+      width?: number | null;
+      height?: number | null;
+      type?: string | null;
+      size_bytes?: number | null;
+      scan_results?: any | null;
+      extra_metadata?: any | null;
+    }>) => Promise<{
+      data: any[] | null;
+      error: any;
+    }>;
+    getScrapedImages: (auditProjectId: string) => Promise<{
+      data: any[] | null;
+      error: any;
+    }>;
+    getScrapedImagesByPage: (scrapedPageId: string) => Promise<{
+      data: any[] | null;
+      error: any;
+    }>;
     // Meta tags processing
     processMetaTagsData: (auditProjectId: string) => Promise<{
       data: AuditProjectWithUserId | null;

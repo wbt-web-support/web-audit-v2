@@ -33,10 +33,7 @@ export default function Navbar() {
       name: 'Testimonials',
       href: '#testimonials'
     },
-    {
-      name: 'Contact',
-      href: '#contact'
-    },
+    
   ]
 
   useEffect(() => {

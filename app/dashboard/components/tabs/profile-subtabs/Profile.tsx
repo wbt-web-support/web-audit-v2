@@ -441,8 +441,8 @@ export default function Profile({
               duration: 0.4,
               delay: 0.8
             }}>
-                <span className="text-gray-600">Login Count</span>
-                <span className="font-medium text-black">{userProfile?.login_count || 0}</span>
+                {/* <span className="text-gray-600">Login Count</span>
+                <span className="font-medium text-black">{userProfile?.login_count || 0}</span> */}
               </motion.div>
               {userProfile?.last_activity_at && <motion.div className="flex justify-between" initial={{
               opacity: 0,

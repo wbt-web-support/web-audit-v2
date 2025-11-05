@@ -1,7 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { checkFeatureAccess } from '@/lib/plan-validation';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function POST(request: NextRequest) {
   try {
+    // Get user from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({
+        error: 'Authentication required',
+        code: 'MISSING_AUTH',
+        isBroken: true
+      }, {
+        status: 401
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify user
+    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json({
+        error: 'Invalid authentication token',
+        code: 'INVALID_AUTH',
+        details: authError?.message || 'Token verification failed',
+        isBroken: true
+      }, {
+        status: 401
+      });
+    }
+
+    // Check if user has access to broken_links_check feature
+    const featureAccess = await checkFeatureAccess(user.id, 'broken_links_check');
+    
+    if (!featureAccess.hasAccess) {
+      console.warn('🚫 User attempted to use broken_links_check feature without access:', {
+        userId: user.id,
+        userPlan: featureAccess.userPlan,
+        error: featureAccess.error
+      });
+      
+      return NextResponse.json({
+        error: 'Feature access denied',
+        code: 'FEATURE_ACCESS_DENIED',
+        message: featureAccess.error || 'Broken Links Check is not available in your current plan',
+        userPlan: featureAccess.userPlan,
+        requiredFeature: 'broken_links_check',
+        isBroken: true
+      }, {
+        status: 403
+      });
+    }
+
     const { url } = await request.json();
 
     if (!url || typeof url !== 'string') {

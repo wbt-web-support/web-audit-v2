@@ -90,6 +90,14 @@ export const FEATURES: Feature[] = [
     isCore: true
   },
   {
+    id: 'Image_scane',
+    name: 'Reverse Image Search',
+    description: 'Search where images are used across the web using reverse image search',
+    category: 'media',
+    icon: '🔍',
+    isCore: false
+  },
+  {
     id: 'link_scanner',
     name: 'Link Scanner',
     description: 'Validate internal/external links and detect broken redirects',
