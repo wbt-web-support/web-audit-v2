@@ -36,12 +36,13 @@ export default function Testimonials() {
     <section className="bg-gray-50 py-12 md:py-16 lg:py-20 px-4 md:px-8 lg:px-12">
       <div className="max-w-[90rem] mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-8 md:mb-12 lg:mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-3 md:mb-4">
-            Trusted by Professionals
+        
+        <div className="mb-12 md:mb-16 lg:mb-20 max-w-4xl">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium text-black mb-4 raleway leading-tight">
+          Trusted by Professionals
           </h2>
-          <p className="text-base md:text-lg lg:text-xl text-black">
-            See what our users are saying
+          <p className="text-lg md:text-xl lg:text-2xl text-black/70 raleway">
+          See what our users are saying
           </p>
         </div>
 

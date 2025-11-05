@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { useUserPlan } from '@/hooks/useUserPlan'
+import { useScreenshot } from '@/lib/api-client'
 
 interface UIQualityTabProps {
   page: {
@@ -175,6 +176,19 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null)
   const [currentStep, setCurrentStep] = useState<'idle' | 'capturing' | 'analyzing' | 'complete'>('idle')
 
+  // Use the screenshot API client hook
+  const {
+    takeScreenshot: apiTakeScreenshot,
+    isProcessing: apiIsProcessing,
+    error: apiError,
+    clearError: clearApiError,
+  } = useScreenshot({
+    onError: (error) => {
+      console.error('Screenshot API error:', error)
+      setProcessingError(error.message || 'Failed to capture screenshot')
+    },
+  })
+
   // Refs to prevent duplicate API calls and handle cleanup
   const isProcessingRef = useRef(false)
   const currentPageIdRef = useRef<string | undefined>(undefined)
@@ -242,41 +256,32 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
     setProcessing(true)
     setProcessingError(null)
+    clearApiError() // Clear any previous API errors
     setCurrentStep('capturing')
     setImageAnalysis(null)
 
     try {
-      // Step 1: Capture screenshot
-      // Note: Not using abort signal to allow requests to continue when component unmounts
+      // Step 1: Capture screenshot using API client
       setCurrentStep('capturing')
-      const screenshotResponse = await fetch('/api/screenshot', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: page.url,
-          pageId: page.id,
-            options: {
-              delay: 3000
-            },
-            priority: 1
-          })
-          // Removed signal to allow requests to continue in background
-        })
-
-      // Parse response even if status is not ok, to check for partial success
-      let screenshotData: any = {}
-      try {
-        screenshotData = await screenshotResponse.json()
-      } catch (parseError) {
-        // If we can't parse JSON, try to get text
-        const errorText = await screenshotResponse.text().catch(() => '')
-        throw new Error(`Failed to parse screenshot response: ${errorText || screenshotResponse.statusText}`)
-      }
       
-      // Extract desktop and mobile URLs from new format
-      // Support multiple formats: { desktop: { screenshotUrl }, mobile: { screenshotUrl }, data: { desktop: { screenshotUrl }, mobile: { screenshotUrl } }, screenshots: { desktop: { url }, mobile: { url } } }
+      // Use the API client hook to take screenshot
+      const screenshotData = await apiTakeScreenshot(
+        page.url,
+        {
+          delay: 3000
+        },
+        page.id
+      )
+
+      // Handle API client errors
+      if (!screenshotData) {
+        if (apiError) {
+          throw new Error(apiError.message || 'Failed to capture screenshot')
+        }
+        throw new Error('Failed to capture screenshot: No response received')
+      }
+
+      // Extract desktop and mobile URLs from response
       const desktopUrl = screenshotData.desktop?.screenshotUrl ||
                         screenshotData.desktop?.url ||
                         screenshotData.desktopUrl || 
@@ -300,7 +305,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       // If desktop URL exists, we can proceed even if there was an error or mobile failed
       if (desktopUrl) {
         // Log warning if mobile failed but desktop succeeded (non-blocking)
-        if (!mobileUrl && (screenshotData.success === 'partial' || screenshotData.success === false || !screenshotResponse.ok)) {
+        if (!mobileUrl && (screenshotData.success === 'partial' || screenshotData.success === false)) {
           console.warn('⚠️ Mobile screenshot failed, but desktop screenshot succeeded. Proceeding with desktop only.')
           // Show warning message if provided
           if (screenshotData.warning) {
@@ -311,11 +316,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         }
       } else {
         // Only throw error if desktop URL is missing
-        if (!screenshotResponse.ok) {
-          const errorMsg = screenshotData.details || screenshotData.error || screenshotData.message || `Failed to capture screenshot: ${screenshotResponse.statusText}`
-          throw new Error(errorMsg)
-        }
-        throw new Error('Invalid response format: no desktop image URL found')
+        const errorMsg = screenshotData.details || screenshotData.error || screenshotData.message || 'Invalid response format: no desktop image URL found'
+        throw new Error(errorMsg)
       }
 
       // Set both URLs

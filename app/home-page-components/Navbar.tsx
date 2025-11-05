@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function Navbar() {
   const [isHeroSection, setIsHeroSection] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated, loading } = useAuth();
 
   const items = [
     {
@@ -147,19 +149,13 @@ export default function Navbar() {
     ? 'bg-transparent border border-white text-white hover:bg-white/10'
     : 'bg-blue-600 border border-blue-600 text-white hover:bg-blue-700';
 
+  const secondaryButtonClasses = isHeroSection
+    ? 'bg-white/10 border border-white/50 text-white hover:bg-white/20'
+    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50';
+
   return (
     <>
       <style jsx>{`
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
         @keyframes slideInLeft {
           from {
             opacity: 0;
@@ -216,15 +212,12 @@ export default function Navbar() {
 
         {/* Desktop Navigation - Hidden on mobile */}
         <div className={`hidden md:flex items-center justify-between py-2 md:py-3 px-4 md:px-8 lg:px-12 ${navbarClasses} gap-4 lg:gap-8 xl:gap-12 rounded-xl md:rounded-2xl transition-all duration-300 hover:shadow-lg`}>
-          {items.map((item, index) => (
+          {items.map((item) => (
             <Link 
               href={item.href} 
               key={item.name} 
               onClick={(e) => handleSmoothScroll(e, item.href)}
               className={`group relative text-xs md:text-sm lg:text-base font-medium ${textClasses} transition-all duration-300 cursor-pointer whitespace-nowrap py-1 overflow-hidden`}
-              style={{
-                animation: `fadeInDown 0.5s ease-out ${index * 0.1}s both`
-              }}
             >
               <span className="relative z-10">{item.name}</span>
               <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
@@ -233,19 +226,37 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Desktop Button - Hidden on mobile */}
-        <div className="get-started-button cursor-pointer hidden md:block">
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              setIsMobileMenuOpen(false);
-            }}
-            className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
-          >
-            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
-            <span className="relative z-10 font-semibold">Get Started</span>
-          </button>
+        {/* Desktop Buttons - Hidden on mobile */}
+        <div className="hidden md:flex items-center gap-2 md:gap-3">
+          {!loading && (
+            <>
+              {isAuthenticated ? (
+                <Link 
+                  href="/dashboard"
+                  className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
+                  <span className="relative z-10 font-semibold">Dashboard</span>
+                </Link>
+              ) : (
+                <>
+                  <Link 
+                    href="/login"
+                    className={`${secondaryButtonClasses} px-4 md:px-5 lg:px-6 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-md hover:shadow-lg`}
+                  >
+                    <span className="relative z-10 font-medium">Login</span>
+                  </Link>
+                  <Link 
+                    href="/signup"
+                    className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
+                    <span className="relative z-10 font-semibold">Sign Up</span>
+                  </Link>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -323,18 +334,38 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Get Started Button */}
-          <div className="p-4 border-t border-gray-200/50">
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setIsMobileMenuOpen(false);
-              }}
-              className={`${buttonClasses} w-full px-6 py-3 rounded-lg text-base font-medium transition-colors duration-200`}
-            >
-              Get Started
-            </button>
+          {/* Auth Buttons */}
+          <div className="p-4 border-t border-gray-200/50 space-y-3">
+            {!loading && (
+              <>
+                {isAuthenticated ? (
+                  <Link 
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`${buttonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
+                  >
+                    Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link 
+                      href="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`${secondaryButtonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
+                    >
+                      Login
+                    </Link>
+                    <Link 
+                      href="/signup"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`${buttonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

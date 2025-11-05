@@ -3,6 +3,50 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate API Key first - before processing any request
+    const requiredApiKey = process.env.SCREENSHOT_API_KEY
+    const providedApiKey = request.headers.get('X-API-Key')
+    
+    if (!requiredApiKey) {
+      console.error('❌ SCREENSHOT_API_KEY not configured in environment variables')
+      return NextResponse.json(
+        {
+          error: 'API key not configured',
+          code: 'API_KEY_NOT_CONFIGURED'
+        },
+        {
+          status: 500
+        }
+      )
+    }
+    
+    if (!providedApiKey) {
+      console.warn('⚠️ Screenshot API request without API key')
+      return NextResponse.json(
+        {
+          error: 'API key required',
+          details: 'Please provide X-API-Key header',
+          code: 'MISSING_API_KEY'
+        },
+        {
+          status: 401
+        }
+      )
+    }
+    
+    if (providedApiKey !== requiredApiKey) {
+      console.warn('⚠️ Screenshot API request with invalid API key')
+      return NextResponse.json(
+        {
+          error: 'Invalid API key',
+          code: 'INVALID_API_KEY'
+        },
+        {
+          status: 401
+        }
+      )
+    }
+
     const body = await request.json()
 
     // Validate required fields
@@ -23,7 +67,10 @@ export async function POST(request: NextRequest) {
     
     // Clean the URL by removing any leading '=' characters
     apiBaseUrl = apiBaseUrl.replace(/^=+/, '')
-    const apiKey = process.env.SCRAPER_API_KEY
+    
+    // Get API key for external screenshot service
+    // Try SCREENSHOT_API_KEY first (for consistency), then fall back to SCRAPER_API_KEY
+    const apiKey = process.env.SCREENSHOT_API_KEY || process.env.SCRAPER_API_KEY
     
     // Allow custom screenshot endpoint path via environment variable
     const screenshotPath = process.env.SCREENSHOT_ENDPOINT_PATH || '/screenshot'
@@ -58,8 +105,12 @@ export async function POST(request: NextRequest) {
       'User-Agent': 'WebAudit/1.0'
     }
     
+    // Add API key for external screenshot service
     if (apiKey) {
       headers['X-API-Key'] = apiKey
+    } else {
+      console.warn('⚠️ No API key found for external screenshot service. Set SCREENSHOT_API_KEY or SCRAPER_API_KEY in environment variables.')
+      console.warn('⚠️ External screenshot service at', endpoint, 'may require authentication')
     }
 
     // Prepare request body
@@ -76,7 +127,9 @@ export async function POST(request: NextRequest) {
       endpoint,
       url: body.url,
       options: screenshotData.options,
-      priority: screenshotData.priority
+      priority: screenshotData.priority,
+      hasApiKey: !!apiKey,
+      apiKeySource: process.env.SCREENSHOT_API_KEY ? 'SCREENSHOT_API_KEY' : process.env.SCRAPER_API_KEY ? 'SCRAPER_API_KEY' : 'none'
     })
 
     // Make request to screenshot service with 5 minute timeout

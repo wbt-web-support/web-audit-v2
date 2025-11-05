@@ -343,13 +343,35 @@ export interface GeminiImageAnalysisResult {
 }
 
 export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string, viewType: 'desktop' | 'mobile' = 'desktop'): Promise<GeminiImageAnalysisResult> {
+  // Timeout configuration (in milliseconds)
+  const IMAGE_FETCH_TIMEOUT = 30000; // 30 seconds for image fetch
+  const GEMINI_API_TIMEOUT = 120000; // 2 minutes for Gemini API call
+  
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp'
     });
 
-    // Fetch the image
-    const imageResponse = await fetch(imageUrl);
+    // Fetch the image with timeout
+    const imageFetchController = new AbortController();
+    const imageFetchTimeout = setTimeout(() => {
+      imageFetchController.abort();
+    }, IMAGE_FETCH_TIMEOUT);
+
+    let imageResponse: Response;
+    try {
+      imageResponse = await fetch(imageUrl, {
+        signal: imageFetchController.signal
+      });
+      clearTimeout(imageFetchTimeout);
+    } catch (fetchError: any) {
+      clearTimeout(imageFetchTimeout);
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`Image fetch timeout after ${IMAGE_FETCH_TIMEOUT}ms`);
+      }
+      throw new Error(`Failed to fetch image: ${fetchError.message || 'Network error'}`);
+    }
+
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
@@ -545,7 +567,25 @@ Provide only the JSON response, no additional text or explanations. Be EXTREMELY
     };
 
     const startTime = Date.now();
-    const result = await model.generateContent([prompt, imagePart]);
+    
+    // Gemini API call with timeout
+    const geminiApiPromise = model.generateContent([prompt, imagePart]);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Gemini API timeout after ${GEMINI_API_TIMEOUT}ms`));
+      }, GEMINI_API_TIMEOUT);
+    });
+
+    let result: any;
+    try {
+      result = await Promise.race([geminiApiPromise, timeoutPromise]);
+    } catch (apiError: any) {
+      if (apiError.message?.includes('timeout')) {
+        throw new Error(`Gemini API call timed out after ${GEMINI_API_TIMEOUT}ms. The image analysis may be too complex or the service is overloaded.`);
+      }
+      throw apiError;
+    }
+
     const response = await result.response;
     const text = response.text();
     const duration = Date.now() - startTime;
