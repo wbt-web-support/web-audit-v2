@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
+import PlanFormModal from './PlanFormModal';
 interface AdminPlansProps {
   userProfile: {
     id: string;
@@ -28,6 +29,19 @@ interface SupabaseError {
   details?: string;
   hint?: string;
 }
+// Helper type for old feature format (for backward compatibility)
+type OldFeature = {
+  name: string;
+  description: string;
+  icon: string;
+};
+
+// New feature format
+type NewFeature = {
+  heading: string;
+  tools: string[];
+};
+
 interface Plan {
   id: string;
   name: string;
@@ -39,11 +53,7 @@ interface Plan {
   currency: string;
   billing_cycle: string;
   interval_count: number;
-  features: Array<{
-    name: string;
-    description: string;
-    icon: string;
-  }>;
+  features: Array<NewFeature | OldFeature>;
   can_use_features: string[];
   max_projects: number;
   limits: PlanLimits;
@@ -56,6 +66,7 @@ interface Plan {
   created_at: string;
   updated_at: string;
 }
+
 interface PlanFormData {
   name: string;
   description: string;
@@ -63,11 +74,7 @@ interface PlanFormData {
   price: number;
   currency: string;
   billing_cycle: string;
-  features: Array<{
-    name: string;
-    description: string;
-    icon: string;
-  }>;
+  features: Array<NewFeature>;
   can_use_features: string[];
   max_projects: number;
   limits: PlanLimits;
@@ -77,6 +84,30 @@ interface PlanFormData {
   sort_order: number;
   razorpay_plan_id: string;
   subscription_id: string;
+}
+
+// Helper function to convert old feature format to new format
+function convertFeaturesToNewFormat(features: unknown): Array<NewFeature> {
+  if (!Array.isArray(features)) return [];
+  
+  return features.map((feature: unknown) => {
+    // Check if it's already in new format
+    if (feature && typeof feature === 'object' && 'heading' in feature && 'tools' in feature) {
+      return feature as NewFeature;
+    }
+    
+    // Convert from old format
+    if (feature && typeof feature === 'object' && 'name' in feature) {
+      const oldFeature = feature as OldFeature;
+      return {
+        heading: oldFeature.name || 'Features',
+        tools: oldFeature.description ? [oldFeature.description] : []
+      };
+    }
+    
+    // Fallback
+    return { heading: 'Features', tools: [] };
+  }).filter((f: NewFeature) => f.heading && f.heading.trim() !== '');
 }
 export default function AdminPlans({
   userProfile: _userProfile
@@ -106,11 +137,6 @@ export default function AdminPlans({
     razorpay_plan_id: '',
     subscription_id: ''
   });
-  const [newFeature, setNewFeature] = useState({
-    name: '',
-    description: '',
-    icon: ''
-  });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -119,119 +145,105 @@ export default function AdminPlans({
     setPlansError(null);
     try {
       // Try direct Supabase access first
-
       const {
         data: directData,
         error: directError
       } = await supabase.from('plans').select('*').order('created_at', {
         ascending: true
       });
-      if (directError || !directData) {
+      
+      if (directError) {
+        console.error('Direct Supabase error:', directError);
         // Fallback to API route
         const response = await fetch('/api/plans');
         if (response.ok) {
           const apiData = await response.json();
-        // Parse features from JSON strings if needed
-        const parsedPlans = (apiData.plans || []).map((plan: unknown) => {
-          const p = plan as Partial<Plan> & { features?: unknown; can_use_features?: unknown; limits?: unknown };
-          try {
-            return {
-              ...p,
-              features: Array.isArray(p.features)
-                ? p.features.map((feature: unknown) =>
-                    typeof feature === 'string' ? JSON.parse(feature as string) : feature
-                  ).filter((feature: any) => feature && (feature as { name?: string }).name)
-                : [],
-              can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : p.can_use_features || [],
-              limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : p.limits || {}
-            };
-          } catch (error) {
-            console.error('Error parsing plan data from API:', error, plan);
-            return {
-              ...p,
-              features: [],
-              can_use_features: [],
-              limits: {}
-            };
-          }
-        }).filter((p: Partial<Plan>): p is Plan => {
-          // Filter out plans missing required fields
-          return !!(
-            p.id &&
-            p.name &&
-            p.description &&
-            p.plan_type &&
-            p.razorpay_plan_id &&
-            p.subscription_id !== undefined &&
-            p.price !== undefined &&
-            p.currency &&
-            p.billing_cycle &&
-            p.interval_count !== undefined &&
-            p.max_projects !== undefined &&
-            p.is_active !== undefined &&
-            p.is_popular !== undefined &&
-            p.color &&
-            p.sort_order !== undefined &&
-            p.created_at &&
-            p.updated_at
-          );
-        });
-        setPlans(parsedPlans);
+          // Parse features from JSON strings if needed
+          const parsedPlans = (apiData.plans || []).map((plan: unknown) => {
+            const p = plan as Partial<Plan> & { features?: unknown; can_use_features?: unknown; limits?: unknown };
+            try {
+              const converted = {
+                ...p,
+                // Provide defaults for missing fields
+                interval_count: p.interval_count ?? (p.billing_cycle === 'yearly' ? 12 : 1),
+                subscription_id: p.subscription_id ?? '',
+                razorpay_plan_id: p.razorpay_plan_id ?? '',
+                features: convertFeaturesToNewFormat(
+                  Array.isArray(p.features)
+                    ? p.features.map((feature: unknown) =>
+                        typeof feature === 'string' ? JSON.parse(feature as string) : feature
+                      )
+                    : []
+                ),
+                can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : (Array.isArray(p.can_use_features) ? p.can_use_features : []),
+                limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : (p.limits || {}),
+                color: p.color || 'gray',
+                sort_order: p.sort_order ?? 0,
+                is_active: p.is_active ?? true,
+                is_popular: p.is_popular ?? false
+              };
+              // Ensure all required fields exist
+              if (converted.id && converted.name && converted.plan_type && converted.price !== undefined && converted.currency && converted.billing_cycle && converted.max_projects !== undefined) {
+                return converted as Plan;
+              }
+              return null;
+            } catch (error) {
+              console.error('Error parsing plan data from API:', error, plan);
+              return null;
+            }
+          }).filter((p: Plan | null): p is Plan => p !== null);
+          setPlans(parsedPlans);
+          console.log(`Loaded ${parsedPlans.length} plans from API`);
         } else {
-          console.error('API access also failed:', response.status, response.statusText);
-          throw new Error('Both direct and API access failed');
+          const errorText = await response.text();
+          console.error('API access also failed:', response.status, response.statusText, errorText);
+          setPlansError(`Failed to load plans: ${errorText || 'Unknown error'}`);
         }
-      } else {
+      } else if (directData) {
         // Parse features from JSON strings if needed
         const parsedData = directData.map((plan: unknown) => {
           const p = plan as Partial<Plan> & { features?: unknown; can_use_features?: unknown; limits?: unknown };
           try {
-            return {
+            const converted = {
               ...p,
-              features: Array.isArray(p.features)
-                ? p.features.map((feature: unknown) =>
-                    typeof feature === 'string' ? JSON.parse(feature as string) : feature
-                  ).filter((feature: any) => feature && (feature as { name?: string }).name)
-                : [],
-              can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : p.can_use_features || [],
-              limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : p.limits || {}
+              // Provide defaults for missing fields
+              interval_count: p.interval_count ?? (p.billing_cycle === 'yearly' ? 12 : 1),
+              subscription_id: p.subscription_id ?? '',
+              razorpay_plan_id: p.razorpay_plan_id ?? '',
+              features: convertFeaturesToNewFormat(
+                Array.isArray(p.features)
+                  ? p.features.map((feature: unknown) =>
+                      typeof feature === 'string' ? JSON.parse(feature as string) : feature
+                    )
+                  : []
+              ),
+              can_use_features: typeof p.can_use_features === 'string' ? JSON.parse(p.can_use_features as string) : (Array.isArray(p.can_use_features) ? p.can_use_features : []),
+              limits: typeof p.limits === 'string' ? JSON.parse(p.limits as string) : (p.limits || {}),
+              color: p.color || 'gray',
+              sort_order: p.sort_order ?? 0,
+              is_active: p.is_active ?? true,
+              is_popular: p.is_popular ?? false
             };
+            // Ensure all required fields exist
+            if (converted.id && converted.name && converted.plan_type && converted.price !== undefined && converted.currency && converted.billing_cycle && converted.max_projects !== undefined) {
+              return converted as Plan;
+            }
+            return null;
           } catch (error) {
             console.error('Error parsing plan data:', error, plan);
-            return {
-              ...p,
-              features: [],
-              can_use_features: [],
-              limits: {}
-            };
+            return null;
           }
-        }).filter((p: Partial<Plan>): p is Plan => {
-          // Filter out plans missing required fields
-          return !!(
-            p.id &&
-            p.name &&
-            p.description &&
-            p.plan_type &&
-            p.razorpay_plan_id &&
-            p.subscription_id !== undefined &&
-            p.price !== undefined &&
-            p.currency &&
-            p.billing_cycle &&
-            p.interval_count !== undefined &&
-            p.max_projects !== undefined &&
-            p.is_active !== undefined &&
-            p.is_popular !== undefined &&
-            p.color &&
-            p.sort_order !== undefined &&
-            p.created_at &&
-            p.updated_at
-          );
-        });
+        }).filter((p): p is Plan => p !== null);
         setPlans(parsedData);
+        console.log(`Loaded ${parsedData.length} plans from Supabase`);
+      } else {
+        // No data and no error - empty result
+        setPlans([]);
+        console.log('No plans found in database');
       }
     } catch (error) {
       console.error('Unexpected error loading plans:', error);
-      setPlansError('Failed to load plans');
+      setPlansError(`Failed to load plans: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setPlansLoading(false);
     }
@@ -382,24 +394,11 @@ export default function AdminPlans({
       razorpay_plan_id: '',
       subscription_id: ''
     });
-    setNewFeature({
-      name: '',
-      description: '',
-      icon: ''
-    });
     setIsEditing(false);
   };
   const handleEditPlan = (plan: Plan) => {
-    // Debug: Log the plan features
-
-    // Features should already be parsed from the loadPlans function
-    const features = Array.isArray(plan.features) ? plan.features : [];
-
-    // Filter out empty features and ensure proper structure
-    const validFeatures = features.filter(feature => {
-      if (!feature || typeof feature !== 'object') return false;
-      return feature.name?.trim() || feature.description?.trim() || feature.icon?.trim();
-    });
+    // Convert features to new format
+    const convertedFeatures = convertFeaturesToNewFormat(plan.features);
 
     setFormData({
       name: plan.name || '',
@@ -408,7 +407,7 @@ export default function AdminPlans({
       price: plan.price || 0,
       currency: plan.currency || 'INR',
       billing_cycle: plan.billing_cycle || 'monthly',
-      features: validFeatures,
+      features: convertedFeatures,
       can_use_features: plan.can_use_features || [],
       max_projects: plan.max_projects || 1,
       limits: plan.limits || {},
@@ -422,27 +421,6 @@ export default function AdminPlans({
     setSelectedPlan(plan);
     setIsEditing(true);
     setShowPlanForm(true);
-  };
-  const handleAddFeature = () => {
-    if (newFeature.name.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, {
-          ...newFeature
-        }]
-      }));
-      setNewFeature({
-        name: '',
-        description: '',
-        icon: ''
-      });
-    }
-  };
-  const handleRemoveFeature = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
   };
   const handleSubmit = () => {
     // Validate plan_type before submitting
@@ -595,9 +573,9 @@ export default function AdminPlans({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Razorpay ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Duration
-                    </th>
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Features
                     </th>
@@ -658,23 +636,30 @@ export default function AdminPlans({
                           </span> : <span className="text-gray-400 text-xs">Not configured</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div className="text-sm text-gray-500">
-                        {plan.start_date ? new Date(plan.start_date).toLocaleDateString() : 'No start'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {plan.end_date ? new Date(plan.end_date).toLocaleDateString() : 'No end'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {plan.can_use_features?.length || 0} features enabled
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {plan.features?.length || 0} custom features
-                      </div>
-                      <div className="text-xs text-blue-600 mt-1">
-                        {plan.max_projects === -1 ? 'Unlimited projects' : `${plan.max_projects} project${plan.max_projects !== 1 ? 's' : ''}`}
+                        {Array.isArray(plan.features) && plan.features.length > 0 ? (
+                          <div className="space-y-1">
+                            {plan.features.map((feature, idx) => {
+                              const newFeature = 'heading' in feature && 'tools' in feature ? feature : null;
+                              if (newFeature) {
+                                return (
+                                  <div key={idx} className="text-xs">
+                                    <span className="font-medium">{newFeature.heading}</span>
+                                    {newFeature.tools.length > 0 && (
+                                      <span className="text-gray-400 ml-1">
+                                        ({newFeature.tools.length} tool{newFeature.tools.length !== 1 ? 's' : ''})
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">No features</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -784,261 +769,17 @@ export default function AdminPlans({
       </div>
 
       {/* Plan Form Modal */}
-      {showPlanForm && <motion.div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} exit={{
-      opacity: 0
-    }} onClick={() => setShowPlanForm(false)}>
-          <motion.div className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-hidden" initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: 20
-      }} onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-black">
-                  {isEditing ? 'Edit Plan' : 'Add New Plan'}
-                </h2>
-                <button onClick={() => setShowPlanForm(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                  ×
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Plan Name <span className="text-red-500">*</span>
-                      </label>
-                      <input type="text" value={formData.name} onChange={e => setFormData(prev => ({
-                    ...prev,
-                    name: e.target.value
-                  }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter plan name" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                      <textarea value={formData.description} onChange={e => setFormData(prev => ({
-                    ...prev,
-                    description: e.target.value
-                  }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows={3} placeholder="Enter plan description" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
-                      <select value={formData.plan_type} onChange={e => setFormData(prev => ({
-                    ...prev,
-                    plan_type: e.target.value as 'Starter' | 'Growth' | 'Scale'
-                  }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Starter">Starter</option>
-                        <option value="Growth">Growth</option>
-                        <option value="Scale">Scale</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-                        <input type="number" step="0.01" value={formData.price} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      price: parseFloat(e.target.value) || 0
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                        <select value={formData.currency} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      currency: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                          <option value="INR">INR</option>
-                          <option value="USD">USD</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Billing Cycle</label>
-                        <select value={formData.billing_cycle} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      billing_cycle: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                          <option value="monthly">Monthly</option>
-                          <option value="yearly">Yearly</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Razorpay Plan ID <span className="text-red-500">*</span>
-                        </label>
-                        <input type="text" value={formData.razorpay_plan_id} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      razorpay_plan_id: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Required Razorpay plan ID" required />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Required. Create this in your Razorpay dashboard first.
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Subscription ID <span className="text-red-500">*</span>
-                        </label>
-                        <input type="text" value={formData.subscription_id} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      subscription_id: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Required Razorpay subscription ID" required />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Required for subscription payments. Create this in your Razorpay dashboard first.
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Max Projects</label>
-                      <div className="flex items-center space-x-2">
-                        <input type="number" value={formData.max_projects} onChange={e => setFormData(prev => ({
-                      ...prev,
-                      max_projects: parseInt(e.target.value) || 1
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" placeholder="Number of projects" />
-                        <button type="button" onClick={() => setFormData(prev => ({
-                      ...prev,
-                      max_projects: -1
-                    }))} className={`px-3 py-2 text-sm rounded-lg border transition-colors ${formData.max_projects === -1 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}>
-                          Unlimited
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formData.max_projects === -1 ? 'Unlimited projects' : `${formData.max_projects} project${formData.max_projects !== 1 ? 's' : ''} allowed`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Features Management */}
-                <div>
-                  <h3 className="text-lg font-semibold text-black mb-4">Custom Features</h3>
-                  <div className="space-y-4">
-                    {/* Add New Feature */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-black mb-3">Add Custom Feature</h4>
-                      <div className="space-y-3">
-                        <input type="text" value={newFeature.name} onChange={e => setNewFeature(prev => ({
-                      ...prev,
-                      name: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Feature name" />
-                        <input type="text" value={newFeature.description} onChange={e => setNewFeature(prev => ({
-                      ...prev,
-                      description: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Feature description" />
-                        <input type="text" value={newFeature.icon} onChange={e => setNewFeature(prev => ({
-                      ...prev,
-                      icon: e.target.value
-                    }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Icon (emoji)" />
-                        <button onClick={handleAddFeature} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                          Add Feature
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Features List */}
-                    <div className="space-y-2">
-                      {formData.features.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          <div className="text-4xl mb-2">📋</div>
-                          <p>No custom features added yet</p>
-                          <p className="text-sm">Add features using the form above</p>
-                        </div>
-                      ) : (
-                        formData.features.map((feature, index) => {
-                          // Debug: Log each feature
-
-                          const hasName = feature.name && feature.name.trim();
-                          const hasDescription = feature.description && feature.description.trim();
-                          const hasIcon = feature.icon && feature.icon.trim();
-
-                          return (
-                            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-lg">{hasIcon ? feature.icon : '📋'}</span>
-                                <div>
-                                  <div className="font-medium text-black">
-                                    {hasName ? feature.name : 'Unnamed Feature'}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {hasDescription ? feature.description : 'No description'}
-                                  </div>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleRemoveFeature(index)}
-                                className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 transition-colors"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Settings */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-black mb-4">Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center">
-                    <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  is_active: e.target.checked
-                }))} className="mr-2" />
-                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                      Active Plan
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input type="checkbox" id="is_popular" checked={formData.is_popular} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  is_popular: e.target.checked
-                }))} className="mr-2" />
-                    <label htmlFor="is_popular" className="text-sm font-medium text-gray-700">
-                      Popular Plan
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
-                    <input type="number" value={formData.sort_order} onChange={e => setFormData(prev => ({
-                  ...prev,
-                  sort_order: parseInt(e.target.value) || 0
-                }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-              <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowPlanForm(false)} className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 transition-colors">
-                  Cancel
-                </button>
-                <button onClick={handleSubmit} disabled={actionLoading === 'create' || actionLoading === 'update'} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  {actionLoading === 'create' || actionLoading === 'update' ? 'Saving...' : isEditing ? 'Update Plan' : 'Create Plan'}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>}
+      <PlanFormModal
+        isOpen={showPlanForm}
+        onClose={() => {
+          setShowPlanForm(false);
+          resetForm();
+        }}
+        onSubmit={handleSubmit}
+        formData={formData}
+        setFormData={setFormData}
+        isEditing={isEditing}
+        actionLoading={actionLoading}
+      />
     </motion.div>;
 }

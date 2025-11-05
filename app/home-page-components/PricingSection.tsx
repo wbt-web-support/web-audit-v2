@@ -66,41 +66,77 @@ export default function PricingSection({
     "monthly"
   );
 
-  // Memoized feature extraction for better performance
-  const extractFeatureText = useCallback((feature: unknown): string => {
-    if (typeof feature === "string") {
-      const trimmed = feature.trim();
-      const looksLikeJson =
-        (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-        (trimmed.startsWith("[") && trimmed.endsWith("]"));
-      if (looksLikeJson) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (parsed && typeof parsed === "object" && "name" in parsed) {
-            return String(
-              (
-                parsed as {
-                  name?: string;
-                }
-              ).name ?? ""
-            );
-          }
-        } catch {
-          // Fall through to return original string
-        }
+  // Helper function to convert features to new format (with backward compatibility)
+  const convertFeaturesToNewFormat = useCallback((features: unknown): Array<{ heading: string; tools: string[] }> => {
+    if (!Array.isArray(features)) return [];
+    
+    return features.map((feature: unknown) => {
+      // Check if it's already in new format
+      if (feature && typeof feature === 'object' && 'heading' in feature && 'tools' in feature) {
+        return feature as { heading: string; tools: string[] };
       }
-      return feature;
-    }
-    if (typeof feature === "object" && feature !== null && "name" in feature) {
-      return String(
-        (
-          feature as {
-            name?: string;
+      
+      // Handle string format - could be JSON string
+      if (typeof feature === 'string') {
+        const trimmed = feature.trim();
+        const looksLikeJson =
+          (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+          (trimmed.startsWith("[") && trimmed.endsWith("]"));
+        if (looksLikeJson) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            // Check for new format with heading and tools
+            if (parsed && typeof parsed === 'object' && 'heading' in parsed && 'tools' in parsed) {
+              return {
+                heading: String(parsed.heading || 'Features'),
+                tools: Array.isArray(parsed.tools) ? parsed.tools.map(String) : []
+              };
+            }
+            // Old format with name
+            if (parsed && typeof parsed === 'object' && 'name' in parsed) {
+              return {
+                heading: String(parsed.name || 'Features'),
+                tools: parsed.description ? [String(parsed.description)] : []
+              };
+            }
+          } catch {
+            // Fall through - treat as plain string
           }
-        ).name ?? ""
-      );
-    }
-    return "";
+        }
+        // Plain string - treat as a feature name
+        return {
+          heading: 'Features',
+          tools: [feature]
+        };
+      }
+      
+      // Convert from old format (backward compatibility)
+      if (feature && typeof feature === 'object' && 'name' in feature) {
+        const oldFeature = feature as { name?: string; description?: string; icon?: string };
+        return {
+          heading: oldFeature.name || 'Features',
+          tools: oldFeature.description ? [oldFeature.description] : []
+        };
+      }
+      
+      // Fallback
+      return { heading: 'Features', tools: [] };
+    }).filter((f) => f.heading && f.heading.trim() !== '');
+  }, []);
+
+  // Track expanded headings per plan (planId -> headingIndex -> boolean)
+  // Default to all expanded (true)
+  const [expandedHeadings, setExpandedHeadings] = useState<Record<string, Record<number, boolean>>>({});
+
+  // Toggle heading expansion
+  const toggleHeading = useCallback((planId: string, headingIndex: number) => {
+    setExpandedHeadings(prev => ({
+      ...prev,
+      [planId]: {
+        ...prev[planId],
+        [headingIndex]: !prev[planId]?.[headingIndex]
+      }
+    }));
   }, []);
 
   // Lazy load Razorpay script only when needed
@@ -183,11 +219,7 @@ export default function PricingSection({
                   ? "per year"
                   : "per " + plan.billing_cycle,
               description: plan.description || "",
-              features: plan.features
-                ? plan.features.map((feature: unknown) =>
-                    extractFeatureText(feature)
-                  )
-                : [],
+              features: plan.features ? convertFeaturesToNewFormat(plan.features) : [],
               cta:
                 plan.plan_type === "Starter"
                   ? "Get Started Free"
@@ -851,40 +883,112 @@ export default function PricingSection({
 
                   </div>
 
-                  {/* Features List */}
+                  {/* Features List with Togglable Headings and Tools */}
 
-                  <ul className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 md:mb-8">
-                    {plan.features.map(
-                      (feature: unknown, featureIndex: number) => {
-                        const featureText = extractFeatureText(feature);
-                        return (
-                          <li key={featureIndex} className="flex items-start">
-                            <span
-                              className={`text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0 mt-0.5 ${
-                                plan.popular &&
-                                plan.billing_cycle === billingCycle
-                                  ? "text-white"
-                                  : "text-black"
-                              }`}
-                            >
-                              ✓
-                            </span>
+                  <div className="space-y-4 sm:space-y-5 mb-4 sm:mb-6 md:mb-8">
+                    {plan.features && Array.isArray(plan.features) && plan.features.length > 0 ? (
+                      (plan.features as unknown as Array<{ heading: string; tools: string[] }>).map(
+                        (featureGroup: { heading: string; tools: string[] }, headingIndex: number) => {
+                          const hasTools = featureGroup.tools && Array.isArray(featureGroup.tools) && featureGroup.tools.length > 0;
+                          // Default to expanded (true) if not set
+                          const isExpanded = expandedHeadings[plan.id]?.[headingIndex] ?? true;
+                          
+                          return (
+                            <div key={headingIndex} className="space-y-2">
+                              {/* Heading - Clickable if has tools */}
+                              <button
+                                onClick={() => hasTools && toggleHeading(plan.id, headingIndex)}
+                                disabled={!hasTools}
+                                className={`w-full flex items-center justify-between text-left ${
+                                  hasTools ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
+                                }`}
+                              >
+                                <div className="flex items-start flex-1">
+                                  <span
+                                    className={`text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0 mt-0.5 ${
+                                      plan.popular &&
+                                      plan.billing_cycle === billingCycle
+                                        ? "text-white"
+                                        : "text-black"
+                                    }`}
+                                  >
+                                    ✓
+                                  </span>
+                                  <span
+                                    className={`text-sm sm:text-base  ${
+                                      plan.popular &&
+                                      plan.billing_cycle === billingCycle
+                                        ? "text-white"
+                                        : "text-black"
+                                    }`}
+                                  >
+                                    {featureGroup.heading}
+                                  </span>
+                                </div>
+                                {hasTools && (
+                                  <span
+                                    className={`ml-2 text-sm flex-shrink-0 transition-transform duration-200 ${
+                                      isExpanded ? 'rotate-180' : ''
+                                    } ${
+                                      plan.popular &&
+                                      plan.billing_cycle === billingCycle
+                                        ? "text-white"
+                                        : "text-gray-500"
+                                    }`}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </span>
+                                )}
+                              </button>
 
-                            <span
-                              className={`text-xs sm:text-sm ${
-                                plan.popular &&
-                                plan.billing_cycle === billingCycle
-                                  ? "text-gray-300"
-                                  : "text-gray-600"
-                              }`}
-                            >
-                              {featureText}
-                            </span>
-                          </li>
-                        );
-                      }
+                              {/* Tools List - Show when expanded (default expanded) */}
+                              {hasTools && isExpanded && (
+                                <div className="ml-6 sm:ml-8 space-y-1.5">
+                                  {featureGroup.tools.map((tool: string, toolIndex: number) => (
+                                    <div key={toolIndex} className="flex items-start">
+                                      <span
+                                        className={`text-xs sm:text-sm mr-2 flex-shrink-0 mt-0.5 ${
+                                          plan.popular &&
+                                          plan.billing_cycle === billingCycle
+                                            ? "text-gray-400"
+                                            : "text-gray-500"
+                                        }`}
+                                      >
+                                        •
+                                      </span>
+                                      <span
+                                        className={`text-xs sm:text-sm ${
+                                          plan.popular &&
+                                          plan.billing_cycle === billingCycle
+                                            ? "text-gray-300"
+                                            : "text-gray-600"
+                                        }`}
+                                      >
+                                        {tool}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                      )
+                    ) : (
+                      <p
+                        className={`text-xs sm:text-sm ${
+                          plan.popular &&
+                          plan.billing_cycle === billingCycle
+                            ? "text-gray-300"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        No features listed
+                      </p>
                     )}
-                  </ul>
+                  </div>
 
                   
 

@@ -41,38 +41,35 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
   // Filter states
   const [selectedLinkType, setSelectedLinkType] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  
+  const [checkingBrokenLinks, setCheckingBrokenLinks] = useState(false)
 
-  // Function to check if a link is broken
+  // Function to check if a link is broken using API endpoint
   const checkLinkBroken = useCallback(async (linkUrl: string): Promise<boolean> => {
     try {
-      await fetch(linkUrl, { 
-        method: 'HEAD',
-        mode: 'no-cors' // This allows checking cross-origin links
+      // Use API endpoint to check link status (bypasses CORS)
+      const response = await fetch('/api/check-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: linkUrl }),
       })
-      return false // If we get here, the link is working
-    } catch {
-      return true // Link is broken
+      
+      if (!response.ok) {
+        console.warn(`API check failed for ${linkUrl}:`, response.status)
+        return true // Assume broken if API fails
+      }
+      
+      const data = await response.json()
+      return data.isBroken === true
+    } catch (error) {
+      console.error('Error checking link:', error, linkUrl)
+      return true // Link is broken on error
     }
   }, [])
 
-  // (Optional) Function to check all links for broken status - kept for future use
-  // const checkAllLinksBroken = useCallback(async (links: LinkData[]) => {
-  //   const updatedLinks = await Promise.all(
-  //     links.map(async (link) => {
-  //       if (link.url) {
-  //         const isBroken = await checkLinkBroken(link.url)
-  //         return { 
-  //           ...link, 
-  //           isBroken,
-  //           status: isBroken ? 'broken' : 'working'
-  //         }
-  //       }
-  //       return { ...link, status: 'unknown' }
-  //     })
-  //   )
-  //   return updatedLinks
-  // }, [checkLinkBroken])
+  // State to track link statuses
+  const [linkStatuses, setLinkStatuses] = useState<Record<string, 'working' | 'broken' | 'unknown'>>({})
 
   // Extract links from original scraping data or HTML content
   const links = useMemo(() => {
@@ -182,12 +179,63 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     return allLinks
   }, [scrapedPages, project.site_url, originalScrapingData])
 
+  // Function to check all links for broken status in batches of 50
+  const checkAllLinksBroken = useCallback(async () => {
+    setCheckingBrokenLinks(true)
+    try {
+      const batchSize = 50
+      const totalLinks = links.length
+      const statusMap: Record<string, 'working' | 'broken' | 'unknown'> = {}
+      
+      // Process links in batches of 50
+      for (let i = 0; i < totalLinks; i += batchSize) {
+        const batch = links.slice(i, i + batchSize)
+        
+        // Process current batch in parallel
+        const batchPromises = batch.map(async (link) => {
+          if (link.url) {
+            try {
+              const isBroken = await checkLinkBroken(link.url)
+              return { url: link.url, status: isBroken ? 'broken' as const : 'working' as const }
+            } catch {
+              return { url: link.url, status: 'unknown' as const }
+            }
+          }
+          return { url: link.url, status: 'unknown' as const }
+        })
+
+        // Wait for current batch to complete
+        const batchResults = await Promise.all(batchPromises)
+        
+        // Update status map with batch results
+        batchResults.forEach(result => {
+          statusMap[result.url] = result.status
+        })
+        
+        // Update state after each batch so UI shows progress
+        setLinkStatuses(prev => ({ ...prev, ...statusMap }))
+        
+        // Small delay between batches to avoid overwhelming the server
+        if (i + batchSize < totalLinks) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+    } catch (error) {
+      console.error('Error checking broken links:', error)
+    } finally {
+      setCheckingBrokenLinks(false)
+    }
+  }, [links, checkLinkBroken])
+
   // Filter links based on selected criteria
   const filteredLinks = useMemo(() => {
     let filtered = [...links]
 
     // Filter by link type
-    if (selectedLinkType !== 'all') {
+    if (selectedLinkType === 'broken') {
+      // Filter for broken links
+      filtered = filtered.filter(link => linkStatuses[link.url] === 'broken')
+    } else if (selectedLinkType !== 'all') {
       filtered = filtered.filter(link => link.type === selectedLinkType)
     }
 
@@ -202,9 +250,8 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
       )
     }
 
-
     return filtered
-  }, [links, selectedLinkType, searchQuery])
+  }, [links, selectedLinkType, searchQuery, linkStatuses])
 
   // Pagination logic
   const totalPages = Math.ceil(filteredLinks.length / itemsPerPage)
@@ -221,11 +268,11 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
     const total = links.length
     const internal = links.filter(link => link.type === 'internal').length
     const external = links.filter(link => link.type === 'external').length
-    const broken = links.filter(link => link.isBroken === true).length
-    const working = links.filter(link => link.isBroken === false).length
+    const broken = links.filter(link => linkStatuses[link.url] === 'broken').length
+    const working = links.filter(link => linkStatuses[link.url] === 'working').length
     
     return { total, internal, external, broken, working }
-  }, [links])
+  }, [links, linkStatuses])
 
   // Handle search
   const handleSearch = () => {
@@ -478,7 +525,27 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
               <option value="all">All Types</option>
               <option value="internal">Internal</option>
               <option value="external">External</option>
+              <option value="broken">Broken Links</option>
             </select>
+          </div>
+
+          {/* Check Broken Links Button */}
+          <div className="lg:w-48">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Link Status</label>
+            <button
+              onClick={checkAllLinksBroken}
+              disabled={checkingBrokenLinks || links.length === 0}
+              className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-colors"
+            >
+              {checkingBrokenLinks ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Checking...
+                </span>
+              ) : (
+                'Check Broken Links'
+              )}
+            </button>
           </div>
 
         </div>
@@ -520,61 +587,82 @@ export default function LinksSection({ project, scrapedPages, originalScrapingDa
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Page
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedLinks.map((link, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {link.text || 'No text'}
-                      </div>
-                      {link.title && (
-                        <div className="text-sm text-gray-500 truncate" title={link.title}>
-                          {link.title}
+              {paginatedLinks.map((link, index) => {
+                const linkStatus = linkStatuses[link.url] || 'unknown'
+                return (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {link.text || 'No text'}
                         </div>
+                        {link.title && (
+                          <div className="text-sm text-gray-500 truncate" title={link.title}>
+                            {link.title}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm truncate block"
+                        >
+                          {link.url}
+                        </a>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        link.type === 'internal' 
+                          ? 'bg-gray-100 text-gray-900' 
+                          : 'bg-gray-200 text-gray-900'
+                      }`}>
+                        {link.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {link.target || '_self'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs truncate">
+                        <a
+                          href={link.page_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          {link.page_url}
+                        </a>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {linkStatus === 'broken' ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                          Broken
+                        </span>
+                      ) : linkStatus === 'working' ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          Working
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                          Unknown
+                        </span>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm truncate block"
-                      >
-                        {link.url}
-                      </a>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      link.type === 'internal' 
-                        ? 'bg-gray-100 text-gray-900' 
-                        : 'bg-gray-200 text-gray-900'
-                    }`}>
-                      {link.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {link.target || '_self'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs truncate">
-                      <a
-                        href={link.page_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        {link.page_url}
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
