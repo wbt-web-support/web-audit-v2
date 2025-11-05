@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { LinkIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Step {
   number: number;
@@ -33,6 +35,8 @@ const steps: Step[] = [
 ];
 
 export default function Steps() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <section className="bg-gray-50 py-12 md:py-16 lg:py-20 px-4 md:px-8 lg:px-12">
       <div className="max-w-[90rem] mx-auto">
@@ -76,10 +80,13 @@ export default function Steps() {
 
               {/* Button (only for step 1) */}
               {step.showButton && (
-                <button className="mt-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 md:py-3 px-4 md:px-5 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 w-full">
+                <Link 
+                  href={isAuthenticated ? '/dashboard' : '/login'}
+                  className="mt-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 md:py-3 px-4 md:px-5 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 w-full cursor-pointer"
+                >
                   <span>Enter URL</span>
                   <LinkIcon className="w-5 h-5" />
-                </button>
+                </Link>
               )}
             </div>
           ))}

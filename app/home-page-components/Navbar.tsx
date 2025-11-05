@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link'
+import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -141,9 +142,6 @@ export default function Navbar() {
     ? 'text-white hover:text-blue-200' // White text for dark background
     : 'text-gray-800 hover:text-blue-600'; // Dark text for light background
 
-  const logoClasses = isHeroSection
-    ? 'text-[#0D52FF]' // Blue logo for dark background
-    : 'text-[#0D52FF]'; // Keep blue logo (or adjust if needed)
 
   const buttonClasses = isHeroSection
     ? 'bg-transparent border border-white text-white hover:bg-white/10'
@@ -202,11 +200,18 @@ export default function Navbar() {
         <Link 
           href="#home" 
           onClick={(e) => handleSmoothScroll(e, '#home')} 
-          className={`${logoClasses} text-lg sm:text-xl md:text-2xl font-bold cursor-pointer transition-all duration-300 z-[101] relative group hover:scale-105 active:scale-95`}
+          className="relative z-[101] cursor-pointer transition-all duration-300 group hover:scale-105 active:scale-95"
         >
           <span className="relative inline-block">
             <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 rounded-lg"></span>
-            <span className="relative">Auditly360</span>
+            <Image
+              src={isHeroSection ? '/whitelogo.svg' : '/blackLogo.svg'}
+              alt="Auditly360"
+              width={124}
+              height={43}
+              className="relative h-8 sm:h-9 md:h-10 w-auto transition-opacity duration-300"
+              priority
+            />
           </span>
         </Link>
 
@@ -300,9 +305,15 @@ export default function Navbar() {
                 handleSmoothScroll(e, '#home');
                 setIsMobileMenuOpen(false);
               }} 
-              className={`${logoClasses} text-lg font-bold`}
+              className="relative"
             >
-              Auditly360
+              <Image
+                src={isHeroSection ? '/whitelogo.svg' : '/blackLogo.svg'}
+                alt="Auditly360"
+                width={124}
+                height={43}
+                className="h-8 w-auto transition-opacity duration-300"
+              />
             </Link>
             
             <button
@@ -327,9 +338,11 @@ export default function Navbar() {
                 href={item.href} 
                 key={item.name} 
                 onClick={(e) => handleSmoothScroll(e, item.href)}
-                className={`block px-6 py-3 ${textClasses} transition-colors duration-200 hover:bg-gray-100/50`}
+                className={`group relative block px-6 py-3 ${textClasses} transition-all duration-200 overflow-hidden`}
               >
-                {item.name}
+                <span className="relative z-10">{item.name}</span>
+                <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
+                <span className={`absolute inset-0 ${isHeroSection ? 'bg-white/10' : 'bg-blue-50'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}></span>
               </Link>
             ))}
           </nav>

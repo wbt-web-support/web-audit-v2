@@ -1,10 +1,14 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import LightRays from '../utils/LightRays';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function HeroSection() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <div className='relative ' style={{ backgroundColor: '#0B1421' }}>
     <div className='min-h-screen px-4 relative overflow-hidden ' >
@@ -47,7 +51,12 @@ export default function HeroSection() {
            Uncover SEO, performance, and security Issues
                instantly with AI-powered audits.
             </p>
-            <button className='bg-white text-black px-10 md:px-12 lg:px-16 py-2 md:py-3 lg:py-3.5 rounded-full mx-auto text-sm md:text-base lg:text-lg font-medium hover:bg-white/90 transition-colors'>Get Started</button>
+            <Link 
+              href={isAuthenticated ? '/dashboard' : '/login'}
+              className='bg-white text-black px-10 cursor-pointer md:px-12 lg:px-16 py-2 md:py-3 lg:py-3.5 rounded-full mx-auto text-sm md:text-base lg:text-lg font-medium hover:bg-white/90 transition-colors inline-block text-center'
+            >
+              Get Started
+            </Link> 
           </div>
         </div>
       </div>

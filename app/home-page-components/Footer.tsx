@@ -2,6 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavColumn {
   title: string;
@@ -23,7 +25,7 @@ const navColumns: NavColumn[] = [
     links: [
       { label: "Help Center", href: "#help" },
       { label: "Contact", href: "#contact" },
-      { label: "Status", href: "#status" },
+      // { label: "Status", href: "#status" },
     ],
   },
   {
@@ -31,21 +33,22 @@ const navColumns: NavColumn[] = [
     links: [
       { label: "Privacy", href: "#privacy" },
       { label: "Terms", href: "#terms" },
-      { label: "Cookies", href: "#cookies" },
-      { label: "Security", href: "#security" },
+      
     ],
   },
-  {
-    title: "Company",
-    links: [
-      { label: "About", href: "#about" },
-      { label: "Teams", href: "#teams" },
-      { label: "Contact", href: "#contact" },
-    ],
-  },
+  // {
+  //   title: "Company",
+  //   links: [
+  //     { label: "About", href: "#about" },
+  //     { label: "Teams", href: "#teams" },
+  //     { label: "Contact", href: "#contact" },
+  //   ],
+  // },
 ];
 
 export default function Footer() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <footer className="bg-black text-white">
       <div className="max-w-[90rem] mx-auto px-4 md:px-8 lg:px-12 py-12 md:py-16 lg:py-20">
@@ -60,9 +63,12 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex-shrink-0">
-            <button className="bg-white text-black font-semibold px-6 md:px-8 py-3 md:py-3.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap">
+            <Link 
+              href={isAuthenticated ? '/dashboard' : '/login'}
+              className="bg-white text-black font-semibold px-6 md:px-8 py-3 md:py-3.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap inline-block cursor-pointer"
+            >
               Get started
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -70,17 +76,16 @@ export default function Footer() {
         <div className="mb-8 md:mb-12 lg:mb-16">
           <div className="flex flex-col lg:flex-row gap-8 md:gap-12 lg:gap-16">
             {/* Logo Section */}
-            <div className="flex items-start gap-4">
-              <div className="relative w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 flex-shrink-0">
-                <div className="absolute inset-0 rounded-full overflow-hidden">
-                  <div className="absolute left-0 top-0 w-1/2 h-full bg-blue-600"></div>
-                  <div className="absolute right-0 top-0 w-1/2 h-full bg-white"></div>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl md:text-3xl lg:text-4xl font-bold">Auditly</span>
-                <span className="text-lg md:text-xl lg:text-2xl">360</span>
-              </div>
+            <div className="flex items-start">
+              <Link href="#home" className="inline-block">
+                <Image
+                  src="/whitelogo.svg"
+                  alt="Auditly360"
+                  width={124}
+                  height={43}
+                  className="h-8 md:h-10 lg:h-12 w-auto"
+                />
+              </Link>
             </div>
 
             {/* Navigation Columns */}
@@ -175,12 +180,13 @@ export default function Footer() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 md:gap-4">
-            <button className="bg-white text-black font-semibold px-5 md:px-6 py-2.5 md:py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap">
-              Sign In
-            </button>
-            <button className="bg-white text-black font-semibold px-5 md:px-6 py-2.5 md:py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap">
+            
+            <Link 
+              href="#contact"
+              className="bg-white text-black font-semibold px-5 md:px-6 py-2.5 md:py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors duration-200 whitespace-nowrap inline-block cursor-pointer"
+            >
               Contact Us
-            </button>
+            </Link>
           </div>
         </div>
       </div>

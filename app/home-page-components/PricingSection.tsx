@@ -683,7 +683,7 @@ export default function PricingSection({
       id="pricing"
       className={`py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className} `}
     >
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[90rem] mx-auto ">
         {/* Section Header */}
         <div className="flex flex-col justify-start">
           <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20 max-w-4xl">

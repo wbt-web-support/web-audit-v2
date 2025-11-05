@@ -2,6 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { roleVerifier } from '@/lib/role-utils';
@@ -188,12 +190,15 @@ export default function DashboardSidebar({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">WA</span>
-              </div>
-              <span className="text-lg font-semibold text-black">Web Audit</span>
-            </div>
+            <Link href="/dashboard" className="flex items-center">
+              <Image
+                src="/blackLogo.svg"
+                alt="Auditly360"
+                width={134}
+                height={53}
+                className="h-14 w-auto mx-"
+              />
+            </Link>
             <button onClick={onClose} className="lg:hidden p-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -305,12 +310,15 @@ export default function DashboardSidebar({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">WA</span>
-              </div>
-              <span className="text-lg font-semibold text-black">Web Audit</span>
-            </div>
+            <Link href="/dashboard" className="flex items-center">
+              <Image
+                src="/blackLogo.svg"
+                alt="Auditly360"
+                width={124}
+                height={43}
+                className="h-8 w-auto"
+              />
+            </Link>
           </div>
 
           {/* User Info */}
