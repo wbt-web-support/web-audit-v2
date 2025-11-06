@@ -173,7 +173,7 @@ Provide only the JSON response, no additional text or explanations.
     let outputTokens: number;
     
     try {
-      // @ts-ignore - usageMetadata might be available in the response
+      // @ts-expect-error - usageMetadata might be available in the response
       const usageMetadata = response.usageMetadata;
       if (usageMetadata) {
         inputTokens = usageMetadata.promptTokenCount || estimateTokenCount(prompt);
@@ -182,7 +182,7 @@ Provide only the JSON response, no additional text or explanations.
         inputTokens = estimateTokenCount(prompt);
         outputTokens = estimateTokenCount(text);
       }
-    } catch (e) {
+    } catch {
       // Fallback to estimation if metadata not available
       inputTokens = estimateTokenCount(prompt);
       outputTokens = estimateTokenCount(text);
@@ -364,12 +364,13 @@ export async function analyzeImageWithGemini(imageUrl: string, pageUrl: string, 
         signal: imageFetchController.signal
       });
       clearTimeout(imageFetchTimeout);
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       clearTimeout(imageFetchTimeout);
-      if (fetchError.name === 'AbortError') {
+      const error = fetchError as Error & { name?: string };
+      if (error.name === 'AbortError') {
         throw new Error(`Image fetch timeout after ${IMAGE_FETCH_TIMEOUT}ms`);
       }
-      throw new Error(`Failed to fetch image: ${fetchError.message || 'Network error'}`);
+      throw new Error(`Failed to fetch image: ${error.message || 'Network error'}`);
     }
 
     if (!imageResponse.ok) {
@@ -576,11 +577,12 @@ Provide only the JSON response, no additional text or explanations. Be EXTREMELY
       }, GEMINI_API_TIMEOUT);
     });
 
-    let result: any;
+    let result: Awaited<ReturnType<typeof geminiApiPromise>>;
     try {
       result = await Promise.race([geminiApiPromise, timeoutPromise]);
-    } catch (apiError: any) {
-      if (apiError.message?.includes('timeout')) {
+    } catch (apiError: unknown) {
+      const error = apiError as Error;
+      if (error.message?.includes('timeout')) {
         throw new Error(`Gemini API call timed out after ${GEMINI_API_TIMEOUT}ms. The image analysis may be too complex or the service is overloaded.`);
       }
       throw apiError;
@@ -603,7 +605,7 @@ Provide only the JSON response, no additional text or explanations. Be EXTREMELY
         inputTokens = estimateTokenCount(prompt);
         outputTokens = estimateTokenCount(text);
       }
-    } catch (e) {
+    } catch {
       inputTokens = estimateTokenCount(prompt);
       outputTokens = estimateTokenCount(text);
     }
@@ -663,7 +665,7 @@ export async function getGeminiAnalysisStatus(): Promise<boolean> {
     let outputTokens: number;
     
     try {
-      // @ts-ignore - usageMetadata might be available in the response
+      // @ts-expect-error - usageMetadata might be available in the response
       const usageMetadata = response.usageMetadata;
       if (usageMetadata) {
         inputTokens = usageMetadata.promptTokenCount || estimateTokenCount(testPrompt);
@@ -672,7 +674,7 @@ export async function getGeminiAnalysisStatus(): Promise<boolean> {
         inputTokens = estimateTokenCount(testPrompt);
         outputTokens = estimateTokenCount(responseText);
       }
-    } catch (e) {
+    } catch {
       // Fallback to estimation if metadata not available
       inputTokens = estimateTokenCount(testPrompt);
       outputTokens = estimateTokenCount(responseText);

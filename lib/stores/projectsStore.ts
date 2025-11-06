@@ -10,7 +10,7 @@ interface ProjectsState {
   
   // Actions
   setProjects: (projects: AuditProject[]) => void;
-  updateProject: (projectId: string, updates: any) => void;
+  updateProject: (projectId: string, updates: Partial<AuditProject>) => void;
   addProject: (project: AuditProject) => void;
   removeProject: (projectId: string) => void;
   setLoading: (loading: boolean) => void;
@@ -73,7 +73,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         loading: false,
         error: null 
       });
-    } catch (error) {
+    } catch {
       set({ error: 'Failed to fetch projects', loading: false });
     }
   }

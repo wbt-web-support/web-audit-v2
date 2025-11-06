@@ -104,7 +104,7 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
 
         // Use the newly created user
         userExists = newUser;
-      } catch (error) {
+      } catch {
         return null;
       }
     }
