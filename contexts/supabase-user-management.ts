@@ -19,7 +19,7 @@ import { User } from '@supabase/supabase-js';
         data,
 
         error,
-      } = await supabase.from("users").select("*").order("created_at", {
+      } = await supabase.from("users").select("*, image_scan_credits").order("created_at", {
         ascending: false,
       });
 

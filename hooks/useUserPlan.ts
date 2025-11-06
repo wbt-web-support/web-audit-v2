@@ -11,6 +11,7 @@ export interface UserPlanInfo {
   current_projects: number;
   billing_cycle?: string;
   plan_expires_at?: string;
+  image_scan_credits?: number;
 }
 export interface UseUserPlanResult {
   planInfo: UserPlanInfo | null;
@@ -162,11 +163,11 @@ export function useUserPlan(): UseUserPlanResult {
         console.warn('Plan expiry check failed (non-blocking):', error);
       });
 
-      // Get user's plan data from user table
+      // Get user's plan data from user table (including credits)
       const {
         data: userData,
         error: userDataError
-      } = await supabase.from('users').select('plan_type, plan_id, max_projects, can_use_features, plan_expires_at, billing_cycle').eq('id', user.id).single();
+      } = await supabase.from('users').select('plan_type, plan_id, max_projects, can_use_features, plan_expires_at, billing_cycle, image_scan_credits').eq('id', user.id).single();
       let userPlan: UserPlanInfo | null = null;
       if (userDataError || !userData || !userData.plan_type) {
         console.warn('No plan_type found in user table, using fallback plan');
@@ -178,7 +179,8 @@ export function useUserPlan(): UseUserPlanResult {
           plan_name: fallbackPlanName,
           can_use_features: ['basic_audit'],
           max_projects: 1,
-          current_projects: 0
+          current_projects: 0,
+          image_scan_credits: 0
         };
       } else {
         // Always fetch fresh data from plans table to get latest features and limits
@@ -211,7 +213,8 @@ export function useUserPlan(): UseUserPlanResult {
             max_projects: 1,
             current_projects: 0,
             billing_cycle: userData.billing_cycle,
-            plan_expires_at: userData.plan_expires_at
+            plan_expires_at: userData.plan_expires_at,
+            image_scan_credits: userData.image_scan_credits || 0
           };
         } else {
           userPlan = {
@@ -223,7 +226,8 @@ export function useUserPlan(): UseUserPlanResult {
             max_projects: planData.max_projects || 1,
             current_projects: 0,
             billing_cycle: userData.billing_cycle,
-            plan_expires_at: userData.plan_expires_at
+            plan_expires_at: userData.plan_expires_at,
+            image_scan_credits: userData.image_scan_credits || 0
           };
         }
       }
@@ -255,7 +259,8 @@ export function useUserPlan(): UseUserPlanResult {
         plan_name: fallbackPlanName,
         can_use_features: ['basic_audit'],
         max_projects: 1,
-        current_projects: 0
+        current_projects: 0,
+        image_scan_credits: 0
       };
       setError(err instanceof Error ? err.message : 'Failed to fetch plan information');
       setPlanInfo(fallbackPlan); // Use fallback instead of null

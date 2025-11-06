@@ -54,7 +54,7 @@ interface ImageData {
 
 export default function ImagesSection({ project, scrapedPages, originalScrapingData }: ImagesSectionProps) {
   const { getScrapedImages } = useSupabase()
-  const { hasFeature } = useUserPlan()
+  const { hasFeature, planInfo } = useUserPlan()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Reduced from 40 to 20 for better performance
   const [isProcessing, setIsProcessing] = useState(false)
@@ -155,6 +155,29 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           setScrapedImagesData([])
         } else {
           setScrapedImagesData(data || [])
+          
+          // Load existing scan results from database into state
+          if (data && data.length > 0) {
+            const existingResults: Record<string, any> = {}
+            data.forEach((img: any) => {
+              if (img.open_web_ninja_data) {
+                // Use the same key generation logic as in rendering
+                // Priority: img.id (database ID), then original_url, then empty string
+                const uniqueKey = img.id || img.original_url || ''
+                if (uniqueKey) {
+                  existingResults[uniqueKey] = img.open_web_ninja_data
+                }
+              }
+            })
+            
+            if (Object.keys(existingResults).length > 0) {
+              setScanResults(prev => ({
+                ...prev,
+                ...existingResults
+              }))
+              console.log('✅ Loaded existing scan results from database:', Object.keys(existingResults).length, Object.keys(existingResults))
+            }
+          }
         }
       } catch (err) {
         console.error('❌ Exception fetching scraped images:', err)
@@ -205,15 +228,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
             absoluteUrl = absoluteUrl.replace('http://', 'https://')
           }
           
-          // Load existing scan results from database if available
-          const existingScanData = img.open_web_ninja_data || img.scan_results
-          if (existingScanData) {
-            const uniqueKey = img.id || absoluteUrl
-            setScanResults(prev => ({
-              ...prev,
-              [uniqueKey]: existingScanData
-            }))
-          }
+          // Note: Existing scan data is now loaded in useEffect above
+          // This avoids setting state inside useMemo
           
           allImages.push({
             url: absoluteUrl,
@@ -526,6 +542,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           fullResponse: result
         })
         
+        // Handle insufficient credits error
+        if (response.status === 402 || result.code === 'INSUFFICIENT_CREDITS') {
+          alert(`Insufficient Credits: ${result.message || 'You do not have enough credits to scan images. Please purchase credits from the Billing section.'}`)
+          // Optionally redirect to billing or show credit purchase UI
+          return
+        }
+        
         // Handle feature access denied errors
         if (response.status === 403 || result.code === 'FEATURE_ACCESS_DENIED') {
           alert(`Access Denied: ${result.message || 'Reverse Image Search is not available in your current plan. Please upgrade to access this feature.'}`)
@@ -561,6 +584,13 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
           image.extra_metadata.open_web_ninja_data = result.data
         }
         
+        // Show credits remaining if available and refresh plan info
+        if (result.creditsRemaining !== undefined) {
+          console.log('✅ Credits remaining after scan:', result.creditsRemaining)
+          // Refresh plan info to update credits display
+          window.dispatchEvent(new Event('planUpdated'))
+        }
+        
         // Check if save was successful
         if (result.saveError) {
           console.error('❌ Scan completed but save to database failed:', result.saveError)
@@ -575,6 +605,26 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               const { data: refreshedImages, error: refreshError } = await getScrapedImages(project.id)
               if (!refreshError && refreshedImages) {
                 setScrapedImagesData(refreshedImages)
+                
+                // Reload scan results from refreshed data into state
+                const refreshedResults: Record<string, any> = {}
+                refreshedImages.forEach((img: any) => {
+                  if (img.open_web_ninja_data) {
+                    const refreshedKey = img.id || img.original_url || ''
+                    if (refreshedKey) {
+                      refreshedResults[refreshedKey] = img.open_web_ninja_data
+                    }
+                  }
+                })
+                
+                if (Object.keys(refreshedResults).length > 0) {
+                  setScanResults(prev => ({
+                    ...prev,
+                    ...refreshedResults
+                  }))
+                  console.log('✅ Reloaded scan results from refreshed data:', Object.keys(refreshedResults).length)
+                }
+                
                 console.log('✅ Images data refreshed, open_web_ninja_data should now be available')
               } else if (refreshError) {
                 console.warn('⚠️ Could not refresh images data:', refreshError)
@@ -644,7 +694,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Images</div>
@@ -656,6 +706,20 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.withoutAlt}</div>
           <div className="text-sm text-gray-600">Without Alt Text</div>
+        </div>
+        <div className={`rounded-lg p-4 ${(planInfo?.image_scan_credits ?? 0) < 5 ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
+          <div className={`text-2xl font-bold ${(planInfo?.image_scan_credits ?? 0) < 5 ? 'text-yellow-700' : 'text-gray-900'}`}>
+            {planInfo?.image_scan_credits ?? 0}
+          </div>
+          <div className={`text-sm ${(planInfo?.image_scan_credits ?? 0) < 5 ? 'text-yellow-600' : 'text-gray-600'}`}>
+            Scan Credits
+            {(planInfo?.image_scan_credits ?? 0) < 5 && (planInfo?.image_scan_credits ?? 0) > 0 && (
+              <span className="block text-xs mt-1">⚠️ Low credits</span>
+            )}
+            {(planInfo?.image_scan_credits ?? 0) === 0 && (
+              <span className="block text-xs mt-1">⚠️ No credits</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -852,75 +916,100 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-2">
-                        {/* Show "Scan Image" button only if feature is available and no existing data */}
-                        {hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
-                         !img.extra_metadata?.open_web_ninja_data && (
-                          <button
-                            onClick={(e) => handleScanImage(e, img)}
-                            disabled={scanningImages.has(img.extra_metadata?.id || img.url || '')}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
-                            title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
-                          >
-                            {scanningImages.has(img.extra_metadata?.id || img.url || '') ? (
-                              <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                Scanning...
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                Scan Image
-                              </>
-                            )}
-                          </button>
-                        )}
-                        
-                        {/* Show feature unavailable message if feature is not in plan */}
-                        {!hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
-                         !img.extra_metadata?.open_web_ninja_data && (
-                          <div className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            Upgrade Required
-                          </div>
-                        )}
-                        
-                        {/* Show "Show Results" button if scan data exists (always show if data exists, regardless of feature access) */}
-                        {(scanResults[img.extra_metadata?.id || img.url || ''] || img.extra_metadata?.open_web_ninja_data) && (
-                          <button
-                            onClick={(e) => {
-                              // Load data from database if not already loaded
-                              const uniqueKey = img.extra_metadata?.id || img.url || ''
-                              if (!scanResults[uniqueKey] && img.extra_metadata?.open_web_ninja_data) {
-                                setScanResults(prev => ({
-                                  ...prev,
-                                  [uniqueKey]: img.extra_metadata?.open_web_ninja_data
-                                }))
-                              }
-                              toggleScanResults(e, uniqueKey)
-                            }}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
-                          >
-                            {expandedRows.has(img.extra_metadata?.id || img.url || '') ? (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                </svg>
-                                Hide Results
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                                Show Results
-                              </>
-                            )}
-                          </button>
-                        )}
+                        {(() => {
+                          // Determine unique key for this image - must match the key used when loading from database
+                          // Priority: database ID, then URL
+                          const imageId = img.extra_metadata?.id || ''
+                          const uniqueKey = imageId || img.url || ''
+                          
+                          // Check if scan data exists - check multiple possible keys
+                          // 1. Check by database ID (primary key)
+                          // 2. Check by full uniqueKey (ID or URL)
+                          // 3. Check in metadata
+                          const hasScanData = !!(
+                            (imageId && scanResults[imageId]) ||
+                            scanResults[uniqueKey] ||
+                            img.extra_metadata?.open_web_ninja_data
+                          )
+                          
+                          // If scan data exists, show "Show/Hide Results" button
+                          if (hasScanData) {
+                            // Use the database ID as the key if available, otherwise use uniqueKey
+                            const displayKey = imageId || uniqueKey
+                            
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  // Load data from database if not already loaded in state
+                                  const dataToLoad = img.extra_metadata?.open_web_ninja_data
+                                  if (dataToLoad) {
+                                    // Load using both possible keys to ensure it's found
+                                    setScanResults(prev => {
+                                      const updated = { ...prev }
+                                      if (imageId) updated[imageId] = dataToLoad
+                                      if (uniqueKey) updated[uniqueKey] = dataToLoad
+                                      return updated
+                                    })
+                                  }
+                                  toggleScanResults(e, displayKey)
+                                }}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                              >
+                                {expandedRows.has(displayKey) ? (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    Hide Results
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    Show Results
+                                  </>
+                                )}
+                              </button>
+                            )
+                          }
+                          
+                          // If no scan data exists, show "Scan Image" button or "Upgrade Required"
+                          if (hasImageScanFeature) {
+                            return (
+                              <button
+                                onClick={(e) => handleScanImage(e, img)}
+                                disabled={scanningImages.has(uniqueKey) || scanningImages.has(imageId)}
+                                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
+                              >
+                                {(scanningImages.has(uniqueKey) || scanningImages.has(imageId)) ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    Scanning...
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    Scan Image
+                                  </>
+                                )}
+                              </button>
+                            )
+                          }
+                          
+                          // Show upgrade required message
+                          return (
+                            <div className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Upgrade Required
+                            </div>
+                          )
+                        })()}
                       </div>
                     </td>
                     </tr>
@@ -1155,75 +1244,100 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                         </div>
                       )}
                       <div className="mt-1 space-y-2">
-                        {/* Show "Scan Image" button only if feature is available and no existing data */}
-                        {hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
-                         !img.extra_metadata?.open_web_ninja_data && (
-                          <button
-                            onClick={(e) => handleScanImage(e, img)}
-                            disabled={scanningImages.has(img.extra_metadata?.id || img.url || '')}
-                            className="w-full sm:w-auto px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
-                            title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
-                          >
-                            {scanningImages.has(img.extra_metadata?.id || img.url || '') ? (
-                              <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                Scanning...
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                Scan Image
-                              </>
-                            )}
-                          </button>
-                        )}
-                        
-                        {/* Show feature unavailable message if feature is not in plan */}
-                        {!hasImageScanFeature && !scanResults[img.extra_metadata?.id || img.url || ''] && 
-                         !img.extra_metadata?.open_web_ninja_data && (
-                          <div className="w-full px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            Upgrade Required
-                          </div>
-                        )}
-                        
-                        {/* Show "Show Results" button if scan data exists (always show if data exists, regardless of feature access) */}
-                        {(scanResults[img.extra_metadata?.id || img.url || ''] || img.extra_metadata?.open_web_ninja_data) && (
-                          <button
-                            onClick={(e) => {
-                              // Load data from database if not already loaded
-                              const uniqueKey = img.extra_metadata?.id || img.url || ''
-                              if (!scanResults[uniqueKey] && img.extra_metadata?.open_web_ninja_data) {
-                                setScanResults(prev => ({
-                                  ...prev,
-                                  [uniqueKey]: img.extra_metadata?.open_web_ninja_data
-                                }))
-                              }
-                              toggleScanResults(e, uniqueKey)
-                            }}
-                            className="w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
-                          >
-                            {expandedRows.has(img.extra_metadata?.id || img.url || '') ? (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                </svg>
-                                Hide Results
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                                Show Results
-                              </>
-                            )}
-                          </button>
-                        )}
+                        {(() => {
+                          // Determine unique key for this image - must match the key used when loading from database
+                          // Priority: database ID, then URL
+                          const imageId = img.extra_metadata?.id || ''
+                          const uniqueKey = imageId || img.url || ''
+                          
+                          // Check if scan data exists - check multiple possible keys
+                          // 1. Check by database ID (primary key)
+                          // 2. Check by full uniqueKey (ID or URL)
+                          // 3. Check in metadata
+                          const hasScanData = !!(
+                            (imageId && scanResults[imageId]) ||
+                            scanResults[uniqueKey] ||
+                            img.extra_metadata?.open_web_ninja_data
+                          )
+                          
+                          // If scan data exists, show "Show/Hide Results" button
+                          if (hasScanData) {
+                            // Use the database ID as the key if available, otherwise use uniqueKey
+                            const displayKey = imageId || uniqueKey
+                            
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  // Load data from database if not already loaded in state
+                                  const dataToLoad = img.extra_metadata?.open_web_ninja_data
+                                  if (dataToLoad) {
+                                    // Load using both possible keys to ensure it's found
+                                    setScanResults(prev => {
+                                      const updated = { ...prev }
+                                      if (imageId) updated[imageId] = dataToLoad
+                                      if (uniqueKey) updated[uniqueKey] = dataToLoad
+                                      return updated
+                                    })
+                                  }
+                                  toggleScanResults(e, displayKey)
+                                }}
+                                className="w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                              >
+                                {expandedRows.has(displayKey) ? (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    Hide Results
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    Show Results
+                                  </>
+                                )}
+                              </button>
+                            )
+                          }
+                          
+                          // If no scan data exists, show "Scan Image" button or "Upgrade Required"
+                          if (hasImageScanFeature) {
+                            return (
+                              <button
+                                onClick={(e) => handleScanImage(e, img)}
+                                disabled={scanningImages.has(uniqueKey) || scanningImages.has(imageId)}
+                                className="w-full sm:w-auto px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
+                              >
+                                {(scanningImages.has(uniqueKey) || scanningImages.has(imageId)) ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    Scanning...
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    Scan Image
+                                  </>
+                                )}
+                              </button>
+                            )
+                          }
+                          
+                          // Show upgrade required message
+                          return (
+                            <div className="w-full px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md flex items-center justify-center gap-1.5 cursor-not-allowed" title="Reverse Image Search is not available in your current plan">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Upgrade Required
+                            </div>
+                          )
+                        })()}
                       </div>
                       
                       {/* Expanded scan results */}

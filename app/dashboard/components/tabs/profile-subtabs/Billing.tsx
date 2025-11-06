@@ -6,6 +6,8 @@ import PricingSection from '@/app/home-page-components/PricingSection';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { supabase } from '@/lib/supabase-client';
 import { handleAuthError } from '@/lib/auth-utils';
+
+// Razorpay type is already declared in layout.tsx or elsewhere
 interface PaymentHistory {
   id: string;
   razorpay_payment_id: string;
@@ -46,8 +48,12 @@ export default function Billing({
 }: BillingProps) {
   const {
     planInfo,
-    loading: _planLoading
+    loading: _planLoading,
+    hasFeature
   } = useUserPlan();
+  
+  // Check if user has Image_scane feature
+  const hasImageScanFeature = hasFeature('Image_scane');
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [planExpiryStatus, setPlanExpiryStatus] = useState<{
@@ -55,6 +61,9 @@ export default function Billing({
     expires_at: string | null;
     days_until_expiry: number | null;
   } | null>(null);
+  const [creditPackages, setCreditPackages] = useState<Array<{id: number | string; credits: number; price: number; label: string; pricePerCredit: string}>>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [purchasingPackage, setPurchasingPackage] = useState<number | string | null>(null);
 
   // Check plan expiry status
   const checkPlanExpiryStatus = async () => {
@@ -134,12 +143,167 @@ export default function Billing({
     }
   };
 
+  // Fetch credit packages
+  const fetchCreditPackages = async () => {
+    try {
+      setLoadingPackages(true);
+      const response = await fetch('/api/purchase-credits');
+      if (response.ok) {
+        const data = await response.json();
+        setCreditPackages(data.packages || []);
+      }
+    } catch (error) {
+      console.error('Error fetching credit packages:', error);
+    } finally {
+      setLoadingPackages(false);
+    }
+  };
+
+  // Handle credit purchase
+  const handlePurchaseCredits = async (packageId: number | string) => {
+    try {
+      setPurchasingPackage(packageId);
+      
+      // Load Razorpay script
+      const loadRazorpayScript = async (): Promise<boolean> => {
+        if (typeof window === 'undefined') return false;
+        if (window.Razorpay) return true;
+
+        const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+        if (existingScript) {
+          return new Promise((resolve) => {
+            existingScript.addEventListener('load', () => resolve(true));
+            existingScript.addEventListener('error', () => resolve(false));
+          });
+        }
+
+        return new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+          
+          setTimeout(() => {
+            if (!window.Razorpay) {
+              resolve(false);
+            }
+          }, 5000);
+        });
+      };
+
+      const isRazorpayReady = await loadRazorpayScript();
+      if (!isRazorpayReady) {
+        alert('Payment system not available. Please try again later.');
+        return;
+      }
+
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        alert('Please log in to purchase credits.');
+        return;
+      }
+
+      // Create order
+      const orderResponse = await fetch('/api/purchase-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ packageId })
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        alert(errorData.message || 'Failed to create payment order');
+        return;
+      }
+
+      const orderData = await orderResponse.json();
+
+      // Initialize Razorpay checkout
+      const razorpay = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: orderData.orderId,
+        name: 'Web Audit Pro',
+        description: `Purchase ${orderData.credits} Image Scan Credits`,
+        image: '/logo.png',
+        prefill: {
+          name: userProfile.first_name && userProfile.last_name 
+            ? `${userProfile.first_name} ${userProfile.last_name}` 
+            : 'Customer',
+          email: userProfile.email,
+        },
+        notes: {
+          credits: orderData.credits.toString(),
+          packageId: orderData.packageId || packageId.toString(),
+          payment_type: 'credit_purchase'
+        },
+        theme: {
+          color: '#000000'
+        },
+        handler: async function(response: any) {
+          try {
+            // Call success API
+            const successResponse = await fetch('/api/credit-purchase-success', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                packageId: orderData.packageId || packageId,
+                credits: orderData.credits,
+                amount: orderData.amount / 100, // Convert from paise
+                currency: orderData.currency
+              })
+            });
+
+            if (successResponse.ok) {
+              const successData = await successResponse.json();
+              alert(`Success! ${successData.creditsAdded} credits have been added to your account.`);
+              // Refresh plan info to get updated credits
+              window.dispatchEvent(new Event('planUpdated'));
+              fetchPaymentHistory();
+            } else {
+              const errorData = await successResponse.json();
+              alert(errorData.message || 'Payment successful but credits could not be added. Please contact support.');
+            }
+          } catch (error) {
+            console.error('Error processing credit purchase:', error);
+            alert('Payment successful but there was an error adding credits. Please contact support with payment ID: ' + response.razorpay_payment_id);
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            setPurchasingPackage(null);
+          }
+        }
+      });
+
+      razorpay.open();
+    } catch (error) {
+      console.error('Error purchasing credits:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setPurchasingPackage(null);
+    }
+  };
+
   // Fetch payment history and check plan expiry on mount
   useEffect(() => {
     // Only fetch if user is authenticated
     if (userProfile?.id) {
       fetchPaymentHistory();
       checkPlanExpiryStatus();
+      fetchCreditPackages();
     } else {
       setLoadingHistory(false);
     }
@@ -314,6 +478,74 @@ export default function Billing({
         </div>
       </motion.div> */}
 
+      {/* Image Scan Credits Section - Only show if user has Image_scane feature */}
+      {hasImageScanFeature && (
+        <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.5,
+          delay: 0.15
+        }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-black">Image Scan Credits</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Credits used for reverse image search scans. Each scan costs 1 credit.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-black">
+                {planInfo?.image_scan_credits ?? 0}
+              </div>
+              <p className="text-sm text-gray-500">Available Credits</p>
+            </div>
+          </div>
+
+          {loadingPackages ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-500">Loading credit packages...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {creditPackages.map((pkg, index) => (
+                <motion.div
+                  key={pkg.id || index}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-black">{pkg.label}</h3>
+                    <span className="text-xs text-gray-500">₹{pkg.pricePerCredit}/credit</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600 mb-3">₹{pkg.price}</p>
+                  <button
+                    onClick={() => handlePurchaseCredits(pkg.id || index)}
+                    disabled={purchasingPackage === (pkg.id || index)}
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {purchasingPackage === (pkg.id || index) ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Processing...
+                      </span>
+                    ) : (
+                      `Purchase ${pkg.label}`
+                    )}
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Pricing Plans */}
       <motion.div initial={{
       opacity: 0,
@@ -445,34 +677,58 @@ export default function Billing({
                   </div>
                 </div>
 
-                {/* Plan Details */}
-                <div className="border-t border-gray-100 pt-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Max Projects</p>
-                      <p className="font-medium text-black">
-                        {payment.max_projects === -1 ? 'Unlimited' : payment.max_projects || 'N/A'}
-                      </p>
+                {/* Plan Details - Show different info for credit purchases */}
+                {payment.plan_type === 'Credits' ? (
+                  <div className="border-t border-gray-100 pt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Purchase Type</p>
+                        <p className="font-medium text-black">
+                          {payment.plan_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Payment Method</p>
+                        <p className="font-medium text-black">
+                          {payment.payment_method || 'Razorpay'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-500">Features</p>
-                      <p className="font-medium text-black">
-                        {payment.can_use_features?.length || 0} features
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Payment Method</p>
-                      <p className="font-medium text-black">
-                        {payment.payment_method || 'Razorpay'}
-                      </p>
-                    </div>
+                    
+                    {payment.notes && <div className="mt-2">
+                        <p className="text-xs text-gray-500">Notes</p>
+                        <p className="text-sm text-gray-700">{payment.notes}</p>
+                      </div>}
                   </div>
-                  
-                  {payment.notes && <div className="mt-2">
-                      <p className="text-xs text-gray-500">Notes</p>
-                      <p className="text-sm text-gray-700">{payment.notes}</p>
-                    </div>}
-                </div>
+                ) : (
+                  <div className="border-t border-gray-100 pt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Max Projects</p>
+                        <p className="font-medium text-black">
+                          {payment.max_projects === -1 ? 'Unlimited' : payment.max_projects || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Features</p>
+                        <p className="font-medium text-black">
+                          {payment.can_use_features?.length || 0} features
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Payment Method</p>
+                        <p className="font-medium text-black">
+                          {payment.payment_method || 'Razorpay'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {payment.notes && <div className="mt-2">
+                        <p className="text-xs text-gray-500">Notes</p>
+                        <p className="text-sm text-gray-700">{payment.notes}</p>
+                      </div>}
+                  </div>
+                )}
               </motion.div>)}
           </div>}
       </motion.div>

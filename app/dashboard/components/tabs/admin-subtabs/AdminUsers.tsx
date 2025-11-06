@@ -42,6 +42,7 @@ interface User {
   plan_limit?: number;
   plan_name?: string;
   subscription_status?: string;
+  image_scan_credits?: number;
 }
 interface Plan {
   id: string;
@@ -541,6 +542,16 @@ export default function AdminUsers({
                           </div>}
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className={`font-medium ${(user.image_scan_credits ?? 0) < 5 ? 'text-yellow-600' : 'text-black'}`}>
+                          {user.image_scan_credits ?? 0}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          {(user.image_scan_credits ?? 0) < 5 && (user.image_scan_credits ?? 0) > 0 ? 'Low' : (user.image_scan_credits ?? 0) === 0 ? 'No credits' : 'Available'}
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(user.created_at)}
                     </td>
@@ -756,6 +767,20 @@ export default function AdminUsers({
                              (Exceeded!)
                            </span>}
                        </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">Image Scan Credits</label>
+                      <div className="flex items-center gap-2">
+                        <p className={`font-medium ${(selectedUser.image_scan_credits ?? 0) < 5 ? 'text-yellow-600' : 'text-black'}`}>
+                          {selectedUser.image_scan_credits ?? 0}
+                        </p>
+                        {(selectedUser.image_scan_credits ?? 0) < 5 && (selectedUser.image_scan_credits ?? 0) > 0 && (
+                          <span className="text-xs text-yellow-600">⚠️ Low credits</span>
+                        )}
+                        {(selectedUser.image_scan_credits ?? 0) === 0 && (
+                          <span className="text-xs text-red-600">⚠️ No credits</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

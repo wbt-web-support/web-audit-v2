@@ -173,6 +173,43 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check if user has credits available
+    const { data: userData, error: userDataError } = await supabaseAdmin
+      .from('users')
+      .select('image_scan_credits')
+      .eq('id', user.id)
+      .single();
+
+    if (userDataError) {
+      console.error('❌ Error fetching user credits:', userDataError);
+      return NextResponse.json({
+        error: 'Failed to check credits',
+        code: 'CREDIT_CHECK_FAILED',
+        message: 'Unable to verify available credits'
+      }, {
+        status: 500
+      });
+    }
+
+    const currentCredits = userData?.image_scan_credits || 0;
+    
+    if (currentCredits < 1) {
+      console.warn('🚫 User attempted to scan image without credits:', {
+        userId: user.id,
+        currentCredits
+      });
+      
+      return NextResponse.json({
+        error: 'Insufficient credits',
+        code: 'INSUFFICIENT_CREDITS',
+        message: 'You do not have enough credits to scan images. Please purchase credits to continue.',
+        currentCredits: currentCredits,
+        requiredCredits: 1
+      }, {
+        status: 402 // Payment Required
+      });
+    }
+
     // Get API configuration
     const apiKey = process.env.OPENWEBNINJA_API_KEY;
     let apiHost = process.env.OPENWEBNINJA_HOST || 'api.openwebninja.com';
@@ -394,10 +431,29 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Deduct credit after successful scan
+      const { error: creditDeductError } = await supabaseAdmin
+        .from('users')
+        .update({
+          image_scan_credits: Math.max(0, currentCredits - 1),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (creditDeductError) {
+        console.error('❌ Error deducting credit:', creditDeductError);
+        // Log error but don't fail the request - scan was successful
+        // The credit will be deducted on next check or admin can fix manually
+      } else {
+        console.log('✅ Credit deducted successfully. Remaining credits:', currentCredits - 1);
+      }
+
       return NextResponse.json({
         success: true,
         data: data,
-        imageId: savedImageId || body.imageId || null
+        imageId: savedImageId || body.imageId || null,
+        creditsRemaining: currentCredits - 1,
+        creditDeducted: true
       });
 
     } catch (fetchError) {
