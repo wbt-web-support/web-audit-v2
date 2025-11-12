@@ -1,4 +1,6 @@
-import React from 'react'
+"use client";
+
+import React, { useEffect, useState } from 'react'
 import CommingSoon from './home-page-components/CommingSoon'
 import HeroSection from './home-page-components/HeroSection'
 import Navbar from './home-page-components/Navbar'
@@ -12,7 +14,14 @@ import Footer from './home-page-components/Footer'
 
 
 export default function page() {
+   const[IsComingSoonTrue, setIsComingSoonTrue] = useState(true)
+
+   useEffect(() => {
+    process.env.NEXT_PUBLIC_COMING_SOON_MODE === 'true' ? setIsComingSoonTrue(true) : setIsComingSoonTrue(false)
+   },[])
+
   return (
+    IsComingSoonTrue ? <CommingSoon /> : (
     <div className='overflow-x-hidden'>
       {/* <CommingSoon /> */}
       <Navbar />
@@ -36,5 +45,7 @@ export default function page() {
         <Footer />
       </section>
     </div>
+
+    )
   )
 }

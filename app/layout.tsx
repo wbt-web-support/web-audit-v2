@@ -135,7 +135,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className="font-sans antialiased overflow-x-hidden w-[100vw]">
+      <body className="font-sans antialiased overflow-x-hidden w-[100vw]" suppressHydrationWarning>
         <SupabaseProvider>
           {children}
         </SupabaseProvider>
