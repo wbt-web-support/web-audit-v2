@@ -843,10 +843,21 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedImages.map((img, index) => {
-                  // Create a unique key combining multiple identifiers
-                  const uniqueKey = img.extra_metadata?.id 
-                    ? `img-${img.extra_metadata.id}`
-                    : `img-${index}-${img.url || 'unknown'}-${img.page_url || ''}`;
+                  // Create a truly unique key combining multiple identifiers
+                  // Priority: database ID > URL + page_url + global index > fallback
+                  const globalIndex = startIndex + index; // Use global index, not paginated index
+                  
+                  // Generate a stable unique key
+                  let uniqueKey: string;
+                  if (img.extra_metadata?.id) {
+                    // Use database ID if available (most reliable)
+                    uniqueKey = `img-${img.extra_metadata.id}`;
+                  } else {
+                    // Create a hash-like key from URL, page_url, and global index
+                    const urlHash = img.url ? img.url.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '') : 'no-url';
+                    const pageHash = img.page_url ? img.page_url.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '') : 'no-page';
+                    uniqueKey = `img-${globalIndex}-${urlHash}-${pageHash}`;
+                  }
                   
                   return (
                   <React.Fragment key={uniqueKey}>
@@ -1128,8 +1139,25 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
 
           {/* Mobile Card View */}
           <div className="lg:hidden space-y-4">
-            {paginatedImages.map((img, index) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+            {paginatedImages.map((img, index) => {
+              // Create a truly unique key combining multiple identifiers
+              // Priority: database ID > URL + page_url + global index > fallback
+              const globalIndex = startIndex + index; // Use global index, not paginated index
+              
+              // Generate a stable unique key (same logic as desktop)
+              let uniqueKey: string;
+              if (img.extra_metadata?.id) {
+                // Use database ID if available (most reliable)
+                uniqueKey = `img-${img.extra_metadata.id}`;
+              } else {
+                // Create a hash-like key from URL, page_url, and global index
+                const urlHash = img.url ? img.url.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '') : 'no-url';
+                const pageHash = img.page_url ? img.page_url.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '') : 'no-page';
+                uniqueKey = `img-mobile-${globalIndex}-${urlHash}-${pageHash}`;
+              }
+              
+              return (
+              <div key={uniqueKey} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                 <div className="flex flex-col sm:flex-row gap-4">
                   {/* Image Preview */}
                   <div className="flex-shrink-0 mx-auto sm:mx-0">
@@ -1445,7 +1473,8 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       ) : (

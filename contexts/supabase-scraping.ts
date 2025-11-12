@@ -398,13 +398,17 @@ const activeRequests = new Map<
       };
 
       const pagesWithUserId = pagesData.map((page) => {
+        // Type assertion to handle images field that may exist in input but not in type
+        const pageWithImages = page as typeof page & { images?: any };
         const {
           social_meta_tags,
 
           social_meta_tags_count,
 
+          images, // Exclude images field as it's now in separate table
+
           ...pageWithoutSocialTags
-        } = page;
+        } = pageWithImages;
 
         // Ensure required fields are present and valid
 
@@ -448,7 +452,7 @@ const activeRequests = new Map<
             : null,
 
           // Images are now saved in separate scraped_images table
-          images: null,
+          // The 'images' field has been excluded from pageWithoutSocialTags above
 
           // Filter out null values from arrays to avoid malformed array literals
 
@@ -742,8 +746,6 @@ const activeRequests = new Map<
 
             links: typeof page.links,
 
-            images: typeof page.images,
-
             audit_project_id: typeof page.audit_project_id,
           })),
         });
@@ -815,7 +817,7 @@ const activeRequests = new Map<
     height: number | null;
     type: string | null;
     size_bytes: number | null;
-    scan_results: any | null;
+    // scan_results column removed - scan results are stored in open_web_ninja_data column
     extra_metadata: any | null;
   }
 
@@ -830,7 +832,7 @@ const activeRequests = new Map<
     height?: number | null;
     type?: string | null;
     size_bytes?: number | null;
-    scan_results?: any | null;
+    // scan_results column removed - scan results are stored in open_web_ninja_data column
     extra_metadata?: any | null;
   }
 
@@ -874,7 +876,7 @@ const activeRequests = new Map<
         height: image.height ?? null,
         type: sanitizeString(image.type),
         size_bytes: image.size_bytes ?? null,
-        scan_results: image.scan_results ? JSON.stringify(image.scan_results) : null,
+        // scan_results column removed - scan results are stored in open_web_ninja_data column
         extra_metadata: image.extra_metadata ? JSON.stringify(image.extra_metadata) : null,
       }));
 

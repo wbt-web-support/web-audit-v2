@@ -169,7 +169,6 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
               <span className="text-gray-600">Site Favicon</span>
               <FaviconDisplay 
                 data={project} 
-                siteUrl={project.site_url}
                 size="sm"
               />
             </div>

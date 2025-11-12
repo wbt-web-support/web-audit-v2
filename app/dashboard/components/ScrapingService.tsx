@@ -475,8 +475,7 @@ export default function ScrapingService({
           images_count: page.images?.length || 0,
           links: page.links || null,
           // Store actual links data
-          images: page.images || null,
-          // Store actual images data
+          // images field removed - images are now stored in separate scraped_images table
           meta_tags_count: page.metaTags?.length || 0,
           technologies_count: page.technologies?.length || 0,
           technologies: page.technologies?.map(tech => tech.name).filter(tech => tech !== null && tech !== undefined && tech !== '') || null,
@@ -542,7 +541,7 @@ export default function ScrapingService({
 
         let successCount = 0;
         let _errorCount = 0;
-        let savedPagesList: any[] = [];
+        const savedPagesList: any[] = [];
         for (const pageData of scrapedPagesData) {
           if (!pageData) continue;
           try {

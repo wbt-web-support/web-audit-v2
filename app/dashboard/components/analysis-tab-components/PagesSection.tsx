@@ -80,11 +80,17 @@ export default function PagesSection({
       }
 
       if (data) {
+        // Map data to match ScrapedPage type from analysis-tab/types
+        // Add images property which is required by the local type but not in supabase-types
+        const mappedData: ScrapedPage[] = data.map(page => ({
+          ...page,
+          images: null // Images are stored separately in scraped_images table
+        }))
 
-        setPages(data)
+        setPages(mappedData)
         setHasLoadedPages(true)
         if (onPagesUpdate) {
-          onPagesUpdate(data)
+          onPagesUpdate(mappedData)
         }
       } else {
 

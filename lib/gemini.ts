@@ -173,7 +173,6 @@ Provide only the JSON response, no additional text or explanations.
     let outputTokens: number;
     
     try {
-      // @ts-expect-error - usageMetadata might be available in the response
       const usageMetadata = response.usageMetadata;
       if (usageMetadata) {
         inputTokens = usageMetadata.promptTokenCount || estimateTokenCount(prompt);
@@ -577,7 +576,7 @@ Provide only the JSON response, no additional text or explanations. Be EXTREMELY
       }, GEMINI_API_TIMEOUT);
     });
 
-    let result: Awaited<ReturnType<typeof geminiApiPromise>>;
+    let result;
     try {
       result = await Promise.race([geminiApiPromise, timeoutPromise]);
     } catch (apiError: unknown) {
@@ -588,7 +587,7 @@ Provide only the JSON response, no additional text or explanations. Be EXTREMELY
       throw apiError;
     }
 
-    const response = await result.response;
+    const response = await (result as any).response;
     const text = response.text();
     const duration = Date.now() - startTime;
 
@@ -665,7 +664,6 @@ export async function getGeminiAnalysisStatus(): Promise<boolean> {
     let outputTokens: number;
     
     try {
-      // @ts-expect-error - usageMetadata might be available in the response
       const usageMetadata = response.usageMetadata;
       if (usageMetadata) {
         inputTokens = usageMetadata.promptTokenCount || estimateTokenCount(testPrompt);

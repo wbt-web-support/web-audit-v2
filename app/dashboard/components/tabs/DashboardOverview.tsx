@@ -300,7 +300,7 @@ export default function DashboardOverview({
 
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1500px] mx-auto space-y-6 mt-6">
       {/* Welcome Section */}
       <div className="   ">
         <h1 className="text-2xl font-bold text-black  mb-2">
@@ -312,28 +312,33 @@ export default function DashboardOverview({
       </div>
 
       {/* Stats Cards */}
-      <StatsCards 
-        projects={projects}
-        projectsLoading={projectsLoading}
-      />
+  
 
       {/* Main Content Row - Site Crawl and Recent Projects */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Site Crawl Form */}
-        <SiteCrawlForm 
-          onSubmit={handleFormSubmit}
-          isSubmitting={isSubmitting}
-          submitStatus={submitStatus}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-stretch">
+        {/* Site Crawl Form - 80% width on md+ */}
+        <div className="md:col-span-4 h-full">
+          <SiteCrawlForm 
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+            submitStatus={submitStatus}
+          />
+        </div>
+        {/* Stats Cards - 20% width on md+ */}
+        <div className="md:col-span-1 h-full">
+          <StatsCards 
+            projects={projects}
+            projectsLoading={projectsLoading}
+          />
+        </div>
+      </div>
 
         {/* Recent Projects */}
         <RecentProjects 
           onProjectSelect={onProjectSelect}
         />
-      </div>
-
       {/* Features Showcase */}
-      <FeaturesShowcase features={features} />
+      {/* <FeaturesShowcase features={features} /> */}
 
       {/* Upgrade Modal */}
       <UpgradeModal

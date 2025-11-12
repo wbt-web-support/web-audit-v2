@@ -179,7 +179,7 @@ export default function SiteCrawlForm({
 
   // Show loading state while plan is being fetched
   if (planLoading) {
-    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden" initial={{
+    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -196,7 +196,7 @@ export default function SiteCrawlForm({
             </div>
           </div>}
         
-        <div className="p-6">
+        <div className="">
           <div className="space-y-6">
             {/* URL Input Skeleton */}
             <div>
@@ -253,7 +253,7 @@ export default function SiteCrawlForm({
 
   // Show error state if plan loading failed
   if (!planInfo) {
-    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden" initial={{
+    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -263,7 +263,7 @@ export default function SiteCrawlForm({
       duration: 0.4,
       ease: "easeOut"
     }}>
-        <div className="p-6">
+        <div className="">
           <div className="text-center py-8">
             <div className="text-red-500 mb-2">
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@ export default function SiteCrawlForm({
         </div>
       </motion.div>;
   }
-  return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden" initial={{
+  return <motion.div className="bg-white p-6 border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
     opacity: 0,
     y: 20
   }} animate={{
@@ -286,21 +286,20 @@ export default function SiteCrawlForm({
     duration: 0.4,
     ease: "easeOut"
   }}>
-      {!isEditMode && <div className="px-6 py-4 border-b border-gray-200">
-          <div>
+      {!isEditMode && <div className="  ">
+          <div className="pb-2">
             <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
-            <p className="text-gray-600 text-sm">Start a comprehensive web audit</p>
+            
           </div>
         </div>}
       
-      <div className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex-1 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
+          <div className="flex-1 space-y-6">
           {/* URL Input */}
           <div>
-            <label htmlFor="siteUrl" className="block text-sm font-medium text-black mb-2">
-              Website URL
-            </label>
-            <input type="url" id="siteUrl" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} placeholder="https://example.com" className="w-full px-4 py-3 border border-gray-200 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+          
+            <input type="url" id="siteUrl" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} placeholder="https://example.com" className="w-full px-4 py-4 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
           </div>
 
           {/* Page Type Selection */}
@@ -308,7 +307,7 @@ export default function SiteCrawlForm({
             <label className="block text-sm font-medium text-black mb-3">
               Crawl Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <label className={`flex items-center p-4 border rounded cursor-pointer ${pageType === 'single' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
                 <input type="radio" name="pageType" value="single" checked={pageType === 'single'} onChange={e => setPageType(e.target.value as CrawlType)} className="sr-only" />
                 <div className="flex items-center">
@@ -341,6 +340,17 @@ export default function SiteCrawlForm({
                 </div>
               </label>
             </div>
+            
+            {/* Brand Consistency Checkbox */}
+            <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                checked={brandConsistency}
+                onChange={(e) => setBrandConsistency(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm font-medium text-black pl-2">Brand Consistency Check</span>
+            </label>
           </div>
 
           {/* Feature Checkboxes */}
@@ -372,17 +382,7 @@ export default function SiteCrawlForm({
            </div> */}
 
           {/* Brand Consistency Checkbox */}
-          <div>
-            <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer">
-              <input
-                type="checkbox"
-                checked={brandConsistency}
-                onChange={(e) => setBrandConsistency(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm font-medium text-black pl-2">Brand Consistency Check</span>
-            </label>
-          </div>
+         
 
           {/* Brand Consistency Fields */}
           {brandConsistency && <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
@@ -475,6 +475,7 @@ export default function SiteCrawlForm({
             </div>
            )} */}
 
+          </div>
           {/* Submit Button */}
           <div className="pt-4">
             <button type="submit" disabled={isSubmitting || !canCreateNewProject} className={`w-full py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${!canCreateNewProject ? 'bg-gray-400 text-white cursor-not-allowed' : submitStatus === 'success' ? 'bg-green-600 text-white' : submitStatus === 'error' ? 'bg-red-600 text-white' : isSubmitting ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white'}`}>

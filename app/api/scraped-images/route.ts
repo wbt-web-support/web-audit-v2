@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
       height: number | null;
       type: string | null;
       size_bytes: number | null;
-      scan_results: string | null;
       extra_metadata: string | null;
     }
 
@@ -80,7 +79,7 @@ export async function POST(request: NextRequest) {
       height: image.height ?? null,
       type: sanitizeString(image.type),
       size_bytes: image.size_bytes ?? null,
-      scan_results: image.scan_results ? JSON.stringify(image.scan_results) : null,
+      // scan_results column removed - scan results are stored in open_web_ninja_data column
       extra_metadata: image.extra_metadata ? JSON.stringify(image.extra_metadata) : null,
     }));
 

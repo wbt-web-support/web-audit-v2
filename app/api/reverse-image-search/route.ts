@@ -45,7 +45,7 @@ interface RateLimitTracker {
   lastCleanup: number;
 }
 
-let rateLimitTracker: RateLimitTracker = {
+const rateLimitTracker: RateLimitTracker = {
   requests: [],
   minuteRequests: [],
   lastCleanup: Date.now()

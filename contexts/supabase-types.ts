@@ -61,7 +61,7 @@ interface UserProfile {
     links_count: number;
     images_count: number;
     links: any[] | null; // Store actual links data
-    images: any[] | null; // Store actual images data
+    // images field removed - images are now stored in separate scraped_images table
     meta_tags_count: number;
     technologies_count: number;
     technologies: string[] | null;

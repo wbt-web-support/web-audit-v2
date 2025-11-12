@@ -297,7 +297,7 @@ function DashboardContentWrapper() {
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gray-50 overflow-x-hidden w-[100vw]">
+  return <div className="min-h-screen bg-gray-50 overflow-x-hidden px-6">
       {/* Sidebar */}
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} activeTab={activeTab} onTabChange={handleTabChange} userProfile={userProfile} selectedProjectId={selectedProjectId} />
 
@@ -307,10 +307,10 @@ function DashboardContentWrapper() {
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} userProfile={userProfile} />
 
          {/* Content */}
-         {activeTab === 'analysis' && selectedProjectId ? <div className="p-6">
+         {activeTab === 'analysis' && selectedProjectId ? <div className="">
              <AnalysisTab key={selectedProjectId} // Prevent unnecessary re-mounting
          projectId={selectedProjectId} cachedData={getCachedAnalysisData(selectedProjectId)} onDataUpdate={(project, scrapedPages) => setCachedAnalysisData(selectedProjectId, project, scrapedPages)} onPageSelect={handlePageSelect} />
-           </div> : activeTab === 'page-analysis' && selectedPageId ? <div className="p-6">
+           </div> : activeTab === 'page-analysis' && selectedPageId ? <div className="">
              <PageAnalysisTab key={selectedPageId} // Prevent unnecessary re-mounting
          pageId={selectedPageId} />
            </div> : <DashboardContent activeTab={activeTab} userProfile={userProfile as any} onProjectSelect={handleProjectSelect} onUpdateProject={handleUpdateProject} onDeleteProject={handleDeleteProject} onRecrawlProject={handleRecrawlProject} />}

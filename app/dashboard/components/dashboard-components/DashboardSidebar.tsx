@@ -164,7 +164,7 @@ export default function DashboardSidebar({
   return <>
       {/* Mobile Overlay */}
       <AnimatePresence>
-        {isOpen && <motion.div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={onClose} initial={{
+        {isOpen && <motion.div className="fixed inset-0 bg-black/40 bg-opacity-50 z-40 lg:hidden" onClick={onClose} initial={{
         opacity: 0
       }} animate={{
         opacity: 1
@@ -189,14 +189,14 @@ export default function DashboardSidebar({
       }}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between  border-b border-gray-200">
             <Link href="/dashboard" className="flex items-center">
               <Image
-                src="/blackLogo.svg"
+                src="/orange-black-auditly.png"
                 alt="Auditly360"
                 width={134}
                 height={53}
-                className="h-14 w-auto mx-"
+                className="h-8 w-auto mx-"
               />
             </Link>
             <button onClick={onClose} className="lg:hidden p-2">
@@ -216,7 +216,7 @@ export default function DashboardSidebar({
               </div>
               <div>
                 <p className="text-sm font-medium text-black">
-                  {displayName}
+                  {displayName} 
                 </p>
                 {/* <div className="flex items-center space-x-2">
                   <p className="text-xs text-gray-600 capitalize">
@@ -239,8 +239,8 @@ export default function DashboardSidebar({
             {navigationItems.map(item => <button key={item.id} onClick={() => {
               onTabChange(item.id);
               onClose();
-            }} className={`w-full flex items-center space-x-3 px-3 py-3 rounded text-sm font-medium ${activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}>
-                <span className={activeTab === item.id ? 'text-blue-700' : 'text-gray-500'}>
+            }} className={`w-full flex items-center space-x-3 px-3 py-3 rounded text-sm font-medium ${activeTab === item.id ? 'bg-[#FF4B01]/10 text-[#FF4B01]' : 'text-gray-700'}`}>
+                <span className={activeTab === item.id ? 'text-[#FF4B01]' : 'text-gray-500'}>
                   {item.icon}
                 </span>
                 <span>{item.name}</span>
@@ -251,7 +251,7 @@ export default function DashboardSidebar({
           <div className="p-4 border-t border-gray-200">
             {planLoading ? <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-[#FF4B01] border-t-transparent rounded-full animate-spin"></div>
                   <span className="ml-2 text-sm text-gray-600">Loading plan...</span>
                 </div>
               </div> : planInfo ? <div className="bg-gray-50 rounded-lg p-3">
@@ -270,7 +270,7 @@ export default function DashboardSidebar({
                     {planInfo.max_projects === -1 ? 'Unlimited' : planInfo.max_projects || 0} projects
                   </span>
                 </div>
-                {planInfo.plan_type === 'Starter' && <button onClick={() => onTabChange('profile')} className="w-full mt-2 text-xs bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-700 transition-colors">
+                {planInfo.plan_type === 'Starter' && <button onClick={() => onTabChange('profile')} className="w-full mt-2 text-xs bg-[#FF4B01] text-white py-1 px-2 rounded hover:bg-[#FF4B01]/90 transition-colors">
                     Upgrade Plan
                   </button>}
               </div> : <div className="bg-gray-50 rounded-lg p-3">
@@ -312,7 +312,7 @@ export default function DashboardSidebar({
           <div className="flex items-center p-6 border-b border-gray-200">
             <Link href="/dashboard" className="flex items-center">
               <Image
-                src="/blackLogo.svg"
+                src="/orange-black-auditly.png"
                 alt="Auditly360"
                 width={124}
                 height={43}
@@ -351,8 +351,8 @@ export default function DashboardSidebar({
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigationItems.map(item => <button key={item.id} onClick={() => onTabChange(item.id)} className={`w-full flex items-center space-x-3 px-3 py-3 rounded text-sm font-medium ${activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}>
-                <span className={activeTab === item.id ? 'text-blue-700' : 'text-gray-500'}>
+            {navigationItems.map(item => <button key={item.id} onClick={() => onTabChange(item.id)} className={`w-full flex items-center space-x-3 px-3 py-3 rounded text-sm font-medium ${activeTab === item.id ? 'bg-[#FF4B01]/10 text-[#FF4B01]' : 'text-gray-700'}`}>
+                <span className={activeTab === item.id ? 'text-[#FF4B01]' : 'text-gray-500'}>
                   {item.icon}
                 </span>
                 <span>{item.name}</span>
@@ -363,7 +363,7 @@ export default function DashboardSidebar({
           <div className="p-4 border-t border-gray-200">
             {planLoading ? <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-[#FF4B01] border-t-transparent rounded-full animate-spin"></div>
                   <span className="ml-2 text-sm text-gray-600">Loading plan...</span>
                 </div>
               </div> : planInfo ? <div className="bg-gray-50 rounded-lg p-3">
@@ -382,7 +382,7 @@ export default function DashboardSidebar({
                     {planInfo.max_projects === -1 ? 'Unlimited' : planInfo.max_projects || 0} projects
                   </span>
                 </div>
-                {planInfo.plan_type === 'Starter' && <button onClick={() => onTabChange('profile')} className="w-full mt-2 text-xs bg-blue-600 text-white py-1 px-2 rounded hover:bg-blue-700 transition-colors">
+                {planInfo.plan_type === 'Starter' && <button onClick={() => onTabChange('profile')} className="w-full mt-2 text-xs bg-[#FF4B01] text-white py-1 px-2 rounded hover:bg-[#FF4B01]/90 transition-colors">
                     Upgrade Plan
                   </button>}
               </div> : <div className="bg-gray-50 rounded-lg p-3">

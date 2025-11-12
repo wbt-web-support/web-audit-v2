@@ -74,8 +74,8 @@ export default function ProfileSubTabs({ userProfile }: ProfileSubTabsProps) {
               onClick={() => setActiveTab(tab.id)}
               className={`py-1.5 px-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
               }`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}

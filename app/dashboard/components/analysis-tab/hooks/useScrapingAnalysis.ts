@@ -163,7 +163,10 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       }
       if (pages) {
         updateState({
-          scrapedPages: pages,
+          scrapedPages: pages.map(page => ({
+            ...page,
+            images: (page as any).images || null
+          })),
           scrapedPagesLoaded: true,
           error: null // Clear any previous errors
         });

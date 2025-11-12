@@ -251,7 +251,7 @@ export default function AnalysisHeader({
                     onClick={() => onSectionChange(tab.id)}
                     className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap flex-shrink-0 ${
                       activeSection === tab.id
-                        ? "border-blue-500 text-blue-600"
+                        ? "border-blue-600 text-blue-600 bg-blue-50"
                         : "border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300"
                     } ${isPremiumFeature ? "opacity-75" : ""}`}
                   >

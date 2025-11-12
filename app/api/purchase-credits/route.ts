@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         receipt: order.receipt,
         credits: creditPackage.credits,
         price: creditPackage.price,
-        packageId: creditPackage.id || packageId
+        packageId: ('id' in creditPackage ? creditPackage.id : undefined) || packageId
       });
     } catch (razorpayError: any) {
       console.error('Error creating Razorpay order:', razorpayError);

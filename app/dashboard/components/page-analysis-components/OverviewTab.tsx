@@ -96,7 +96,6 @@ export default function OverviewTab({ page, project }: OverviewTabProps) {
                   <>
                     <FaviconDisplay 
                       data={project as unknown as Record<string, any>} 
-                      siteUrl={project.site_url}
                       size="sm"
                       className="mr-2"
                     />

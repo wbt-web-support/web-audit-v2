@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase';
 // PUT - Update credit package
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { credits, price, label, is_active, sort_order } = body;
 
@@ -120,10 +120,10 @@ export async function PUT(
 // DELETE - Soft delete credit package (set is_active to false)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabaseAdmin
       .from('credit_packages')

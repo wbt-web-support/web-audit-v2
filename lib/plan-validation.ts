@@ -103,7 +103,10 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo | nu
         }
 
         // Use the newly created user
-        userExists = newUser;
+        userExists = {
+          ...newUser,
+          plan_id: null as any
+        };
       } catch {
         return null;
       }

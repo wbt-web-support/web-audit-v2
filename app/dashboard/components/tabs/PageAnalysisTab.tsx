@@ -208,7 +208,10 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
         }
         if (!pageData) throw new Error('Page not found')
 
-        setPage(pageData as PageData)
+        setPage({
+          ...pageData,
+          images: (pageData as any).images || null
+        } as PageData)
 
         // Load project data
         if (pageData.audit_project_id) {

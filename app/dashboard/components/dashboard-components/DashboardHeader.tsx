@@ -23,7 +23,7 @@ export default function DashboardHeader({ onMenuClick, userProfile }: DashboardH
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between py-4">
         {/* Left side - Mobile menu button and title */}
         <div className="flex items-center">
           <button

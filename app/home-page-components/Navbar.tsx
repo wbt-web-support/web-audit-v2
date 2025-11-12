@@ -195,18 +195,18 @@ export default function Navbar() {
       >
         {/* Logo */}
         <Link 
-          href="#home" 
-          onClick={(e) => handleSmoothScroll(e, '#home')} 
-          className="relative z-[101] cursor-pointer transition-all duration-300 group hover:scale-105 active:scale-95"
+          href="/#home" 
+          onClick={(e) => handleSmoothScroll(e, '/#home')} 
+          className="relative z-[101] cursor-pointer "
         >
           <span className="relative inline-block">
-            <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300 rounded-lg"></span>
+            <span className="absolute inset-0 rounded-lg"></span>
             <Image
-              src={isHeroSection ? '/whitelogo.svg' : '/blackLogo.svg'}
+              src={isHeroSection ? '/white-orange-auditly.png' : '/orange-black-auditly.png'}
               alt="Auditly360"
               width={124}
               height={43}
-              className="relative h-8 sm:h-9 md:h-10 w-auto transition-opacity duration-300"
+              className="relative h-8 sm:h-9 md:h-10 w-auto "
               priority
             />
           </span>
@@ -219,7 +219,7 @@ export default function Navbar() {
               href={item.href} 
               key={item.name} 
               onClick={(e) => handleSmoothScroll(e, item.href)}
-              className={`group relative text-xs md:text-sm lg:text-base font-medium ${textClasses} transition-all duration-300 cursor-pointer whitespace-nowrap py-1 overflow-hidden`}
+              className={` relative text-xs md:text-sm lg:text-base font-medium ${textClasses} transition-all duration-300 cursor-pointer whitespace-nowrap py-1 overflow-hidden`}
             >
               <span className="relative z-10">{item.name}</span>
               <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
@@ -241,21 +241,13 @@ export default function Navbar() {
                   <span className="relative z-10 font-semibold">Dashboard</span>
                 </Link>
               ) : (
-                <>
-                  <Link 
-                    href="/login"
-                    className={`${secondaryButtonClasses} px-4 md:px-5 lg:px-6 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-md hover:shadow-lg`}
-                  >
-                    <span className="relative z-10 font-medium">Login</span>
-                  </Link>
-                  <Link 
-                    href="/signup"
-                    className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
-                  >
-                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
-                    <span className="relative z-10 font-semibold">Sign Up</span>
-                  </Link>
-                </>
+                <Link 
+                  href="/signup"
+                  className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
+                  <span className="relative z-10 font-semibold">Get Started</span>
+                </Link>
               )}
             </>
           )}
@@ -289,7 +281,7 @@ export default function Navbar() {
 
       {/* Mobile Menu - Simple Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] sm:w-[300px] ${navbarClasses} z-[100] md:hidden transform transition-transform duration-300 ease-out shadow-xl ${
+        className={`fixed top-0 right-0 h-full w-[280px] sm:w-[300px] bg-white z-[100] md:hidden transform transition-transform duration-300 ease-out shadow-xl ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -305,21 +297,18 @@ export default function Navbar() {
               className="relative"
             >
               <Image
-                src={isHeroSection ? '/whitelogo.svg' : '/blackLogo.svg'}
+                src="/orange-black-auditly.png"
                 alt="Auditly360"
                 width={124}
                 height={43}
                 className="h-8 w-auto transition-opacity duration-300"
+                priority
               />
             </Link>
             
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`p-2 rounded-lg transition-colors duration-200 ${
-                isHeroSection 
-                  ? 'text-white hover:bg-white/10' 
-                  : 'text-gray-800 hover:bg-gray-100'
-              }`}
+              className="p-2 rounded-lg transition-colors duration-200 text-gray-800 hover:bg-gray-100"
               aria-label="Close menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,11 +324,11 @@ export default function Navbar() {
                 href={item.href} 
                 key={item.name} 
                 onClick={(e) => handleSmoothScroll(e, item.href)}
-                className={`group relative block px-6 py-3 ${textClasses} transition-all duration-200 overflow-hidden`}
+                className="relative block px-6 py-3 text-gray-800 hover:text-blue-600 transition-all duration-200 overflow-hidden"
               >
                 <span className="relative z-10">{item.name}</span>
-                <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
-                <span className={`absolute inset-0 ${isHeroSection ? 'bg-white/10' : 'bg-blue-50'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}></span>
+                <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
               </Link>
             ))}
           </nav>
@@ -352,27 +341,18 @@ export default function Navbar() {
                   <Link 
                     href="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`${buttonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
+                    className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
                   >
                     Dashboard
                   </Link>
                 ) : (
-                  <>
-                    <Link 
-                      href="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`${secondaryButtonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
-                    >
-                      Login
-                    </Link>
-                    <Link 
-                      href="/signup"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`${buttonClasses} block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200`}
-                    >
-                      Sign Up
-                    </Link>
-                  </>
+                  <Link 
+                    href="/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
+                  >
+                    Get Started
+                  </Link>
                 )}
               </>
             )}
