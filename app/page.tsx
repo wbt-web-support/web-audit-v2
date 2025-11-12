@@ -23,7 +23,7 @@ export default function Page() {
   return (
     IsComingSoonTrue ? <CommingSoon /> : (
     <div className='overflow-x-hidden'>
-      {/* <CommingSoon /> */}
+      {/* <CommingSoon  now /> */}
       <Navbar />
       <section id="home">
         <HeroSection />
