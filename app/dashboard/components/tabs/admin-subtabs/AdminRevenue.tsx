@@ -160,7 +160,7 @@ export default function AdminRevenue({ }: AdminRevenueProps) {
                 </span>
                 <div className="w-16 h-2 bg-gray-200 rounded-full">
                   <div 
-                    className="h-2 bg-blue-500 rounded-full" 
+                    className="h-2 bg-[#ff4b01] rounded-full" 
                     style={{ width: `${Math.min(Math.abs(data.growth) * 5, 100)}%` }}
                   ></div>
                 </div>
@@ -194,7 +194,7 @@ export default function AdminRevenue({ }: AdminRevenueProps) {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="h-2 bg-blue-500 rounded-full" 
+                    className="h-2 bg-[#ff4b01] rounded-full" 
                     style={{ width: `${source.percentage}%` }}
                   ></div>
                 </div>
@@ -267,7 +267,7 @@ export default function AdminRevenue({ }: AdminRevenueProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">View</button>
+                      <button className="text-[#ff4b01] hover:text-[#e64401]">View</button>
                       <button className="text-yellow-600 hover:text-yellow-900">Refund</button>
                       <button className="text-gray-600 hover:text-gray-900">Export</button>
                     </div>
@@ -320,16 +320,16 @@ export default function AdminRevenue({ }: AdminRevenueProps) {
         >
           <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Generate Revenue Report</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Export Financial Data</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">View Tax Reports</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Process Refunds</span>
             </button>
           </div>

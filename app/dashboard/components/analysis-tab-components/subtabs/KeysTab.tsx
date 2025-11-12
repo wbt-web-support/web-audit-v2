@@ -50,6 +50,43 @@ export default function KeysTab({
   // Load keys data from database with pagination and filtering
   const loadKeysData = useCallback(async (page = 1, limit = 20, status = 'all', severity = 'all') => {
     if (!project?.id) return;
+    if (!getDetectedKeys) {
+      // Fallback to client-side detection if function is not available
+      if (pageHtml && pageHtml.length > 0) {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const result = await detectKeysInHtml(pageHtml);
+          setKeysData({
+            keys: result.keys,
+            total: result.totalKeys,
+            page,
+            limit,
+            totalPages: Math.max(1, Math.ceil(result.totalKeys / limit)),
+            filters: {
+              status,
+              severity
+            },
+            summary: {
+              totalKeys: result.totalKeys,
+              exposedKeys: result.exposedKeys,
+              secureKeys: result.secureKeys,
+              criticalKeys: result.criticalKeys,
+              highRiskKeys: result.highRiskKeys,
+              analysisComplete: result.analysisComplete,
+              processingTime: result.processingTime
+            }
+          });
+        } catch (err) {
+          setError('Failed to analyze keys data');
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setError('Keys detection function not available');
+      }
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {

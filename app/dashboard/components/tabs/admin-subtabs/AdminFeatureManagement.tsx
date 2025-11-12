@@ -161,7 +161,7 @@ export default function AdminFeatureManagement({
       case 'Starter':
         return 'bg-green-100 text-green-800';
       case 'Growth':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01]';
       case 'Scale':
         return 'bg-purple-100 text-purple-800';
       default:
@@ -204,11 +204,11 @@ export default function AdminFeatureManagement({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Plans</label>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Search plans..." />
+            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" placeholder="Search plans..." />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Plan Type</label>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Types</option>
               <option value="free">Free</option>
               <option value="pro">Pro</option>
@@ -235,7 +235,7 @@ export default function AdminFeatureManagement({
           </div>
           
           {plansLoading ? <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
             </div> : plansError ? <div className="text-center py-8">
               <div className="text-red-500 mb-2">
                 <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +243,7 @@ export default function AdminFeatureManagement({
                 </svg>
               </div>
               <p className="text-red-600 font-medium">{plansError}</p>
-              <button onClick={loadPlans} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+              <button onClick={loadPlans} className="mt-2 text-[#ff4b01] hover:text-[#e64401] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
                 Try again
               </button>
             </div> : <div className="max-h-96 overflow-y-auto">
@@ -256,7 +256,7 @@ export default function AdminFeatureManagement({
           }} transition={{
             duration: 0.3,
             delay: 0.3 + index * 0.1
-          }} className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${selectedPlan?.id === plan.id ? 'bg-blue-50 border-blue-200' : ''}`} onClick={() => handlePlanSelect(plan)}>
+          }} className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${selectedPlan?.id === plan.id ? 'bg-[#ff4b01]/10 border-[#ff4b01]/30' : ''}`} onClick={() => handlePlanSelect(plan)}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
@@ -272,11 +272,11 @@ export default function AdminFeatureManagement({
                       <div className="text-sm text-gray-500 mt-2">
                         {plan.can_use_features?.length || 0} features enabled
                       </div>
-                      <div className="text-xs text-blue-600 mt-1">
+                      <div className="text-xs text-[#ff4b01] mt-1">
                         {plan.max_projects === -1 ? 'Unlimited projects' : `${plan.max_projects} project${plan.max_projects !== 1 ? 's' : ''}`}
                       </div>
                     </div>
-                    {selectedPlan?.id === plan.id && <div className="text-blue-600">
+                    {selectedPlan?.id === plan.id && <div className="text-[#ff4b01]">
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
@@ -306,7 +306,7 @@ export default function AdminFeatureManagement({
           {selectedPlan ? <div className="p-6 max-h-96 overflow-y-auto">
               {/* Quick Actions */}
               <div className="flex gap-2 mb-6">
-                <button onClick={handleSelectAllFeatures} className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors">
+                <button onClick={handleSelectAllFeatures} className="px-3 py-1 bg-[#ff4b01]/20 text-[#ff4b01] rounded text-sm hover:bg-[#ff4b01]/30 transition-colors">
                   Select All
                 </button>
                 <button onClick={handleSelectCoreFeatures} className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors">
@@ -323,8 +323,8 @@ export default function AdminFeatureManagement({
             return <div key={categoryKey} className="mb-6">
                     <h4 className="font-medium text-black mb-3">{categoryName}</h4>
                     <div className="space-y-2">
-                      {categoryFeatures.map(feature => <label key={feature.id} className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
-                          <input type="checkbox" checked={selectedFeatures.includes(feature.id)} onChange={() => handleFeatureToggle(feature.id)} className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                      {categoryFeatures.map(feature => <label key={feature.id} className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-colors cursor-pointer">
+                          <input type="checkbox" checked={selectedFeatures.includes(feature.id)} onChange={() => handleFeatureToggle(feature.id)} className="mt-1 h-4 w-4 text-[#ff4b01] focus:ring-[#ff4b01] border-gray-300 rounded" />
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
                               <span className="text-lg">{feature.icon}</span>
@@ -342,7 +342,7 @@ export default function AdminFeatureManagement({
 
               {/* Save Button */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <button onClick={handleSaveFeatures} disabled={actionLoading === 'save'} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <button onClick={handleSaveFeatures} disabled={actionLoading === 'save'} className="w-full bg-[#ff4b01] text-white py-2 rounded-lg hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   {actionLoading === 'save' ? 'Saving...' : 'Save Features'}
                 </button>
               </div>
@@ -373,7 +373,7 @@ export default function AdminFeatureManagement({
             {selectedFeatures.length > 0 ? <div className="flex flex-wrap gap-2">
                 {selectedFeatures.map(featureId => {
             const feature = FEATURES.find(f => f.id === featureId);
-            return feature ? <span key={featureId} className="inline-flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+            return feature ? <span key={featureId} className="inline-flex items-center space-x-1 px-2 py-1 bg-[#ff4b01]/20 text-[#ff4b01] rounded text-xs">
                       <span>{feature.icon}</span>
                       <span>{feature.name}</span>
                     </span> : null;

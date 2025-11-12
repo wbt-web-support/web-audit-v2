@@ -106,8 +106,8 @@ export default function TechnologiesSection({ project, scrapedPages = [] }: Tech
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 sm:px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-[#ff4b01] text-[#ff4b01] bg-[#ff4b01]/10'
+                    : 'border-transparent text-gray-500 hover:text-[#ff4b01] hover:border-[#ff4b01]/30'
                 }`}
               >
                 {tab.icon}

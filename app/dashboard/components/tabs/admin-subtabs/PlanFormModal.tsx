@@ -156,7 +156,7 @@ export default function PlanFormModal({
                       ...prev,
                       name: e.target.value
                     }))} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                     placeholder="Enter plan name" 
                     required 
                   />
@@ -169,7 +169,7 @@ export default function PlanFormModal({
                       ...prev,
                       description: e.target.value
                     }))} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                     rows={3} 
                     placeholder="Enter plan description" 
                   />
@@ -182,7 +182,7 @@ export default function PlanFormModal({
                       ...prev,
                       plan_type: e.target.value as 'Starter' | 'Growth' | 'Scale'
                     }))} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   >
                     <option value="Starter">Starter</option>
                     <option value="Growth">Growth</option>
@@ -200,7 +200,7 @@ export default function PlanFormModal({
                         ...prev,
                         price: parseFloat(e.target.value) || 0
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                       placeholder="0" 
                     />
                   </div>
@@ -212,7 +212,7 @@ export default function PlanFormModal({
                         ...prev,
                         currency: e.target.value
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                     >
                       <option value="INR">INR</option>
                       <option value="USD">USD</option>
@@ -228,7 +228,7 @@ export default function PlanFormModal({
                         ...prev,
                         billing_cycle: e.target.value
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                     >
                       <option value="monthly">Monthly</option>
                       <option value="yearly">Yearly</option>
@@ -245,7 +245,7 @@ export default function PlanFormModal({
                         ...prev,
                         razorpay_plan_id: e.target.value
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                       placeholder="Required Razorpay plan ID" 
                       required 
                     />
@@ -264,7 +264,7 @@ export default function PlanFormModal({
                         ...prev,
                         subscription_id: e.target.value
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                       placeholder="Required Razorpay subscription ID" 
                       required 
                     />
@@ -283,7 +283,7 @@ export default function PlanFormModal({
                         ...prev,
                         max_projects: parseInt(e.target.value) || 1
                       }))} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                       min="1" 
                       placeholder="Number of projects"
                       disabled={formData.max_projects === -1}
@@ -296,7 +296,7 @@ export default function PlanFormModal({
                       }))} 
                       className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
                         formData.max_projects === -1 
-                          ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                          ? 'bg-[#ff4b01]/20 text-[#ff4b01] border-[#ff4b01]/30' 
                           : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                       }`}
                     >
@@ -322,7 +322,7 @@ export default function PlanFormModal({
                       type="text" 
                       value={newHeading} 
                       onChange={e => setNewHeading(e.target.value)} 
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                       placeholder="Enter heading name" 
                       onKeyPress={e => {
                         if (e.key === 'Enter') {
@@ -332,7 +332,7 @@ export default function PlanFormModal({
                     />
                     <button 
                       onClick={handleAddHeading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-[#ff4b01] text-white rounded-lg hover:bg-[#e64401] transition-colors"
                     >
                       Add Heading
                     </button>
@@ -347,7 +347,7 @@ export default function PlanFormModal({
                       <select 
                         value={selectedHeadingIndex ?? ''} 
                         onChange={e => setSelectedHeadingIndex(e.target.value ? parseInt(e.target.value) : null)} 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                       >
                         <option value="">Select a heading</option>
                         {formData.features.map((feature, index) => (
@@ -362,7 +362,7 @@ export default function PlanFormModal({
                             type="text" 
                             value={newTool} 
                             onChange={e => setNewTool(e.target.value)} 
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                             placeholder="Enter tool name" 
                             onKeyPress={e => {
                               if (e.key === 'Enter') {
@@ -372,7 +372,7 @@ export default function PlanFormModal({
                           />
                           <button 
                             onClick={handleAddTool}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 bg-[#ff4b01] text-white rounded-lg hover:bg-[#e64401] transition-colors"
                           >
                             Add Tool
                           </button>
@@ -472,7 +472,7 @@ export default function PlanFormModal({
                       ...prev,
                       sort_order: parseInt(e.target.value) || 0
                     }))} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
                   />
                 </div>
               </div>
@@ -492,7 +492,7 @@ export default function PlanFormModal({
             <button 
               onClick={onSubmit} 
               disabled={actionLoading === 'create' || actionLoading === 'update'} 
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {actionLoading === 'create' || actionLoading === 'update' ? 'Saving...' : isEditing ? 'Update Plan' : 'Create Plan'}
             </button>

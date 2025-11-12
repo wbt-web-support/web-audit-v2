@@ -115,7 +115,7 @@ export default function FeedbackShowcase() {
           <h3 className="text-lg font-semibold text-black">User Feedback</h3>
         </div>
         <div className="flex items-center justify-center py-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
         </div>
       </div>
     );
@@ -151,7 +151,7 @@ export default function FeedbackShowcase() {
           <h3 className="text-lg font-semibold text-black">User Feedback</h3>
           <div className="flex gap-2">
             <button onClick={() => fetchFeedbacks()} className="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Refresh</button>
-            <button onClick={() => setShowAll(false)} className="text-sm px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Carousel</button>
+            <button onClick={() => setShowAll(false)} className="text-sm px-3 py-1 rounded bg-[#ff4b01] text-white hover:bg-[#e64401]">Carousel</button>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -183,7 +183,7 @@ export default function FeedbackShowcase() {
         <h3 className="text-lg font-semibold text-black">User Feedback</h3>
         <div className="flex gap-2">
           <button onClick={() => fetchFeedbacks()} className="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Refresh</button>
-          <button onClick={() => setShowAll(true)} className="text-sm px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Show all</button>
+          <button onClick={() => setShowAll(true)} className="text-sm px-3 py-1 rounded bg-[#ff4b01] text-white hover:bg-[#e64401]">Show all</button>
         </div>
       </div>
 
@@ -225,7 +225,7 @@ export default function FeedbackShowcase() {
             </button>
             <div className="flex gap-1">
               {Array.from({ length: totalPages }).map((_, i) => (
-                <span key={i} className={`h-1.5 w-4 rounded-full ${i === activePage ? 'bg-blue-600' : 'bg-gray-300'}`}></span>
+                <span key={i} className={`h-1.5 w-4 rounded-full ${i === activePage ? 'bg-[#ff4b01]' : 'bg-gray-300'}`}></span>
               ))}
             </div>
             <button

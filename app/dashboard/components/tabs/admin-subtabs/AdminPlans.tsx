@@ -455,7 +455,7 @@ export default function AdminPlans({
       case 'Starter':
         return 'bg-green-100 text-green-800';
       case 'Growth':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01]';
       case 'Scale':
         return 'bg-purple-100 text-purple-800';
       default:
@@ -502,7 +502,7 @@ export default function AdminPlans({
           <button onClick={() => {
           resetForm();
           setShowPlanForm(true);
-        }} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        }} className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Add Plan
           </button>
         </div>
@@ -511,11 +511,11 @@ export default function AdminPlans({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Search plans..." />
+            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" placeholder="Search plans..." />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Types</option>
               <option value="Starter">Starter</option>
               <option value="Growth">Growth</option>
@@ -524,7 +524,7 @@ export default function AdminPlans({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -545,7 +545,7 @@ export default function AdminPlans({
       delay: 0.2
     }}>
         {plansLoading ? <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
           </div> : plansError ? <div className="text-center py-8">
             <div className="text-red-500 mb-2">
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -553,7 +553,7 @@ export default function AdminPlans({
               </svg>
             </div>
             <p className="text-red-600 font-medium">{plansError}</p>
-            <button onClick={loadPlans} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button onClick={loadPlans} className="mt-2 text-[#ff4b01] hover:text-[#e64401] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
               Try again
             </button>
           </div> : <div className="overflow-x-auto">
@@ -602,7 +602,7 @@ export default function AdminPlans({
             }} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${plan.color === 'black' ? 'bg-black' : plan.color === 'blue' ? 'bg-blue-500' : 'bg-gray-500'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${plan.color === 'black' ? 'bg-black' : plan.color === 'blue' ? 'bg-[#ff4b01]' : 'bg-gray-500'}`}>
                           <span className="text-white font-medium text-sm">
                             {plan.name.charAt(0)}
                           </span>
@@ -627,7 +627,7 @@ export default function AdminPlans({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${plan.billing_cycle === 'monthly' ? 'bg-blue-100 text-blue-800' : plan.billing_cycle === 'yearly' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${plan.billing_cycle === 'monthly' ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : plan.billing_cycle === 'yearly' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                         {plan.billing_cycle || 'monthly'}
                       </span>
                     </td>
@@ -671,7 +671,7 @@ export default function AdminPlans({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button onClick={() => handleEditPlan(plan)} className="text-blue-600 hover:text-blue-900">
+                        <button onClick={() => handleEditPlan(plan)} className="text-[#ff4b01] hover:text-[#e64401]">
                           Edit
                         </button>
                         <button onClick={() => handlePlanAction(plan.id, 'delete')} disabled={actionLoading === 'delete'} className="text-red-600 hover:text-red-900 disabled:opacity-50">
@@ -713,7 +713,7 @@ export default function AdminPlans({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Growth Plans</span>
-              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'Growth').length}</span>
+              <span className="font-semibold text-[#ff4b01]">{plans.filter(p => p.plan_type === 'Growth').length}</span>
             </div>
           </div>
         </motion.div>
@@ -730,13 +730,13 @@ export default function AdminPlans({
       }}>
           <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <button onClick={loadPlans} className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button onClick={loadPlans} className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Refresh Plans</span>
             </button>
-            <button onClick={() => setShowPlanForm(true)} className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button onClick={() => setShowPlanForm(true)} className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Add New Plan</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Export Plans</span>
             </button>
           </div>
@@ -760,7 +760,7 @@ export default function AdminPlans({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Growth</span>
-              <span className="font-semibold text-blue-600">{plans.filter(p => p.plan_type === 'Growth').length}</span>
+              <span className="font-semibold text-[#ff4b01]">{plans.filter(p => p.plan_type === 'Growth').length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Scale</span>

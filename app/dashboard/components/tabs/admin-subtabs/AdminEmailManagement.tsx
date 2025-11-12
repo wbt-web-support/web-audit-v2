@@ -557,8 +557,8 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-12 h-12 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mx-auto w-24 h-24 bg-[#ff4b01]/20 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-12 h-12 text-[#ff4b01] animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </div>
@@ -641,7 +641,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#ff4b01] text-white'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -657,7 +657,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               <h3 className="text-lg font-semibold text-black">Email Templates</h3>
               <button
                 onClick={() => setShowTemplateForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
               >
                 + New Template
               </button>
@@ -671,7 +671,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditTemplate(template)}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
+                        className="text-[#ff4b01] hover:text-[#ff4b01] text-sm"
                       >
                         Edit
                       </button>
@@ -687,7 +687,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <div className="flex flex-col">
                       <span>{template.variables.length} variables</span>
-                      <span className="text-blue-600 font-medium">
+                      <span className="text-[#ff4b01] font-medium">
                         {allTemplateTypes.find(t => t.value === template.template_type)?.label || template.template_type}
                       </span>
                     </div>
@@ -718,7 +718,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   <div key={type.value} className={`rounded-lg p-4 border ${
                     type.is_system
                       ? 'bg-gray-50 border-gray-200'
-                      : 'bg-blue-50 border-blue-200'
+                      : 'bg-[#ff4b01]/10 border-[#ff4b01]/30'
                   }`}>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
@@ -729,7 +729,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           type.is_system
                             ? 'bg-gray-200 text-gray-700'
-                            : 'bg-blue-200 text-blue-700'
+                            : 'bg-[#ff4b01]/30 text-[#ff4b01]'
                         }`}>
                           {type.is_system ? 'System' : 'Custom'}
                         </span>
@@ -747,7 +747,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     <div className={`text-xs font-mono px-2 py-1 rounded ${
                       type.is_system
                         ? 'text-gray-600 bg-gray-100'
-                        : 'text-blue-600 bg-blue-100'
+                        : 'text-[#ff4b01] bg-[#ff4b01]/20'
                     }`}>
                       {type.value}
                     </div>
@@ -756,8 +756,8 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               </div>
 
               {getCustomTemplateTypes().length === 0 && (
-                <div className="text-center py-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
-                  <p className="text-blue-600 text-sm">No custom template types yet. Click &quot;Add Custom Type&quot; to create your first one.</p>
+                <div className="text-center py-4 bg-[#ff4b01]/10 rounded-lg border border-[#ff4b01]/30 mt-4">
+                  <p className="text-[#ff4b01] text-sm">No custom template types yet. Click &quot;Add Custom Type&quot; to create your first one.</p>
                 </div>
               )}
             </div>
@@ -776,7 +776,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               <select
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
               >
                 <option value="">Choose a template...</option>
                 {templates.filter(t => t.is_active).map((template) => (
@@ -797,7 +797,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                     placeholder="Search users..."
                   />
                 </div>
@@ -806,7 +806,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   <select
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                   >
                     <option value="all">All Roles</option>
                     <option value="admin">Admin</option>
@@ -818,7 +818,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                   >
                     <option value="all">All Status</option>
                     <option value="verified">Verified</option>
@@ -830,7 +830,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   <select
                     value={filterPlan}
                     onChange={(e) => setFilterPlan(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                   >
                     <option value="all">All Plans</option>
                     {plans.map(plan => (
@@ -869,7 +869,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSelectAll}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                    className="px-3 py-1 text-sm bg-[#ff4b01]/20 text-[#ff4b01] rounded hover:bg-[#ff4b01]/30 transition-colors"
                   >
                     {selectedUsers.length === filteredUsers.length ? 'Deselect All' : 'Select All'}
                   </button>
@@ -939,7 +939,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                            user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-[#ff4b01]/20 text-[#ff4b01]'
                           }`}>
                             {user.role}
                           </span>
@@ -1005,7 +1005,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               <button
                 onClick={handleSendBulkEmail}
                 disabled={sending || selectedUsers.length === 0 || !selectedTemplate}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-[#ff4b01] text-white px-6 py-2 rounded-lg hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {sending ? 'Sending...' : `Send to ${selectedUsers.length} users`}
               </button>
@@ -1030,7 +1030,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   type="text"
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm({...templateForm, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
 
@@ -1043,7 +1043,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                       setTemplateForm({...templateForm, template_type: e.target.value})
                       setTemplateTypeError(null)
                     }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                     disabled={allTemplateTypes.length === 0}
                   >
                     {allTemplateTypes.length === 0 ? (
@@ -1082,7 +1082,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   type="text"
                   value={templateForm.subject}
                   onChange={(e) => setTemplateForm({...templateForm, subject: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
 
@@ -1093,7 +1093,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   onChange={(e) => setTemplateForm({...templateForm, html_content: e.target.value})}
                   onFocus={() => setActiveTextarea('html')}
                   rows={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
 
@@ -1104,7 +1104,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   onChange={(e) => setTemplateForm({...templateForm, text_content: e.target.value})}
                   onFocus={() => setActiveTextarea('text')}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
               </div>
@@ -1118,58 +1118,58 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     <div className="space-y-2">
                       <button
                         onClick={() => insertVariable('firstName')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{firstName}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{firstName}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">User&apos;s first name</div>
                       </button>
                       <button
                         onClick={() => insertVariable('lastName')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{lastName}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{lastName}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">User&apos;s last name</div>
                       </button>
                       <button
                         onClick={() => insertVariable('email')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{email}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{email}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">User&apos;s email address</div>
                       </button>
                       <button
                         onClick={() => insertVariable('dashboardUrl')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{dashboardUrl}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{dashboardUrl}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">Link to user dashboard</div>
                       </button>
                       <button
                         onClick={() => insertVariable('planName')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{planName}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{planName}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">User&apos;s current plan</div>
                       </button>
                       <button
                         onClick={() => insertVariable('projectCount')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{projectCount}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{projectCount}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">Number of user&apos;s projects</div>
                       </button>
                       <button
                         onClick={() => insertVariable('companyName')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{companyName}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{companyName}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">Your company name</div>
                       </button>
                       <button
                         onClick={() => insertVariable('currentDate')}
-                        className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                        className="w-full text-left p-2 bg-[#ff4b01]/10 hover:bg-[#ff4b01]/20 rounded border border-[#ff4b01]/30 transition-colors"
                       >
-                        <code className="text-blue-800 font-mono text-sm">{'{{currentDate}}'}</code>
+                        <code className="text-[#ff4b01] font-mono text-sm">{'{{currentDate}}'}</code>
                         <div className="text-xs text-gray-600 mt-1">Current date</div>
                       </button>
                     </div>
@@ -1196,7 +1196,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               </button>
               <button
                 onClick={handleSaveTemplate}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-[#ff4b01] text-white rounded-md hover:bg-[#e64401]"
               >
                 {editingTemplate ? 'Update' : 'Create'} Template
               </button>
@@ -1222,7 +1222,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     setTemplateTypeError(null)
                   }}
                   placeholder="e.g., newsletter, promotion"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
                 <p className="text-xs text-gray-500 mt-1">Lowercase, no spaces (will be auto-formatted)</p>
               </div>
@@ -1234,7 +1234,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   value={newTypeForm.label}
                   onChange={(e) => setNewTypeForm({...newTypeForm, label: e.target.value})}
                   placeholder="e.g., Newsletter, Promotion"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
 
@@ -1245,7 +1245,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                   value={newTypeForm.description}
                   onChange={(e) => setNewTypeForm({...newTypeForm, description: e.target.value})}
                   placeholder="Brief description of this template type"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 />
               </div>
 
@@ -1269,7 +1269,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               </button>
               <button
                 onClick={handleAddCustomType}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-[#ff4b01] text-white rounded-md hover:bg-[#e64401]"
               >
                 Add Type
               </button>

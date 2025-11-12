@@ -232,7 +232,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
       case 'critical': return 'bg-red-100 text-red-800'
       case 'high': return 'bg-orange-100 text-orange-800'
       case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'low': return 'bg-blue-100 text-blue-800'
+      case 'low': return 'bg-[#ff4b01]/20 text-[#ff4b01]'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -248,7 +248,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'info': return 'bg-blue-500'
+      case 'info': return 'bg-[#ff4b01]'
       case 'warning': return 'bg-yellow-500'
       case 'error': return 'bg-red-500'
       case 'success': return 'bg-green-500'
@@ -272,7 +272,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
       </div>
     )
   }
@@ -299,7 +299,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
           <div className="flex space-x-3">
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
             >
               Create Alert
             </button>
@@ -324,7 +324,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -335,7 +335,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           >
             <option value="all">All Types</option>
             <option value="info">Info</option>
@@ -350,7 +350,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           >
             <option value="all">All Severity</option>
             <option value="low">Low</option>
@@ -406,7 +406,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
             alerts.map((alertItem, index) => (
             <motion.div
               key={alertItem.id}
-              className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
+              className="p-4 rounded-lg border border-gray-200 hover:border-[#ff4b01] transition-colors"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
@@ -439,7 +439,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                 <div className="flex space-x-2">
                     <button 
                       onClick={() => handleToggleStatus(alertItem)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff4b01] focus:ring-offset-2 ${
                         alertItem.status === 'active' 
                           ? 'bg-green-600' 
                           : 'bg-gray-200'
@@ -453,7 +453,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                     </button>
                     <button 
                       onClick={() => handleEditAlert(alertItem)}
-                      className="text-blue-600 hover:text-blue-900 text-sm"
+                      className="text-[#ff4b01] hover:text-[#e64401] text-sm"
                     >
                       Edit
                     </button>
@@ -530,7 +530,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   placeholder="Enter alert title"
                 />
               </div>
@@ -540,7 +540,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                 <textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   rows={3}
                   placeholder="Enter alert message"
                 />
@@ -552,7 +552,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                   <select
                     value={formData.alert_type}
                     onChange={(e) => setFormData({ ...formData, alert_type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   >
                     <option value="info">Info</option>
                     <option value="warning">Warning</option>
@@ -569,7 +569,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                   <select
                     value={formData.severity}
                     onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -583,7 +583,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -598,7 +598,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                   <select
                     value={formData.target_audience}
                     onChange={(e) => setFormData({ ...formData, target_audience: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   >
                     <option value="all">All Users</option>
                     <option value="free">Free Users</option>
@@ -615,7 +615,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                     max="10"
                     value={formData.priority || 1}
                     onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   />
                 </div>
               </div>
@@ -627,7 +627,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                     type="url"
                     value={formData.action_url || ''}
                     onChange={(e) => setFormData({ ...formData, action_url: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                     placeholder="https://example.com"
                   />
                 </div>
@@ -638,7 +638,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
                     type="text"
                     value={formData.action_text || ''}
                     onChange={(e) => setFormData({ ...formData, action_text: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                     placeholder="Learn More"
                   />
                 </div>
@@ -690,7 +690,7 @@ export default function AdminAlerts({ }: AdminAlertsProps) {
               </button>
               <button
                 onClick={editingAlert ? handleUpdateAlert : handleCreateAlert}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-[#ff4b01] text-white rounded-lg hover:bg-[#e64401]"
               >
                 {editingAlert ? 'Update Alert' : 'Create Alert'}
               </button>

@@ -57,7 +57,7 @@ export default function FilterPanel({ onFiltersChange, plans }: FilterPanelProps
             type="date"
             value={filters.startDate}
             onChange={(e) => handleFilterChange('startDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           />
         </div>
         
@@ -67,7 +67,7 @@ export default function FilterPanel({ onFiltersChange, plans }: FilterPanelProps
             type="date"
             value={filters.endDate}
             onChange={(e) => handleFilterChange('endDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           />
         </div>
         
@@ -77,7 +77,7 @@ export default function FilterPanel({ onFiltersChange, plans }: FilterPanelProps
           <select
             value={filters.planId}
             onChange={(e) => handleFilterChange('planId', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           >
             <option value="">All Plans</option>
             {plans.map((plan) => (
@@ -94,7 +94,7 @@ export default function FilterPanel({ onFiltersChange, plans }: FilterPanelProps
           <select
             value={filters.chartType}
             onChange={(e) => handleFilterChange('chartType', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
           >
             <option value="revenue">Revenue Growth</option>
             <option value="users">User Growth</option>

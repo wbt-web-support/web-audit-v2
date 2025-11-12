@@ -118,8 +118,8 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-12 h-12 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mx-auto w-24 h-24 bg-[#ff4b01]/20 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-12 h-12 text-[#ff4b01] animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </div>
@@ -152,7 +152,7 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-6 lg:px-6 py-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -189,8 +189,8 @@ export default function AdminTab({ userProfile }: AdminTabProps) {
                 onClick={() => setActiveTab(tab.id as AdminTabType)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
+                    ? 'border-[#ff4b01] text-[#ff4b01] bg-[#ff4b01]/10'
+                    : 'border-transparent text-gray-500 hover:text-[#ff4b01] hover:border-[#ff4b01]/30'
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

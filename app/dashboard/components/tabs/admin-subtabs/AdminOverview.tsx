@@ -114,7 +114,7 @@ export default function AdminOverview({ userProfile: _userProfile }: AdminOvervi
             <p className="text-gray-600">{error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4 bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
             >
               Retry
             </button>
@@ -186,7 +186,7 @@ export default function AdminOverview({ userProfile: _userProfile }: AdminOvervi
                   <div className={`w-2 h-2 rounded-full mt-2 ${
                     activity.status === 'success' ? 'bg-green-500' : 
                     activity.status === 'warning' ? 'bg-yellow-500' : 
-                    activity.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                    activity.status === 'error' ? 'bg-red-500' : 'bg-[#ff4b01]'
                   }`}></div>
                   <div className="flex-1">
                     <p className="text-sm text-black">{activity.message}</p>
@@ -267,7 +267,7 @@ export default function AdminOverview({ userProfile: _userProfile }: AdminOvervi
       </div>
 
       {/* Quick Actions */}
-      <motion.div
+      {/* <motion.div
         className="bg-white rounded-lg border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -275,20 +275,20 @@ export default function AdminOverview({ userProfile: _userProfile }: AdminOvervi
       >
         <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
+          <button className="p-4 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors text-left">
             <h4 className="font-medium text-black mb-1">Export Data</h4>
             <p className="text-sm text-gray-600">Download system reports</p>
           </button>
-          <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
+          <button className="p-4 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors text-left">
             <h4 className="font-medium text-black mb-1">Clear Cache</h4>
             <p className="text-sm text-gray-600">Optimize system performance</p>
           </button>
-          <button className="p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
+          <button className="p-4 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors text-left">
             <h4 className="font-medium text-black mb-1">System Logs</h4>
             <p className="text-sm text-gray-600">View detailed logs</p>
           </button>
         </div>
-      </motion.div>
+      </motion.div> */}
     </motion.div>
   )
 }

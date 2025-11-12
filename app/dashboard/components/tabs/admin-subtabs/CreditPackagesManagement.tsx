@@ -161,7 +161,7 @@ export default function CreditPackagesManagement() {
               setCreditPackageForm({ credits: '', price: '', label: '', sort_order: 0 });
               setShowCreditPackageForm(true);
             }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
           >
             Add Package
           </button>
@@ -169,7 +169,7 @@ export default function CreditPackagesManagement() {
 
         {loadingCreditPackages ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -233,7 +233,7 @@ export default function CreditPackagesManagement() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleEditCreditPackage(pkg)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-[#ff4b01] hover:text-[#e64401]"
                           >
                             Edit
                           </button>
@@ -283,7 +283,7 @@ export default function CreditPackagesManagement() {
                   onChange={(e) =>
                     setCreditPackageForm({ ...creditPackageForm, credits: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   placeholder="10"
                 />
               </div>
@@ -300,7 +300,7 @@ export default function CreditPackagesManagement() {
                   onChange={(e) =>
                     setCreditPackageForm({ ...creditPackageForm, price: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   placeholder="100.00"
                 />
               </div>
@@ -315,7 +315,7 @@ export default function CreditPackagesManagement() {
                   onChange={(e) =>
                     setCreditPackageForm({ ...creditPackageForm, label: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   placeholder="10 Credits"
                 />
               </div>
@@ -334,14 +334,14 @@ export default function CreditPackagesManagement() {
                       sort_order: parseInt(e.target.value) || 0
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]"
                   placeholder="0"
                 />
               </div>
 
               {creditPackageForm.credits && creditPackageForm.price && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-[#ff4b01]/10 border border-[#ff4b01]/30 rounded-lg p-3">
+                  <p className="text-sm text-[#ff4b01]">
                     <strong>Price per Credit:</strong>{' '}
                     ₹{(parseFloat(creditPackageForm.price) / parseInt(creditPackageForm.credits)).toFixed(2)}
                   </p>
@@ -362,7 +362,7 @@ export default function CreditPackagesManagement() {
               </button>
               <button
                 onClick={handleSubmitCreditPackage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-[#ff4b01] text-white rounded-lg hover:bg-[#e64401] transition-colors"
               >
                 {editingCreditPackage ? 'Update' : 'Create'}
               </button>

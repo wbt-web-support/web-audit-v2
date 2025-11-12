@@ -243,7 +243,7 @@ export default function AdminSupport({}: AdminSupportProps) {
       case 'medium':
         return 'bg-yellow-100 text-yellow-800';
       case 'low':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01]';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -297,7 +297,7 @@ export default function AdminSupport({}: AdminSupportProps) {
             <p className="text-gray-600">Monitor support tickets and team performance</p>
           </div>
           <div className="flex space-x-3">
-            <button onClick={loadTickets} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            <button onClick={loadTickets} className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
               Refresh
             </button>
             <button className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
@@ -367,7 +367,7 @@ export default function AdminSupport({}: AdminSupportProps) {
         <h3 className="text-lg font-semibold text-black mb-4">Ticket Analytics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-1">
+            <div className="text-2xl font-bold text-[#ff4b01] mb-1">
               {supportStats.totalTickets > 0 ? (supportStats.resolvedTickets / supportStats.totalTickets * 100).toFixed(1) : 0}%
             </div>
             <div className="text-sm text-gray-600">Resolution Rate</div>
@@ -408,7 +408,7 @@ export default function AdminSupport({}: AdminSupportProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Status</option>
               <option value="open">Open</option>
               <option value="in_progress">In Progress</option>
@@ -418,7 +418,7 @@ export default function AdminSupport({}: AdminSupportProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-            <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Priority</option>
               <option value="urgent">Urgent</option>
               <option value="high">High</option>
@@ -449,7 +449,7 @@ export default function AdminSupport({}: AdminSupportProps) {
       delay: 0.4
     }}>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
             <span className="ml-3 text-gray-600">Loading tickets...</span>
           </div>
         </motion.div> : ticketsError ? <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
@@ -469,7 +469,7 @@ export default function AdminSupport({}: AdminSupportProps) {
               </svg>
             </div>
             <p className="text-red-600 font-medium">{ticketsError}</p>
-            <button onClick={loadTickets} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button onClick={loadTickets} className="mt-2 text-[#ff4b01] hover:text-[#e64401] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
               Try again
             </button>
           </div>
@@ -504,7 +504,7 @@ export default function AdminSupport({}: AdminSupportProps) {
       }}>
             <h3 className="text-lg font-semibold text-black mb-4">Tickets ({filteredTickets.length})</h3>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredTickets.map((ticket, index) => <motion.div key={ticket.id} className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedTicket?.id === ticket.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}`} initial={{
+              {filteredTickets.map((ticket, index) => <motion.div key={ticket.id} className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedTicket?.id === ticket.id ? 'border-[#ff4b01] bg-[#ff4b01]/10' : 'border-gray-200 hover:border-[#ff4b01]/30 hover:bg-gray-50'}`} initial={{
             opacity: 0,
             y: 20
           }} animate={{
@@ -590,7 +590,7 @@ export default function AdminSupport({}: AdminSupportProps) {
                 <div className="border-t border-gray-200 pt-4">
                   <h5 className="font-medium text-black mb-3">Conversation</h5>
                   <div className="space-y-3 max-h-48 overflow-y-auto">
-                    {ticketMessages.map((message, index) => <motion.div key={message.id} className={`p-3 rounded-lg ${message.is_from_support ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50 border-l-4 border-gray-300'}`} initial={{
+                    {ticketMessages.map((message, index) => <motion.div key={message.id} className={`p-3 rounded-lg ${message.is_from_support ? 'bg-[#ff4b01]/10 border-l-4 border-[#ff4b01]' : 'bg-gray-50 border-l-4 border-gray-300'}`} initial={{
                 opacity: 0,
                 x: -20
               }} animate={{
@@ -615,8 +615,8 @@ export default function AdminSupport({}: AdminSupportProps) {
                   {/* Send Message */}
                   <form onSubmit={handleSendMessage} className="mt-4">
                     <div className="flex space-x-2">
-                      <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type your response..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled={isSubmittingMessage} />
-                      <button type="submit" disabled={!newMessage.trim() || isSubmittingMessage} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type your response..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" disabled={isSubmittingMessage} />
+                      <button type="submit" disabled={!newMessage.trim() || isSubmittingMessage} className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         {isSubmittingMessage ? 'Sending...' : 'Send'}
                       </button>
                     </div>

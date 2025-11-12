@@ -169,7 +169,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
             <p className="text-gray-600">{error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4 bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
             >
               Retry
             </button>
@@ -238,7 +238,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-black">Subscription Plans</h3>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Add Plan
           </button>
         </div>
@@ -248,7 +248,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
             subscriptionPlans.map((plan, index) => (
               <motion.div
                 key={`${plan.name}-${plan.type}`}
-                className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors"
+                className="border border-gray-200 rounded-lg p-4 hover:border-[#ff4b01] transition-colors"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
@@ -452,13 +452,13 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
         >
           <h3 className="text-lg font-semibold text-black mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Generate Revenue Report</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Export Subscription Data</span>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#ff4b01] hover:bg-[#ff4b01]/10 transition-colors">
               <span className="font-medium text-black">Manage Billing Settings</span>
             </button>
           </div>

@@ -620,6 +620,119 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     getUserProjects: async (userId: string) => getUserProjectsRaw(user, userId),
     getUserSubscription: async (userId: string) =>
       getUserSubscriptionRaw(user, userId),
+    // Keys detection functions
+    getDetectedKeys: async (
+      auditProjectId: string,
+      page: number = 1,
+      limit: number = 20,
+      statusFilter: string = 'all',
+      severityFilter: string = 'all'
+    ) => {
+      if (!user) {
+        return {
+          data: null,
+          error: { message: 'User not authenticated', code: 'UNAUTHORIZED' }
+        };
+      }
+
+      try {
+        // Get the project with detected_keys data
+        const { data: project, error: projectError } = await supabase
+          .from('audit_projects')
+          .select('detected_keys')
+          .eq('id', auditProjectId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (projectError) {
+          return {
+            data: null,
+            error: projectError
+          };
+        }
+
+        // If no detected_keys data, return empty result
+        if (!project?.detected_keys || !project.detected_keys.detected_keys) {
+          return {
+            data: {
+              keys: [],
+              total: 0,
+              page,
+              limit,
+              totalPages: 0,
+              filters: {
+                status: statusFilter,
+                severity: severityFilter
+              },
+              summary: {
+                totalKeys: 0,
+                exposedKeys: 0,
+                secureKeys: 0,
+                criticalKeys: 0,
+                highRiskKeys: 0,
+                analysisComplete: false,
+                processingTime: 0
+              }
+            },
+            error: null
+          };
+        }
+
+        // Get all keys from the detected_keys field
+        let allKeys = project.detected_keys.detected_keys || [];
+
+        // Apply filters
+        if (statusFilter !== 'all') {
+          allKeys = allKeys.filter((key: any) => key.status === statusFilter);
+        }
+        if (severityFilter !== 'all') {
+          allKeys = allKeys.filter((key: any) => key.severity === severityFilter);
+        }
+
+        // Calculate total after filtering
+        const total = allKeys.length;
+
+        // Apply pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedKeys = allKeys.slice(startIndex, endIndex);
+
+        // Calculate summary
+        const summary = {
+          totalKeys: project.detected_keys.total_keys || 0,
+          exposedKeys: project.detected_keys.exposed_keys || 0,
+          secureKeys: project.detected_keys.secure_keys || 0,
+          criticalKeys: project.detected_keys.critical_keys || 0,
+          highRiskKeys: project.detected_keys.high_risk_keys || 0,
+          analysisComplete: project.detected_keys.analysis_complete || false,
+          processingTime: project.detected_keys.processing_time || 0
+        };
+
+        return {
+          data: {
+            keys: paginatedKeys,
+            total,
+            page,
+            limit,
+            totalPages: Math.max(1, Math.ceil(total / limit)),
+            filters: {
+              status: statusFilter,
+              severity: severityFilter
+            },
+            summary
+          },
+          error: null
+        };
+      } catch (error: any) {
+        return {
+          data: null,
+          error: {
+            message: error?.message || 'Failed to fetch detected keys',
+            code: 'UNKNOWN_ERROR'
+          }
+        };
+      }
+    },
   } as unknown as SupabaseContextType;
   return (
     <SupabaseContext.Provider value={value}>
