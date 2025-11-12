@@ -13,8 +13,8 @@ import Footer from './home-page-components/Footer'
 
 
 
-export default function page() {
-   const[IsComingSoonTrue, setIsComingSoonTrue] = useState(true)
+export default function Page() {
+   const [IsComingSoonTrue, setIsComingSoonTrue] = useState(true)
 
    useEffect(() => {
     process.env.NEXT_PUBLIC_COMING_SOON_MODE === 'true' ? setIsComingSoonTrue(true) : setIsComingSoonTrue(false)
