@@ -189,62 +189,59 @@ export default function SiteCrawlForm({
       duration: 0.4,
       ease: "easeOut"
     }}>
-        {!isEditMode && <div className="px-6 py-4 border-b border-gray-200">
-            <div>
-              <div className="h-6 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-            </div>
+        {!isEditMode && <div className="mb-6">
+            <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
           </div>}
         
         <div className="">
           <div className="space-y-6">
             {/* URL Input Skeleton */}
             <div>
-              <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-11 bg-gray-200 rounded-lg animate-pulse"></div>
             </div>
 
             {/* Page Type Selection Skeleton */}
             <div>
-              <div className="h-4 bg-gray-200 rounded w-20 mb-3 animate-pulse"></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="h-14 bg-gray-200 rounded-lg border border-gray-200 animate-pulse"></div>
+                <div className="h-14 bg-gray-200 rounded-lg border border-gray-200 animate-pulse"></div>
               </div>
+              <div className="h-14 bg-gray-200 rounded-lg border border-gray-200 animate-pulse"></div>
             </div>
 
             {/* Brand Consistency Skeleton */}
-            <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
-              <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="bg-[#ff4b01]/5 rounded-lg p-4 sm:p-6 space-y-4 border border-[#ff4b01]/20">
+              <div className="h-4 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
-                    <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                   </div>
                   <div>
-                    <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                    <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                   </div>
                 </div>
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
-                  <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                  <div className="h-20 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
               </div>
             </div>
 
             {/* Submit Button Skeleton */}
-            <div className="pt-4">
-              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+            <div className="pt-2">
+              <div className="h-12 bg-gray-200 rounded-lg border-2 border-gray-200 animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -276,7 +273,7 @@ export default function SiteCrawlForm({
         </div>
       </motion.div>;
   }
-  return <motion.div className="bg-white p-6 border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
+  return <motion.div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
     opacity: 0,
     y: 20
   }} animate={{
@@ -286,11 +283,13 @@ export default function SiteCrawlForm({
     duration: 0.4,
     ease: "easeOut"
   }}>
-      {!isEditMode && <div className="  ">
-          <div className="pb-2">
-            <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
-            
-          </div>
+      {!isEditMode && <div className="mb-6">
+          <h2 className="text-lg font-semibold text-black">New Site Crawl</h2>
+          <p className="text-sm text-gray-600 mt-2">
+            Simply paste your website URL into the audit tool and configure your crawl settings.
+            <br />
+            Our system will scan your website for SEO, performance, security, and accessibility issues.
+          </p>
         </div>}
       
       <div className="flex-1 flex flex-col">
@@ -298,20 +297,19 @@ export default function SiteCrawlForm({
           <div className="flex-1 space-y-6">
           {/* URL Input */}
           <div>
-          
-            <input type="url" id="siteUrl" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} placeholder="https://example.com" className="w-full px-4 py-4 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+            <input type="url" id="siteUrl" value={siteUrl} onChange={e => setSiteUrl(e.target.value)} placeholder="https://example.com" className="w-full px-4 py-4 border border-gray-200 rounded-lg text-black focus:outline-none focus:border-[#ff4b01] transition-colors" required />
           </div>
 
           {/* Page Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-black mb-3">
+            <label className="block text-sm font-medium text-black mb-2">
               Crawl Type
             </label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <label className={`flex items-center p-4 border rounded cursor-pointer ${pageType === 'single' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${pageType === 'single' ? 'border-[#ff4b01] bg-[#ff4b01]/5' : 'border-gray-200 hover:border-gray-300'}`}>
                 <input type="radio" name="pageType" value="single" checked={pageType === 'single'} onChange={e => setPageType(e.target.value as CrawlType)} className="sr-only" />
                 <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full border-2 mr-3 ${pageType === 'single' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full border-2 mr-3 ${pageType === 'single' ? 'border-[#ff4b01] bg-[#ff4b01]' : 'border-gray-300'}`}>
                     {pageType === 'single' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
                   </div>
                   <div>
@@ -322,15 +320,15 @@ export default function SiteCrawlForm({
                   </div>
                 </div>
               </label>
-              <label className={`flex items-center p-4 border rounded cursor-pointer ${pageType === 'multiple' ? 'border-blue-500 bg-blue-50' : hasFeature('full_site_crawl') ? 'border-gray-200' : 'border-gray-200 bg-gray-50'} ${!hasFeature('full_site_crawl') ? 'opacity-60' : ''}`} onClick={handleUpgradeClick}>
+              <label className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${pageType === 'multiple' ? 'border-[#ff4b01] bg-[#ff4b01]/5' : hasFeature('full_site_crawl') ? 'border-gray-200 hover:border-gray-300' : 'border-gray-200 bg-gray-50'} ${!hasFeature('full_site_crawl') ? 'opacity-60' : ''}`} onClick={handleUpgradeClick}>
                 <input type="radio" name="pageType" value="multiple" checked={pageType === 'multiple'} onChange={e => hasFeature('full_site_crawl') && setPageType(e.target.value as CrawlType)} disabled={!hasFeature('full_site_crawl')} className="sr-only" />
                 <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full border-2 mr-3 ${pageType === 'multiple' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full border-2 mr-3 ${pageType === 'multiple' ? 'border-[#ff4b01] bg-[#ff4b01]' : 'border-gray-300'}`}>
                     {pageType === 'multiple' && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium text-black">Multiple Pages</span>
-                    {!hasFeature('full_site_crawl') && <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    {!hasFeature('full_site_crawl') && <svg className="w-4 h-4 text-[#ff4b01]" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>}
                     {/* {hasFeature('full_site_crawl') && (
@@ -341,15 +339,20 @@ export default function SiteCrawlForm({
               </label>
             </div>
             
+            {/* Choose Features Label */}
+            <div className="block text-sm font-medium text-black mb-2 mt-6">
+              Choose Features
+            </div>
+            
             {/* Brand Consistency Checkbox */}
-            <label className="flex items-center p-3 border border-gray-200 rounded cursor-pointer">
+            <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-gray-300 transition-colors">
               <input
                 type="checkbox"
                 checked={brandConsistency}
                 onChange={(e) => setBrandConsistency(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-[#ff4b01] border-gray-300 rounded focus:outline-none"
               />
-              <span className="text-sm font-medium text-black pl-2">Brand Consistency Check</span>
+              <span className="text-sm font-medium text-black ml-2">Brand Consistency Check</span>
             </label>
           </div>
 
@@ -373,7 +376,7 @@ export default function SiteCrawlForm({
                       else if (feature.key === 'hiddenUrls') setHiddenUrls(e.target.checked)
                       else setKeysCheck(e.target.checked)
                     }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-[#ff4b01] border-gray-300 rounded focus:outline-none"
                   />
                   <span className="text-sm font-medium text-black pl-2">{feature.label}</span>
                 </label>
@@ -385,8 +388,8 @@ export default function SiteCrawlForm({
          
 
           {/* Brand Consistency Fields */}
-          {brandConsistency && <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
-              <h3 className="text-base font-semibold text-black">
+          {brandConsistency && <div className="bg-[#ff4b01]/5 rounded-lg p-4 sm:p-6 space-y-4 border border-[#ff4b01]/20">
+              <h3 className="text-sm font-semibold text-black mb-2">
                 Brand Consistency Information
               </h3>
               <div className="grid grid-cols-1 gap-4">
@@ -394,33 +397,33 @@ export default function SiteCrawlForm({
                   <label htmlFor="companyName" className="block text-sm font-medium text-black mb-1">
                     Company Name
                   </label>
-                  <input type="text" id="companyName" value={brandData.companyName} onChange={e => handleBrandDataChange('companyName', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <input type="text" id="companyName" value={brandData.companyName} onChange={e => handleBrandDataChange('companyName', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-black focus:outline-none focus:border-[#ff4b01] transition-colors" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="phoneNumber" className="block text-sm font-medium text-black mb-1">
                       Phone Number
                     </label>
-                    <input type="tel" id="phoneNumber" value={brandData.phoneNumber} onChange={e => handleBrandDataChange('phoneNumber', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input type="tel" id="phoneNumber" value={brandData.phoneNumber} onChange={e => handleBrandDataChange('phoneNumber', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-black focus:outline-none focus:border-[#ff4b01] transition-colors" />
                   </div>
                   <div>
                     <label htmlFor="emailAddress" className="block text-sm font-medium text-black mb-1">
                       Email Address
                     </label>
-                    <input type="email" id="emailAddress" value={brandData.emailAddress} onChange={e => handleBrandDataChange('emailAddress', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input type="email" id="emailAddress" value={brandData.emailAddress} onChange={e => handleBrandDataChange('emailAddress', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-black focus:outline-none focus:border-[#ff4b01] transition-colors" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="address" className="block text-sm font-medium text-black mb-1">
                     Address
                   </label>
-                  <input type="text" id="address" value={brandData.address} onChange={e => handleBrandDataChange('address', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <input type="text" id="address" value={brandData.address} onChange={e => handleBrandDataChange('address', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-black focus:outline-none focus:border-[#ff4b01] transition-colors" />
                 </div>
                 <div>
                   <label htmlFor="additionalInformation" className="block text-sm font-medium text-black mb-1">
                     Additional Information
                   </label>
-                  <textarea id="additionalInformation" value={brandData.additionalInformation} onChange={e => handleBrandDataChange('additionalInformation', e.target.value)} rows={3} className="w-full px-3 py-2 text-black border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <textarea id="additionalInformation" value={brandData.additionalInformation} onChange={e => handleBrandDataChange('additionalInformation', e.target.value)} rows={3} className="w-full px-3 py-2 text-black border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff4b01] transition-colors" />
                 </div>
               </div>
             </div>}
@@ -431,7 +434,7 @@ export default function SiteCrawlForm({
                 <h3 className="text-base font-semibold text-black">
                   Hidden URLs
                 </h3>
-                <button type="button" onClick={addHiddenUrl} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded cursor-pointer">
+                <button type="button" onClick={addHiddenUrl} className="flex items-center px-4 py-2 border-2 border-[#ff4b01] text-[#ff4b01] bg-transparent rounded-lg hover:bg-[#ff4b01]/10 transition-colors cursor-pointer">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
@@ -440,7 +443,7 @@ export default function SiteCrawlForm({
               </div>
               <div className="space-y-3">
                 {hiddenUrlsList.map(hiddenUrl => <div key={hiddenUrl.id} className="flex items-center space-x-2">
-                    <input type="url" value={hiddenUrl.url} onChange={e => updateHiddenUrl(hiddenUrl.id, e.target.value)} placeholder="https://example.com/hidden-page" className="flex-1 px-3 py-2 text-black border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input type="url" value={hiddenUrl.url} onChange={e => updateHiddenUrl(hiddenUrl.id, e.target.value)} placeholder="https://example.com/hidden-page" className="flex-1 px-3 py-2 text-black border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff4b01] transition-colors" />
                     {hiddenUrlsList.length > 1 && <button type="button" onClick={() => removeHiddenUrl(hiddenUrl.id)} className="p-2 text-gray-600 rounded cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -477,8 +480,8 @@ export default function SiteCrawlForm({
 
           </div>
           {/* Submit Button */}
-          <div className="pt-4">
-            <button type="submit" disabled={isSubmitting || !canCreateNewProject} className={`w-full py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${!canCreateNewProject ? 'bg-gray-400 text-white cursor-not-allowed' : submitStatus === 'success' ? 'bg-green-600 text-white' : submitStatus === 'error' ? 'bg-red-600 text-white' : isSubmitting ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white'}`}>
+          <div className="pt-2">
+            <button type="submit" disabled={isSubmitting || !canCreateNewProject} className={`w-full py-3 px-4 rounded-lg focus:outline-none font-medium transition-all ${!canCreateNewProject ? 'border-2 border-gray-300 text-gray-400 cursor-not-allowed' : submitStatus === 'success' ? 'border-2 border-green-600 text-green-600 bg-green-50' : submitStatus === 'error' ? 'border-2 border-red-600 text-red-600 bg-red-50' : isSubmitting ? 'border-2 border-gray-300 text-gray-400 cursor-not-allowed' : 'border-2 border-[#ff4b01] text-[#ff4b01] bg-transparent hover:bg-[#ff4b01]/10 hover:border-[#ff4b01]'}`}>
               <span className="flex items-center justify-center">
                 {submitStatus === 'success' ? <>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,7 +494,7 @@ export default function SiteCrawlForm({
                     </svg>
                     Error - Try Again
                   </> : isSubmitting ? <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>

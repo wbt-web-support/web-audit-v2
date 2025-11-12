@@ -341,7 +341,7 @@ export default function Navbar() {
                   <Link 
                     href="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
+                    className="bg-[#ff4b01] border border-[#ff4b01] text-white hover:bg-[#e64401] block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
                   >
                     Dashboard
                   </Link>
@@ -349,7 +349,7 @@ export default function Navbar() {
                   <Link 
                     href="/signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
+                    className="bg-[#ff4b01] border border-[#ff4b01] text-white hover:bg-[#e64401] block w-full px-6 py-3 rounded-lg text-base font-medium text-center transition-colors duration-200"
                   >
                     Get Started
                   </Link>

@@ -37,7 +37,7 @@ export default function RecentProjects({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-black">Recent Projects</h2>
@@ -47,12 +47,12 @@ export default function RecentProjects({
             <svg className={`w-5 h-5 ${projectsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {projectsLoading && <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>}
+            {projectsLoading && <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#ff4b01] rounded-full animate-pulse"></div>}
           </button>
         </div>
       </div>
         
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {projectsLoading ? <div className="space-y-4">
             {Array.from({
           length: 3
@@ -71,7 +71,7 @@ export default function RecentProjects({
                   See <code className="bg-yellow-100 px-1 rounded">env.example</code> for reference.
                 </p>
               </div>}
-            <button onClick={() => refreshProjects()} className="mt-2 text-blue-600 text-sm font-medium px-4 py-2 bg-blue-50 rounded">
+            <button onClick={() => refreshProjects()} className="mt-2 text-[#ff4b01] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
               Try again
             </button>
           </div> : projects.length === 0 ? <div className="text-center py-8">
@@ -85,25 +85,24 @@ export default function RecentProjects({
           </div> : <div className="space-y-4">
             {projects.slice(0, 3).map((project, index) => <motion.div 
               key={project.id} 
-              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1, ease: "easeOut" }}
             >
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center mb-2 gap-2">
                     <FaviconDisplay 
                       projectId={project.id}
                       size="sm"
-                      className="mr-2 flex-shrink-0"
+                      className="flex-shrink-0"
                     />
-                    <h3 className="font-semibold text-black">
+                    <h3 className="font-semibold text-black truncate">
                       {getProjectName(project.site_url)}
                     </h3>
-                   
                   </div>
                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                     {project.issues_count > 0 && <span className="flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -130,11 +129,10 @@ export default function RecentProjects({
                       </span>}
                   </div>
                 </div>
-                <div className="flex flex-col items-end space-y-2">
-                  
-                  {project.status === 'completed' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">
+                <div className="flex flex-col items-start sm:items-end space-y-2 w-full sm:w-auto">
+                  {project.status === 'completed' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-[#ff4b01] text-sm font-medium hover:text-[#ff4b01]/80 transition-colors">
                       View Analysis →
-                    </button> : project.status === 'pending' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-blue-600 text-sm font-medium">
+                    </button> : project.status === 'pending' ? <button onClick={() => onProjectSelect?.(project.id)} className="text-[#ff4b01] text-sm font-medium hover:text-[#ff4b01]/80 transition-colors">
                       View Details →
                     </button> : <button className="text-gray-500 text-sm font-medium">
                       {project.status === 'in_progress' ? 'Processing...' : 'Pending'}
@@ -144,7 +142,7 @@ export default function RecentProjects({
           </div>}
           
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <button className="w-full text-center text-blue-600 font-medium">
+          <button className="w-full text-center text-[#ff4b01] font-medium hover:text-[#ff4b01]/80 transition-colors">
             View All Projects
           </button>
         </div>

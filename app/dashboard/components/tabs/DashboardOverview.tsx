@@ -58,53 +58,6 @@ export default function DashboardOverview({
     featureName: ''
   })
 
-  // Sample data removed - RecentProjects now fetches real data from database
-
-
-  const features: Feature[] = [
-    {
-      id: 1,
-      name: 'Performance Audit',
-      description: 'Analyze page speed, Core Web Vitals, and optimization opportunities',
-      icon: '⚡',
-      category: 'Performance'
-    },
-    {
-      id: 2,
-      name: 'SEO Analysis',
-      description: 'Check meta tags, headings, alt text, and search engine optimization',
-      icon: '🔍',
-      category: 'SEO'
-    },
-    {
-      id: 3,
-      name: 'Security Scan',
-      description: 'Identify security vulnerabilities and SSL certificate issues',
-      icon: '🔒',
-      category: 'Security'
-    },
-    {
-      id: 4,
-      name: 'Accessibility Check',
-      description: 'Ensure your site is accessible to users with disabilities',
-      icon: '♿',
-      category: 'Accessibility'
-    },
-    {
-      id: 5,
-      name: 'Brand Consistency',
-      description: 'Verify consistent branding across all pages and elements',
-      icon: '🎨',
-      category: 'Performance'
-    },
-    {
-      id: 6,
-      name: 'Mobile Optimization',
-      description: 'Check mobile responsiveness and mobile-specific issues',
-      icon: '📱',
-      category: 'Performance'
-    }
-  ]
 
 
   // Test function to check database connection
@@ -300,32 +253,29 @@ export default function DashboardOverview({
 
 
   return (
-    <div className="max-w-[1500px] mx-auto space-y-6 mt-6">
+    <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Welcome Section */}
-      <div className="   ">
-        <h1 className="text-2xl font-bold text-black  mb-2">
+      <div className="mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
           Welcome back, {userProfile?.first_name || 'User'}!
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm sm:text-base">
           Here&apos;s what&apos;s happening with your web audits today.
         </p>
       </div>
 
-      {/* Stats Cards */}
-  
-
-      {/* Main Content Row - Site Crawl and Recent Projects */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-stretch">
-        {/* Site Crawl Form - 80% width on md+ */}
-        <div className="md:col-span-4 h-full">
+      {/* Main Content Row - Site Crawl and Stats Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        {/* Site Crawl Form - Takes full width on mobile, 8 columns on lg+ */}
+        <div className="lg:col-span-8 h-full">
           <SiteCrawlForm 
             onSubmit={handleFormSubmit}
             isSubmitting={isSubmitting}
             submitStatus={submitStatus}
           />
         </div>
-        {/* Stats Cards - 20% width on md+ */}
-        <div className="md:col-span-1 h-full">
+        {/* Stats Cards - Takes full width on mobile, 4 columns on lg+ */}
+        <div className="lg:col-span-4 h-full">
           <StatsCards 
             projects={projects}
             projectsLoading={projectsLoading}
@@ -333,10 +283,12 @@ export default function DashboardOverview({
         </div>
       </div>
 
-        {/* Recent Projects */}
+      {/* Recent Projects */}
+      <div className="mt-8">
         <RecentProjects 
           onProjectSelect={onProjectSelect}
         />
+      </div>
       {/* Features Showcase */}
       {/* <FeaturesShowcase features={features} /> */}
 
