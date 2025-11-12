@@ -61,7 +61,7 @@ export default function Steps() {
                 <span
                   className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-transparent rounded-lg inline-block px-3 md:px-4 py-1 leading-none"
                   style={{
-                    WebkitTextStroke: "3px #2563eb",
+                    WebkitTextStroke: "3px #ff4b01",
                   }}
                 >
                   {step.number}
@@ -82,7 +82,7 @@ export default function Steps() {
               {step.showButton && (
                 <Link 
                   href={isAuthenticated ? '/dashboard' : '/login'}
-                  className="mt-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 md:py-3 px-4 md:px-5 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 w-full cursor-pointer"
+                  className="mt-auto bg-[#ff4b01] hover:bg-[#ff4b01]/90 text-white font-semibold py-2.5 md:py-3 px-4 md:px-5 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 w-full cursor-pointer"
                 >
                   <span>Enter URL</span>
                   <LinkIcon className="w-5 h-5" />

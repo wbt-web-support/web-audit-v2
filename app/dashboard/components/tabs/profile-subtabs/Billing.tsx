@@ -360,7 +360,7 @@ export default function Billing({
     duration: 0.5
   }}>
       {/* Plan Expiry Warning */}
-      {planExpiryStatus && planExpiryStatus.expires_at && <motion.div className={`rounded-lg border p-4 mb-6 ${planExpiryStatus.is_expired ? 'bg-red-50 border-red-200' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'}`} initial={{
+      {planExpiryStatus && planExpiryStatus.expires_at && <motion.div className={`rounded-lg border p-4 mb-6 ${planExpiryStatus.is_expired ? 'bg-red-50 border-red-200' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'bg-yellow-50 border-yellow-200' : 'bg-[#ff4b01]/10 border-[#ff4b01]/30'}`} initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -371,16 +371,16 @@ export default function Billing({
       delay: 0.05
     }}>
           <div className="flex items-center">
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${planExpiryStatus.is_expired ? 'bg-red-100' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'bg-yellow-100' : 'bg-blue-100'}`}>
-              <span className={`text-lg ${planExpiryStatus.is_expired ? 'text-red-600' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-600' : 'text-blue-600'}`}>
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${planExpiryStatus.is_expired ? 'bg-red-100' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'bg-yellow-100' : 'bg-[#ff4b01]/20'}`}>
+              <span className={`text-lg ${planExpiryStatus.is_expired ? 'text-red-600' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-600' : 'text-[#ff4b01]'}`}>
                 {planExpiryStatus.is_expired ? '⚠️' : '⏰'}
               </span>
             </div>
             <div className="ml-3">
-              <h3 className={`text-sm font-medium ${planExpiryStatus.is_expired ? 'text-red-800' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-800' : 'text-blue-800'}`}>
+              <h3 className={`text-sm font-medium ${planExpiryStatus.is_expired ? 'text-red-800' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-800' : 'text-[#ff4b01]'}`}>
                 {planExpiryStatus.is_expired ? 'Plan Expired' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'Plan Expiring Soon' : 'Plan Status'}
               </h3>
-              <p className={`text-sm ${planExpiryStatus.is_expired ? 'text-red-700' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-700' : 'text-blue-700'}`}>
+              <p className={`text-sm ${planExpiryStatus.is_expired ? 'text-red-700' : planExpiryStatus.days_until_expiry && planExpiryStatus.days_until_expiry <= 7 ? 'text-yellow-700' : 'text-[#ff4b01]'}`}>
                 {planExpiryStatus.is_expired ? 'Your plan has expired and you have been downgraded to the Starter plan.' : planExpiryStatus.days_until_expiry ? `Your plan expires in ${planExpiryStatus.days_until_expiry} day${planExpiryStatus.days_until_expiry === 1 ? '' : 's'} on ${new Date(planExpiryStatus.expires_at!).toLocaleDateString()}.` : `Your plan expires on ${new Date(planExpiryStatus.expires_at!).toLocaleDateString()}.`}
               </p>
             </div>
@@ -400,7 +400,7 @@ export default function Billing({
     }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-black">Current Plan</h2>
-          <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-[#ff4b01]/20 text-[#ff4b01]">
             {subscription.status}
           </span>
         </div>
@@ -435,7 +435,7 @@ export default function Billing({
               <div className="flex justify-between text-sm">
                 <span>Projects: {subscription.usage.projects}/{subscription.usage.maxProjects === -1 ? '∞' : subscription.usage.maxProjects}</span>
                 <div className="w-20 bg-gray-200 rounded h-2">
-                  <motion.div className="bg-blue-600 h-2 rounded" initial={{
+                  <motion.div className="bg-[#ff4b01] h-2 rounded" initial={{
                   width: 0
                 }} animate={{
                   width: subscription.usage.maxProjects === -1 ? '100%' : `${Math.min(subscription.usage.projects / subscription.usage.maxProjects * 100, 100)}%`
@@ -448,7 +448,7 @@ export default function Billing({
               <div className="flex justify-between text-sm">
                 <span>Audits: {subscription.usage.audits}/{subscription.usage.maxAudits}</span>
                 <div className="w-20 bg-gray-200 rounded h-2">
-                  <motion.div className="bg-blue-600 h-2 rounded" initial={{
+                  <motion.div className="bg-[#ff4b01] h-2 rounded" initial={{
                   width: 0
                 }} animate={{
                   width: `${subscription.usage.audits / subscription.usage.maxAudits * 100}%`
@@ -507,7 +507,7 @@ export default function Billing({
 
           {loadingPackages ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff4b01] mx-auto"></div>
               <p className="mt-2 text-sm text-gray-500">Loading credit packages...</p>
             </div>
           ) : (
@@ -515,7 +515,7 @@ export default function Billing({
               {creditPackages.map((pkg, index) => (
                 <motion.div
                   key={pkg.id || index}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
+                  className="border border-gray-200 rounded-lg p-4 hover:border-[#ff4b01]/30 hover:shadow-md transition-all"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
@@ -524,11 +524,11 @@ export default function Billing({
                     <h3 className="font-semibold text-black">{pkg.label}</h3>
                     <span className="text-xs text-gray-500">₹{pkg.pricePerCredit}/credit</span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-600 mb-3">₹{pkg.price}</p>
+                  <p className="text-2xl font-bold text-[#ff4b01] mb-3">₹{pkg.price}</p>
                   <button
                     onClick={() => handlePurchaseCredits(pkg.id || index)}
                     disabled={purchasingPackage === (pkg.id || index)}
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-[#ff4b01] rounded-md hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {purchasingPackage === (pkg.id || index) ? (
                       <span className="flex items-center justify-center gap-2">
@@ -652,7 +652,7 @@ export default function Billing({
                       <span className={`px-2 py-1 rounded text-xs font-medium ${payment.payment_status === 'completed' ? 'bg-green-100 text-green-800' : payment.payment_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {payment.payment_status}
                       </span>
-                      {payment.subscription_status && <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      {payment.subscription_status && <span className="px-2 py-1 rounded text-xs font-medium bg-[#ff4b01]/20 text-[#ff4b01]">
                           {payment.subscription_status}
                         </span>}
                     </div>

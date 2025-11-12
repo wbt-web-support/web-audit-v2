@@ -136,13 +136,13 @@ export default function Navbar() {
     : 'bg-white/95 backdrop-blur-md shadow-md'; // Light sections style
 
   const textClasses = isHeroSection
-    ? 'text-white hover:text-blue-200' // White text for dark background
-    : 'text-gray-800 hover:text-blue-600'; // Dark text for light background
+    ? 'text-white hover:text-[#ff4b01]/80' // White text for dark background
+    : 'text-gray-800 hover:text-[#ff4b01]'; // Dark text for light background
 
 
   const buttonClasses = isHeroSection
     ? 'bg-transparent border border-white text-white hover:bg-white/10'
-    : 'bg-blue-600 border border-blue-600 text-white hover:bg-blue-700';
+    : 'bg-[#ff4b01] border border-[#ff4b01] text-white hover:bg-[#e64401]';
 
   const secondaryButtonClasses = isHeroSection
     ? 'bg-white/10 border border-white/50 text-white hover:bg-white/20'
@@ -222,8 +222,8 @@ export default function Navbar() {
               className={` relative text-xs md:text-sm lg:text-base font-medium ${textClasses} transition-all duration-300 cursor-pointer whitespace-nowrap py-1 overflow-hidden`}
             >
               <span className="relative z-10">{item.name}</span>
-              <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-blue-200' : 'bg-blue-600'} transition-all duration-300 group-hover:w-full`}></span>
-              <span className={`absolute inset-0 ${isHeroSection ? 'bg-white/5' : 'bg-blue-50'} scale-0 group-hover:scale-100 transition-transform duration-300 rounded-md -z-10`}></span>
+              <span className={`absolute bottom-0 left-0 h-0.5 w-0 ${isHeroSection ? 'bg-[#ff4b01]/80' : 'bg-[#ff4b01]'} transition-all duration-300 group-hover:w-full`}></span>
+              <span className={`absolute inset-0 ${isHeroSection ? 'bg-white/5' : 'bg-[#ff4b01]/10'} scale-0 group-hover:scale-100 transition-transform duration-300 rounded-md -z-10`}></span>
             </Link>
           ))}
         </div>
@@ -324,11 +324,11 @@ export default function Navbar() {
                 href={item.href} 
                 key={item.name} 
                 onClick={(e) => handleSmoothScroll(e, item.href)}
-                className="relative block px-6 py-3 text-gray-800 hover:text-blue-600 transition-all duration-200 overflow-hidden"
+                className="relative block px-6 py-3 text-gray-800 hover:text-[#ff4b01] transition-all duration-200 overflow-hidden"
               >
                 <span className="relative z-10">{item.name}</span>
-                <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-                <span className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-[#ff4b01] transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute inset-0 bg-[#ff4b01]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
               </Link>
             ))}
           </nav>

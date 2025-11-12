@@ -209,10 +209,10 @@ export default function Support({
       delay: 0.1
     }}>
         <nav className="-mb-px flex space-x-8">
-          <button onClick={() => setActiveTab('tickets')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${activeTab === 'tickets' ? 'border-blue-600 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'}`}>
+          <button onClick={() => setActiveTab('tickets')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${activeTab === 'tickets' ? 'border-[#ff4b01] text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'}`}>
             <i className="fas fa-ticket-alt mr-2"></i>My Tickets ({tickets.length})
           </button>
-          <button onClick={() => setActiveTab('new')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${activeTab === 'new' ? 'border-blue-600 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'}`}>
+          <button onClick={() => setActiveTab('new')} className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${activeTab === 'new' ? 'border-[#ff4b01] text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'}`}>
             <i className="fas fa-plus mr-2"></i>Create New Ticket
           </button>
         </nav>
@@ -256,7 +256,7 @@ export default function Support({
                   <p className="text-xs text-red-600">
                     This will create the tables and configure the necessary permissions.
                   </p>
-                </div> : <button onClick={loadTickets} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                </div> : <button onClick={loadTickets} className="mt-2 text-[#ff4b01] hover:text-[#e64401] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
                   <i className="fas fa-redo mr-2"></i>Try again
                 </button>}
             </div> : tickets.length === 0 ? <motion.div className="text-center py-8" initial={{
@@ -330,7 +330,7 @@ export default function Support({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-heading mr-1"></i>Ticket Title
               </label>
-              <input type="text" name="title" value={newTicket.title} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600" placeholder="Brief description of your issue" required />
+              <input type="text" name="title" value={newTicket.title} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" placeholder="Brief description of your issue" required />
             </motion.div>
 
             <motion.div initial={{
@@ -346,7 +346,7 @@ export default function Support({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-flag mr-1"></i>Priority
               </label>
-              <select name="priority" value={newTicket.priority} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+              <select name="priority" value={newTicket.priority} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
                 <option value="low">Low - General question or minor issue</option>
                 <option value="medium">Medium - Standard support request</option>
                 <option value="high">High - Important issue affecting usage</option>
@@ -367,7 +367,7 @@ export default function Support({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <i className="fas fa-align-left mr-1"></i>Description
               </label>
-              <textarea name="description" value={newTicket.description} onChange={handleInputChange} rows={6} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600" placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..." required />
+              <textarea name="description" value={newTicket.description} onChange={handleInputChange} rows={6} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..." required />
             </motion.div>
 
             <motion.div className="flex space-x-3" initial={{
@@ -380,7 +380,7 @@ export default function Support({
           duration: 0.4,
           delay: 0.7
         }}>
-              <button type="submit" disabled={isCreatingTicket} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+              <button type="submit" disabled={isCreatingTicket} className="bg-[#ff4b01] text-white px-6 py-2 rounded hover:bg-[#e64401] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
                 <i className={`fas ${isCreatingTicket ? 'fa-spinner fa-spin' : 'fa-plus-circle'} mr-2`}></i>
                 {isCreatingTicket ? 'Creating Ticket...' : 'Create Ticket'}
               </button>

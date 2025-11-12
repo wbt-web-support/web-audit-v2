@@ -469,7 +469,7 @@ export default function SiteCrawlForm({
                   planInfo.plan_type === 'Starter' 
                     ? 'bg-green-100 text-green-700' 
                     : planInfo.plan_type === 'Growth' 
-                    ? 'bg-blue-100 text-blue-700' 
+                    ? 'bg-[#ff4b01]/20 text-[#ff4b01]' 
                     : 'bg-purple-100 text-purple-700'
                 }`}>
                   {planInfo.plan_type}

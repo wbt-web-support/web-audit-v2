@@ -312,7 +312,7 @@ export default function PagesSection({
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="text-center py-8">
           <div className="inline-flex items-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#ff4b01]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -353,7 +353,7 @@ export default function PagesSection({
           <button
             onClick={fetchPages}
             disabled={isLoading}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="px-3 py-1.5 bg-[#ff4b01] text-white text-sm font-medium rounded-md hover:bg-[#e64401] disabled:bg-[#ff4b01]/50 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff4b01] focus:ring-offset-2"
           >
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
@@ -371,7 +371,7 @@ export default function PagesSection({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or URL..."
-              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:w-48"
+              className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01] flex-1 sm:w-48"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.currentTarget.blur()
@@ -397,7 +397,7 @@ export default function PagesSection({
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as 'all' | 'success' | 'error' | 'redirect')}
-            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
           >
             <option value="all">All Pages</option>
             <option value="success">Success (200-299)</option>
@@ -411,7 +411,7 @@ export default function PagesSection({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'created_at' | 'title' | 'status_code')}
-            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
           >
             <option value="created_at">Date</option>
             <option value="title">Title</option>
@@ -424,7 +424,7 @@ export default function PagesSection({
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
           >
             <option value="desc">Descending</option>
             <option value="asc">Ascending</option>
@@ -436,7 +436,7 @@ export default function PagesSection({
           <select
             value={itemsPerPage}
             onChange={(e) => setItemsPerPage(Number(e.target.value))}
-            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -463,7 +463,7 @@ export default function PagesSection({
       {isLoading && (
         <div className="text-center py-8">
           <div className="inline-flex items-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#ff4b01]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -515,7 +515,7 @@ export default function PagesSection({
                       console.warn('No page ID available for analysis')
                     }
                   }}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto flex-shrink-0"
+                  className="px-3 py-1.5 bg-[#ff4b01] text-white text-sm font-medium rounded-md hover:bg-[#e64401] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff4b01] focus:ring-offset-2 w-full sm:w-auto flex-shrink-0"
                 >
                   Analyze
                 </button>
@@ -569,7 +569,7 @@ export default function PagesSection({
                 <select
                   value={currentPage}
                   onChange={(e) => setCurrentPage(Number(e.target.value))}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4b01]"
                 >
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
                     <option key={pageNum} value={pageNum}>
@@ -602,7 +602,7 @@ export default function PagesSection({
                     setHasLoadedPages(false)
                     fetchPages()
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                  className="px-4 py-2 bg-[#ff4b01] text-white text-sm font-medium rounded-md hover:bg-[#e64401] transition-colors duration-200"
                 >
                   Try fetching pages
                 </button>

@@ -154,7 +154,7 @@ export default function AnalysisHeader({
   };
 
   return (
-    <div className=" p-6">
+    <div className=" lg:py-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="flex flex-col space-y-3 min-w-0">
           {currentTab === "page-analysis" && (
@@ -162,7 +162,7 @@ export default function AnalysisHeader({
               onClick={() =>
                 router.push(`/dashboard?tab=analysis&projectId=${project.id}`)
               }
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-fit"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01] transition-colors w-fit"
             >
               Back
             </button>
@@ -190,7 +190,7 @@ export default function AnalysisHeader({
             {getStatusDisplayName(project.status)}
           </span> */}
           {/* <div className="text-right">
-            <div className={`text-2xl font-bold ${project.score >= 80 ? 'text-blue-600' : project.score >= 60 ? 'text-blue-500' : 'text-blue-400'}`}>
+            <div className={`text-2xl font-bold ${project.score >= 80 ? 'text-[#ff4b01]' : project.score >= 60 ? 'text-[#ff4b01]' : 'text-[#ff4b01]/70'}`}>
               {project.score > 0 ? project.score : 'N/A'}
             </div>
             <div className="text-sm text-gray-500">/100</div>
@@ -251,13 +251,13 @@ export default function AnalysisHeader({
                     onClick={() => onSectionChange(tab.id)}
                     className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap flex-shrink-0 ${
                       activeSection === tab.id
-                        ? "border-blue-600 text-blue-600 bg-blue-50"
-                        : "border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300"
+                        ? "border-[#ff4b01] text-[#ff4b01] bg-[#ff4b01]/10"
+                        : "border-transparent text-gray-500 hover:text-[#ff4b01] hover:border-[#ff4b01]/30"
                     } ${isPremiumFeature ? "opacity-75" : ""}`}
                   >
                     {tab.name}
                     {isPremiumFeature && (
-                      <span className="text-blue-500 text-xs ml-1">★</span>
+                      <span className="text-[#ff4b01] text-xs ml-1">★</span>
                     )}
                   </button>
                 );

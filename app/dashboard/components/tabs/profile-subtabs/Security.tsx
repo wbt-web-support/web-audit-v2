@@ -65,9 +65,9 @@ export default function Security({ userProfile }: SecurityProps) {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center mx-auto mb-3"
+            className="w-12 h-12 bg-[#ff4b01]/20 rounded flex items-center justify-center mx-auto mb-3"
           >
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-[#ff4b01]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
             </svg>
           </motion.div>
@@ -125,7 +125,7 @@ export default function Security({ userProfile }: SecurityProps) {
             <button
               onClick={handlePasswordReset}
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="w-full bg-[#ff4b01] text-white px-4 py-2 rounded hover:bg-[#e64401] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -167,7 +167,7 @@ export default function Security({ userProfile }: SecurityProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#ff4b01] rounded-full"></div>
             <span className="text-xs text-gray-600">Password reset links expire after 24 hours</span>
           </motion.div>
           <motion.div 
@@ -176,7 +176,7 @@ export default function Security({ userProfile }: SecurityProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
           >
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#ff4b01] rounded-full"></div>
             <span className="text-xs text-gray-600">You can only request one reset email per hour</span>
           </motion.div>
           <motion.div 
@@ -185,7 +185,7 @@ export default function Security({ userProfile }: SecurityProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.5 }}
           >
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#ff4b01] rounded-full"></div>
             <span className="text-xs text-gray-600">Your account will remain secure during the reset process</span>
           </motion.div>
         </div>

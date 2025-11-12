@@ -102,7 +102,7 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Score</h3>
               <div className="flex items-center space-x-4">
-                <div className="text-4xl font-bold text-blue-600">
+                <div className="text-4xl font-bold text-[#ff4b01]">
                   {Math.round(((
                     (hasDoctype ? 1 : 0) +
                     (hasHtmlTag ? 1 : 0) +
@@ -202,19 +202,19 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Element Analysis</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{scriptCount}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#ff4b01]">{scriptCount}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Scripts</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{linkCount}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#ff4b01]">{linkCount}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Links</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{metaCount}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#ff4b01]">{metaCount}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Meta Tags</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{styleCount}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#ff4b01]">{styleCount}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Styles</div>
                 </div>
               </div>
@@ -438,8 +438,8 @@ export default function TechnicalTab({ page }: TechnicalTabProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 sm:px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
+                    ? 'border-[#ff4b01] text-[#ff4b01] bg-[#ff4b01]/10'
+                    : 'border-transparent text-gray-500 hover:text-[#ff4b01] hover:border-[#ff4b01]/30'
                 }`}
               >
                 {tab.icon}

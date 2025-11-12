@@ -278,10 +278,14 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
 
         // Handle authentication errors
         if (errorData.code === 'MISSING_AUTH' || errorData.code === 'INVALID_AUTH' || scrapeResponse.status === 401) {
+          const errorMessage = errorData.message || errorData.error || 'Authentication failed';
           console.error('❌ Authentication error:', {
             status: scrapeResponse.status,
-            errorData,
-            hasSession: !!session?.access_token
+            statusText: scrapeResponse.statusText,
+            errorCode: errorData.code,
+            errorMessage: errorMessage,
+            hasSession: !!session?.access_token,
+            sessionExpired: !session?.access_token
           });
           // Try to refresh the session
           try {
@@ -292,7 +296,7 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
               error: refreshError
             } = await supabase.auth.refreshSession();
             if (refreshError || !newSession) {
-              throw new Error('Session refresh failed. Please log in again.');
+              throw new Error(`Session refresh failed: ${refreshError?.message || 'Please log in again.'}`);
             }
             // Retry the scraping request with the new token
             const retryResponse = await fetch('/api/scrape', {
@@ -476,7 +480,13 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       // Provide more user-friendly error messages
       let errorMessage = 'Scraping failed';
       if (error instanceof Error) {
-        if (error.message.includes('Authentication required')) {
+        const errorMsgLower = error.message.toLowerCase();
+        if (errorMsgLower.includes('authentication') || 
+            errorMsgLower.includes('session') || 
+            errorMsgLower.includes('auth') ||
+            errorMsgLower.includes('401') ||
+            errorMsgLower.includes('unauthorized') ||
+            errorMsgLower.includes('log in')) {
           errorMessage = 'Your session has expired. Please refresh the page and try again.';
         } else if (error.message.includes('SERVICE_UNAVAILABLE')) {
           errorMessage = 'The scraping service is currently unavailable. Please try again later.';
@@ -539,6 +549,17 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       });
       return;
     }
+    
+    // Check authentication before loading
+    if (!session?.access_token) {
+      console.error('❌ Authentication error: No session token available');
+      updateState({
+        error: 'Authentication required. Please log in again.',
+        loading: false
+      });
+      return;
+    }
+    
     updateState({
       loading: true,
       error: null
@@ -550,7 +571,11 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
         error: projectError
       } = await getAuditProject(projectId);
       if (projectError) {
-        throw new Error(`Failed to load project: ${projectError.message}`);
+        // Check if it's an authentication error
+        if (projectError.message?.includes('auth') || projectError.message?.includes('session') || projectError.message?.includes('401')) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        throw new Error(`Failed to load project: ${projectError.message || 'Unknown error'}`);
       }
       if (!projectData) {
         throw new Error('Project not found');
@@ -573,12 +598,23 @@ export function useScrapingAnalysis(projectId: string, cachedData?: CachedData |
       }
     } catch (error) {
       console.error('❌ Error loading project data:', error);
+      let errorMessage = 'Failed to load project';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Check if it's an authentication-related error
+        if (error.message.toLowerCase().includes('auth') || 
+            error.message.toLowerCase().includes('session') || 
+            error.message.toLowerCase().includes('401') ||
+            error.message.toLowerCase().includes('unauthorized')) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        }
+      }
       updateState({
-        error: error instanceof Error ? error.message : 'Failed to load project',
+        error: errorMessage,
         loading: false
       });
     }
-  }, [projectId, getAuditProject, startScraping, updateState, loadScrapedPages, scrapingInitiated]);
+  }, [projectId, getAuditProject, startScraping, updateState, loadScrapedPages, scrapingInitiated, session]);
 
   // Handle section change
   const handleSectionChange = useCallback((section: string) => {

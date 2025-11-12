@@ -253,7 +253,7 @@ export default function DashboardOverview({
 
 
   return (
-    <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="m lg:px-8 py-8 space-y-8">
       {/* Welcome Section */}
       <div className="mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
@@ -265,17 +265,17 @@ export default function DashboardOverview({
       </div>
 
       {/* Main Content Row - Site Crawl and Stats Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        {/* Site Crawl Form - Takes full width on mobile, 8 columns on lg+ */}
-        <div className="lg:col-span-8 h-full">
+      <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+        {/* Site Crawl Form - Takes full width on mobile, 2/3 width on lg+ */}
+        <div className="w-full lg:w-[70%]">
           <SiteCrawlForm 
             onSubmit={handleFormSubmit}
             isSubmitting={isSubmitting}
             submitStatus={submitStatus}
           />
         </div>
-        {/* Stats Cards - Takes full width on mobile, 4 columns on lg+ */}
-        <div className="lg:col-span-4 h-full">
+        {/* Stats Cards - Takes full width on mobile, 1/3 width on lg+ */}
+        <div className="w-full lg:w-[30%]">
           <StatsCards 
             projects={projects}
             projectsLoading={projectsLoading}

@@ -189,7 +189,7 @@ export default function DashboardSidebar({
       }}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between  border-b border-gray-200">
+          <div className="flex items-center justify-between  border-b p-4 border-gray-200">
             <Link href="/dashboard" className="flex items-center">
               <Image
                 src="/orange-black-auditly.png"
@@ -222,8 +222,8 @@ export default function DashboardSidebar({
                   <p className="text-xs text-gray-600 capitalize">
                     {userProfile?.role || 'user'}
                   </p>
-                  {roleLoading && <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
-                  {isAdmin === true && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                  {roleLoading && <div className="w-3 h-3 border-2 border-[#ff4b01] border-t-transparent rounded-full animate-spin"></div>}
+                  {isAdmin === true && <span className="text-xs bg-[#ff4b01]/20 text-[#ff4b01] px-2 py-0.5 rounded">
                       Admin
                     </span>}
                   {isAdmin === false && !roleLoading && userProfile?.role === 'admin' && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
@@ -337,8 +337,8 @@ export default function DashboardSidebar({
                   <p className="text-xs text-gray-600 capitalize">
                     {userProfile?.role || 'user'}
                   </p>
-                  {roleLoading && <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
-                  {isAdmin === true && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                  {roleLoading && <div className="w-3 h-3 border-2 border-[#ff4b01] border-t-transparent rounded-full animate-spin"></div>}
+                  {isAdmin === true && <span className="text-xs bg-[#ff4b01]/20 text-[#ff4b01] px-2 py-0.5 rounded">
                       Admin
                     </span>}
                   {isAdmin === false && !roleLoading && userProfile?.role === 'admin' && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">

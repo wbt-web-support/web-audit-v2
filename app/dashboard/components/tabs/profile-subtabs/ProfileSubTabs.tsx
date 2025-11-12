@@ -40,7 +40,7 @@ export default function ProfileSubTabs({ userProfile }: ProfileSubTabsProps) {
 
   return (
     <motion.div 
-      className="space-y-6"
+      className="space-y-6 px-6" 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -74,8 +74,8 @@ export default function ProfileSubTabs({ userProfile }: ProfileSubTabsProps) {
               onClick={() => setActiveTab(tab.id)}
               className={`py-1.5 px-2 border-b-2 font-medium text-sm transition-colors duration-300 ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'
+                  ? 'border-[#ff4b01] text-[#ff4b01] bg-[#ff4b01]/10'
+                  : 'border-transparent text-gray-500 hover:text-[#ff4b01] hover:border-[#ff4b01]/30'
               }`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}

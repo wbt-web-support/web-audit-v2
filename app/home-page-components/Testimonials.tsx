@@ -56,7 +56,7 @@ export default function Testimonials() {
               {/* Quotation Mark Icon */}
               <div className="mb-4 md:mb-5">
                 <svg
-                  className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 text-blue-600"
+                  className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 text-[#ff4b01]"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"

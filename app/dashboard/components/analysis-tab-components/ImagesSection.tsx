@@ -739,7 +739,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
               />
               <button
                 onClick={handleSearch}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                className="px-4 py-2 bg-[#ff4b01] text-white rounded-md hover:bg-[#e64401] transition-colors w-full sm:w-auto"
               >
                 Search
               </button>
@@ -890,7 +890,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                           href={img.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-[#ff4b01] hover:text-[#e64401] text-sm"
                         >
                           {img.url}
                         </a>
@@ -919,7 +919,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                           href={img.page_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-[#ff4b01] hover:text-[#e64401] text-sm"
                         >
                           {img.page_url}
                         </a>
@@ -991,7 +991,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                               <button
                                 onClick={(e) => handleScanImage(e, img)}
                                 disabled={scanningImages.has(uniqueKey) || scanningImages.has(imageId)}
-                                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                className="px-3 py-1.5 text-xs font-medium text-white bg-[#ff4b01] rounded-md hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
                                 title={img.extra_metadata?.id ? 'Scan image from database' : 'Scan image (will be saved to database)'}
                               >
                                 {(scanningImages.has(uniqueKey) || scanningImages.has(imageId)) ? (
@@ -1597,7 +1597,7 @@ export default function ImagesSection({ project, scrapedPages, originalScrapingD
                       href={selectedImage.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
+                      className="flex-1 bg-[#ff4b01] text-white px-4 py-2 rounded-md hover:bg-[#e64401] transition-colors text-center"
                     >
                       Open in New Tab
                     </a>

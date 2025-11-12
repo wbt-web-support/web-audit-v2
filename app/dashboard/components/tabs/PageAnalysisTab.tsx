@@ -320,7 +320,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center overflow-x-hidden w-[100vw]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff4b01] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading page analysis...</p>
         </div>
       </div>
@@ -479,7 +479,7 @@ export default function PageAnalysisTab({ pageId }: PageAnalysisTabProps) {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:px-6">
       {/* Use AnalysisHeader for consistent design */}
       <AnalysisHeader
         project={mockProject}

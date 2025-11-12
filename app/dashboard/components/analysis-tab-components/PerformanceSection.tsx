@@ -107,24 +107,24 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Performance Analysis</h2>
             <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#ff4b01]"></div>
               <span className="text-sm text-gray-600">Analyzing performance...</span>
             </div>
           </div>
           
           {/* Enhanced loading message */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-[#ff4b01]/10 border border-[#ff4b01]/30 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-[#ff4b01]/70" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">Performance Analysis in Progress</h3>
-                <div className="mt-2 text-sm text-blue-700">
+                <h3 className="text-sm font-medium text-[#ff4b01]">Performance Analysis in Progress</h3>
+                <div className="mt-2 text-sm text-[#ff4b01]">
                   <p>We&apos;re running comprehensive performance tests on your website. This typically takes 30-60 seconds to complete.</p>
-                  <p className="mt-1 text-xs text-blue-600">Please don&apos;t close this page while the analysis is running.</p>
+                  <p className="mt-1 text-xs text-[#ff4b01]/80">Please don&apos;t close this page while the analysis is running.</p>
                 </div>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
               <button
                 onClick={handleReanalyze}
                 disabled={isReanalyzing}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#ff4b01] hover:bg-[#e64401] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff4b01] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isReanalyzing ? (
                   <>

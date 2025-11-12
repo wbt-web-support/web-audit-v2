@@ -401,8 +401,30 @@ export default function ScrapingService({
   // Function to process scraping data and save to database
   const processScrapingData = useCallback(async (scrapingData: ScrapingData, projectId: string) => {
     try {
+      // Validate input data
+      if (!scrapingData) {
+        console.error('❌ No scraping data provided');
+        onScrapingComplete(false);
+        return;
+      }
+
       if (!scrapingData.pages || !Array.isArray(scrapingData.pages)) {
-        console.warn('⚠️ No pages data found in scraping response');
+        console.warn('⚠️ No pages data found in scraping response', {
+          hasScrapingData: !!scrapingData,
+          pagesType: typeof scrapingData.pages,
+          pagesValue: scrapingData.pages,
+          projectId
+        });
+        onScrapingComplete(false);
+        return;
+      }
+
+      if (scrapingData.pages.length === 0) {
+        console.warn('⚠️ Scraping response contains empty pages array', {
+          projectId,
+          hasSummary: !!scrapingData.summary,
+          summary: scrapingData.summary
+        });
         onScrapingComplete(false);
         return;
       }
@@ -497,15 +519,43 @@ export default function ScrapingService({
 
       // Validate data before saving
       if (!scrapedPagesData || scrapedPagesData.length === 0) {
-        console.error('❌ No scraped pages data to save');
+        console.error('❌ No scraped pages data to save', {
+          projectId,
+          originalPagesCount: scrapingData.pages?.length || 0,
+          scrapedPagesDataLength: scrapedPagesData?.length || 0,
+          pagesData: scrapingData.pages?.map(p => ({
+            url: p.url,
+            hasHtml: !!p.html,
+            htmlLength: p.html?.length || 0
+          })),
+          reason: 'All pages were filtered out or invalid'
+        });
+        
+        // Try to understand why pages were filtered
+        const invalidPages = scrapingData.pages.filter(page => !page.url);
+        if (invalidPages.length > 0) {
+          console.error('❌ Found pages without URLs:', invalidPages.length);
+        }
+        
         onScrapingComplete(false);
         return;
       }
 
       // Validate each page has required fields
-      const invalidPages = scrapedPagesData.filter(page => page && (!page.url || !page.audit_project_id));
+      const invalidPages = scrapedPagesData.filter((page): page is NonNullable<typeof page> => 
+        page !== null && page !== undefined && (!page.url || !page.audit_project_id)
+      );
       if (invalidPages.length > 0) {
-        console.error('❌ Invalid pages found:', invalidPages);
+        console.error('❌ Invalid pages found:', {
+          invalidCount: invalidPages.length,
+          totalCount: scrapedPagesData.length,
+          invalidPages: invalidPages.map(p => ({
+            hasUrl: !!p.url,
+            hasProjectId: !!p.audit_project_id,
+            url: p.url
+          })),
+          projectId
+        });
         onScrapingComplete(false);
         return;
       }
@@ -848,14 +898,48 @@ export default function ScrapingService({
         // This prevents the need for page refresh
       }
     } catch (error) {
-      console.error('❌ Error processing scraping data:', error);
+      console.error('❌ Error processing scraping data:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        projectId,
+        hasScrapingData: !!scrapingData,
+        pagesCount: scrapingData?.pages?.length || 0
+      });
       onScrapingComplete(false);
     }
   }, [createScrapedPages, createScrapedImages, updateAuditProject, processMetaTagsData, getAuditProject, onScrapingComplete]);
 
   // Process data when component receives it using useEffect
   useEffect(() => {
-    if (!projectId || !scrapingData || isProcessing.current) {
+    // Validate required props
+    if (!projectId) {
+      console.warn('⚠️ ScrapingService: No projectId provided');
+      return;
+    }
+
+    if (!scrapingData) {
+      console.warn('⚠️ ScrapingService: No scrapingData provided', { projectId });
+      return;
+    }
+
+    // Validate scrapingData structure
+    if (!scrapingData.pages || !Array.isArray(scrapingData.pages)) {
+      console.warn('⚠️ ScrapingService: Invalid scrapingData structure', {
+        projectId,
+        hasPages: !!scrapingData.pages,
+        pagesType: typeof scrapingData.pages,
+        scrapingDataKeys: Object.keys(scrapingData)
+      });
+      return;
+    }
+
+    if (scrapingData.pages.length === 0) {
+      console.warn('⚠️ ScrapingService: Empty pages array', { projectId });
+      return;
+    }
+
+    if (isProcessing.current) {
       return;
     }
 

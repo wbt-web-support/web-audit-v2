@@ -30,7 +30,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-2xl sm:text-3xl font-bold text-black">
+            <p className="text-2xl  font-bold text-black">
               {projectsLoading ? '...' : totalProjects}
             </p>
             <p className="text-sm font-medium text-gray-600 mt-1">Total Projects</p>
@@ -51,7 +51,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-2xl sm:text-3xl font-bold text-black">
+            <p className="text-2xl  font-bold text-black">
               {projectsLoading ? '...' : activeProjects}
             </p>
             <p className="text-sm font-medium text-gray-600 mt-1">Active Projects</p>
@@ -72,7 +72,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-2xl sm:text-3xl font-bold text-black">
+            <p className="text-2xl  font-bold text-black">
               {projectsLoading ? '...' : completedProjects}
             </p>
             <p className="text-sm font-medium text-gray-600 mt-1">Completed Projects</p>
@@ -93,7 +93,7 @@ export default function StatsCards({ projects, projectsLoading }: StatsCardsProp
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-2xl sm:text-3xl font-bold text-black">
+            <p className="text-2xl  font-bold text-black">
               {projectsLoading ? '...' : `${successRate}%`}
             </p>
             <p className="text-sm font-medium text-gray-600 mt-1">Success Rate</p>

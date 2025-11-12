@@ -188,7 +188,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
               </p>
               <a 
                 href={socialUrl} 
-                className="text-blue-600 text-xs hover:underline break-all"
+                  className="text-[#ff4b01] text-xs hover:underline break-all"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -229,7 +229,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
                   href={socialImage} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-600 text-sm hover:underline break-all"
+                  className="text-[#ff4b01] text-sm hover:underline break-all"
                 >
                   {socialImage}
                 </a>
@@ -259,7 +259,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Twitter</h3>
             {twitterPresent > 0 && (
-              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+              <span className="bg-[#ff4b01]/20 text-[#ff4b01] text-xs font-medium px-2 py-1 rounded-full">
                 Present
               </span>
             )}
@@ -303,7 +303,7 @@ export default function SocialPreviewTab({ project }: SocialPreviewTabProps) {
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Open Graph</h3>
             {openGraphPresent > 0 && (
-              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+              <span className="bg-[#ff4b01]/20 text-[#ff4b01] text-xs font-medium px-2 py-1 rounded-full">
                 Present
               </span>
             )}

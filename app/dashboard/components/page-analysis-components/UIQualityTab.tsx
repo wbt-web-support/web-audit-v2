@@ -826,7 +826,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
     switch (priority) {
       case 'high': return 'bg-gray-200 text-gray-900'
       case 'medium': return 'bg-gray-100 text-gray-800'
-      case 'low': return 'bg-blue-100 text-blue-800'
+      case 'low': return 'bg-[#ff4b01]/20 text-[#ff4b01]'
       default: return 'bg-gray-50 text-gray-700'
     }
   }
@@ -857,7 +857,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
           <button
             onClick={handleRetakeScreenshot}
             disabled={processing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 bg-[#ff4b01] hover:bg-[#e64401] disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed"
           >
             <ArrowPathIcon className={`w-5 h-5 ${processing ? 'animate-spin' : ''}`} />
             <span>{processing ? 'Reanalyzing...' : 'Reanalyze'}</span>
@@ -877,7 +877,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       {!hasScreenshotAccess && !imageAnalysis && !desktopScreenshotUrl && !screenshotUrl && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <div className="flex items-center space-x-4">
-            <div className="text-blue-500">
+            <div className="text-[#ff4b01]">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -894,7 +894,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                 </div>
                 <button 
                   onClick={() => window.location.href = '/dashboard?tab=profile&subtab=plans'}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-[#ff4b01] text-white rounded-lg hover:bg-[#e64401] transition-colors text-sm font-medium"
                 >
                   Upgrade Plan
                 </button>
@@ -905,13 +905,13 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       )}
 
       {/* Overall Quality Score */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
+      <div className="bg-gradient-to-r from-[#ff4b01]/10 to-[#ff4b01]/20 rounded-xl border border-[#ff4b01]/30 p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
             <p className="text-gray-600">Comprehensive assessment of your page&apos;s user interface and structure</p>
           </div>
           {/* <div className="text-right">
-            <div className="text-5xl font-bold text-blue-600">{overallScore}</div>
+            <div className="text-5xl font-bold text-[#ff4b01]">{overallScore}</div>
             <div className="text-sm text-gray-600">Overall Score</div>
             <div className="text-xs text-gray-500">Out of 100</div>
           </div> */}
@@ -919,14 +919,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         
         {/* Processing Steps - Simple Loader - Only show if user has access */}
         {processing && hasScreenshotAccess && (
-          <div className="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-6">
+          <div className="mt-6 bg-[#ff4b01]/10 rounded-lg border border-[#ff4b01]/30 p-6">
             <div className="flex flex-col items-center space-y-4">
               {/* Simple spinner */}
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#ff4b01]/30 border-t-[#ff4b01]"></div>
               
               {/* Step indicator */}
               <div className="text-center">
-                <div className="text-base font-semibold text-blue-700">
+                <div className="text-base font-semibold text-[#ff4b01]">
                   {currentStep === 'capturing' && 'Capturing page screenshot...'}
                   {currentStep === 'analyzing' && 'AI analyzing your page...'}
                   {currentStep === 'complete' && 'Analysis complete'}
@@ -963,18 +963,18 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                   <p className="text-lg text-gray-600 leading-relaxed">{primaryAnalysis.summary || imageAnalysis.summary}</p>
                 </div>
                 <div className="text-center md:text-right">
-                  <div className="text-6xl font-bold text-blue-600 mb-1">{imageAnalysis.overall_score}</div>
+                  <div className="text-6xl font-bold text-[#ff4b01] mb-1">{imageAnalysis.overall_score}</div>
                   <div className="text-base text-gray-600 font-medium">Overall Score</div>
                 </div>
               </div>
               
               {/* Score Grid - Secondary */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-100">
-                <div className="bg-blue-50 rounded-lg p-5">
+                <div className="bg-[#ff4b01]/10 rounded-lg p-5">
                   <div className="text-sm text-gray-600 mb-2 font-medium">UI/UX Score</div>
                   <div className="text-3xl font-bold text-gray-900">{imageAnalysis.ui_ux_score}</div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-5">
+                <div className="bg-[#ff4b01]/10 rounded-lg p-5">
                   <div className="text-sm text-gray-600 mb-2 font-medium">Content Score</div>
                   <div className="text-3xl font-bold text-gray-900">{imageAnalysis.content_score}</div>
                 </div>
@@ -991,46 +991,46 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
               </div>
               {primaryAnalysis.ui_ux_analysis && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.layout_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Layout</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.color_scheme_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Colors</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.typography_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Typography</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.spacing_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Spacing</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.visual_hierarchy_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Hierarchy</div>
                 </div>
                 {primaryAnalysis.ui_ux_analysis.accessibility_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.accessibility_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Accessibility</div>
                   </div>
                 )}
                 {primaryAnalysis.ui_ux_analysis.mobile_responsiveness_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.mobile_responsiveness_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Mobile</div>
                   </div>
                 )}
                 {primaryAnalysis.ui_ux_analysis.navigation_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.navigation_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Navigation</div>
                   </div>
                 )}
                 {primaryAnalysis.ui_ux_analysis.call_to_action_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.ui_ux_analysis.call_to_action_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">CTA</div>
                   </div>
@@ -1083,8 +1083,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                   <ul className="space-y-3">
                     {primaryAnalysis.ui_ux_analysis.strengths.map((strength: string, idx: number) => (
                       <li key={idx} className="flex items-start group">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-blue-200 transition-colors">
-                          <span className="text-blue-600 text-xs font-bold">✓</span>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#ff4b01]/20 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-[#ff4b01]/30 transition-colors">
+                          <span className="text-[#ff4b01] text-xs font-bold">✓</span>
                         </span>
                         <span className="text-sm text-gray-700 flex-1 leading-relaxed">{strength}</span>
                       </li>
@@ -1101,7 +1101,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                       <div key={idx} className={`p-4 rounded-lg border-l-4 shadow-sm ${
                         issue.severity === 'high' ? 'border-red-400 bg-red-50/50' :
                         issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50/50' :
-                        'border-blue-400 bg-blue-50/50'
+                        'border-[#ff4b01]/50 bg-[#ff4b01]/10'
                       }`}>
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
@@ -1127,7 +1127,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                           <span className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide flex-shrink-0 ${
                             issue.severity === 'high' ? 'bg-red-100 text-red-800' :
                             issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
+                            'bg-[#ff4b01]/20 text-[#ff4b01]'
                           }`}>
                             {issue.severity}
                           </span>
@@ -1143,32 +1143,32 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-8">Content Analysis</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.readability_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Readability</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.clarity_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Clarity</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                   <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis?.structure_score}</div>
                   <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Structure</div>
                 </div>
                 {primaryAnalysis.content_analysis?.seo_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.seo_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">SEO</div>
                   </div>
                 )}
                 {primaryAnalysis.content_analysis?.content_length_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.content_length_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Length</div>
                   </div>
                 )}
                 {primaryAnalysis.content_analysis?.heading_structure_score !== undefined && (
-                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                  <div className="bg-gray-50 rounded-lg p-5 text-center border border-gray-100 hover:border-[#ff4b01]/30 hover:bg-[#ff4b01]/10 transition-all">
                     <div className="text-3xl font-bold text-gray-900 mb-2">{primaryAnalysis.content_analysis.heading_structure_score}</div>
                     <div className="text-xs text-gray-600 font-medium uppercase tracking-wide">Headings</div>
                   </div>
@@ -1220,8 +1220,8 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                   <ul className="space-y-3">
                     {primaryAnalysis.content_analysis.strengths.map((strength: string, idx: number) => (
                       <li key={idx} className="flex items-start group">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-blue-200 transition-colors">
-                          <span className="text-blue-600 text-xs font-bold">✓</span>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#ff4b01]/20 flex items-center justify-center mt-0.5 mr-3 group-hover:bg-[#ff4b01]/30 transition-colors">
+                          <span className="text-[#ff4b01] text-xs font-bold">✓</span>
                         </span>
                         <span className="text-sm text-gray-700 flex-1 leading-relaxed">{strength}</span>
                       </li>
@@ -1238,7 +1238,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                       <div key={idx} className={`p-4 rounded-lg border-l-4 shadow-sm ${
                         issue.severity === 'high' ? 'border-red-400 bg-red-50/50' :
                         issue.severity === 'medium' ? 'border-yellow-400 bg-yellow-50/50' :
-                        'border-blue-400 bg-blue-50/50'
+                        'border-[#ff4b01]/50 bg-[#ff4b01]/10'
                       }`}>
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
@@ -1254,7 +1254,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                           <span className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide flex-shrink-0 ${
                             issue.severity === 'high' ? 'bg-red-100 text-red-800' :
                             issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
+                            'bg-[#ff4b01]/20 text-[#ff4b01]'
                           }`}>
                             {issue.severity}
                           </span>
@@ -1276,7 +1276,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                       <div className="text-sm font-medium text-gray-700 mb-2">Identified Patterns:</div>
                       <div className="flex flex-wrap gap-2">
                         {primaryAnalysis.design_patterns.identified_patterns.map((pattern: string, idx: number) => (
-                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">{pattern}</span>
+                          <span key={idx} className="px-3 py-1 bg-[#ff4b01]/20 text-[#ff4b01] rounded-full text-xs">{pattern}</span>
                         ))}
                       </div>
                     </div>
@@ -1330,7 +1330,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-8">Brand Consistency</h3>
                 {primaryAnalysis.brand_consistency.score !== undefined && (
-                  <div className="mb-6 p-6 bg-blue-50 rounded-lg border border-blue-200/50 inline-block">
+                  <div className="mb-6 p-6 bg-[#ff4b01]/10 rounded-lg border border-[#ff4b01]/30 inline-block">
                     <div className="text-4xl font-bold text-gray-900 mb-1">{primaryAnalysis.brand_consistency.score}</div>
                     <div className="text-sm text-gray-600 font-medium">Consistency Score</div>
                   </div>
@@ -1373,7 +1373,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
 
             {/* Detailed Summary */}
             {primaryAnalysis.detailed_summary && (
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-xl border border-blue-200 shadow-sm p-8">
+              <div className="bg-gradient-to-br from-[#ff4b01]/10 to-[#ff4b01]/20 rounded-xl border border-[#ff4b01]/30 shadow-sm p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-8">Detailed Assessment</h3>
                 {primaryAnalysis.detailed_summary.overall_assessment && (
                   <div className="mb-4">
@@ -1404,7 +1404,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                   )}
                   {primaryAnalysis.detailed_summary.quick_wins && primaryAnalysis.detailed_summary.quick_wins.length > 0 && (
                     <div>
-                      <div className="text-sm font-medium text-blue-700 mb-2">Quick Wins:</div>
+                      <div className="text-sm font-medium text-[#ff4b01] mb-2">Quick Wins:</div>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                         {primaryAnalysis.detailed_summary.quick_wins.map((win: string, idx: number) => (
                           <li key={idx}>{win}</li>
@@ -1435,7 +1435,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                     // Handle both old format (string) and new format (object)
                     if (typeof rec === 'string') {
                       return (
-                        <div key={idx} className="p-3 rounded-lg border-l-4 border-blue-400 bg-blue-50">
+                        <div key={idx} className="p-3 rounded-lg border-l-4 border-[#ff4b01]/50 bg-[#ff4b01]/10">
                           <div className="text-sm text-gray-700">{rec}</div>
                         </div>
                       )
@@ -1444,7 +1444,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                       <div key={idx} className={`p-4 rounded-lg border-l-4 ${
                         rec.priority === 'high' ? 'border-red-400 bg-red-50' :
                         rec.priority === 'medium' ? 'border-yellow-400 bg-yellow-50' :
-                        'border-blue-400 bg-blue-50'
+                        'border-[#ff4b01]/50 bg-[#ff4b01]/10'
                       }`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
@@ -1468,7 +1468,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
                               rec.priority === 'high' ? 'bg-red-100 text-red-800' :
                               rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-blue-100 text-blue-800'
+                              'bg-[#ff4b01]/20 text-[#ff4b01]'
                             }`}>
                               {rec.priority.toUpperCase()}
                             </span>
@@ -1516,7 +1516,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         <h3 className="text-xl font-semibold text-gray-900 mb-6">Page Structure Overview</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{headingCount}</div>
+            <div className="text-2xl font-bold text-[#ff4b01]">{headingCount}</div>
             <div className="text-sm text-gray-600">Headings</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -1551,14 +1551,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         {/* Accessibility Analysis */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-[#ff4b01] rounded-full mr-2"></span>
             Accessibility Analysis
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Alt Text for Images</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasAltText ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-900'
+                hasAltText ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-200 text-gray-900'
               }`}>
                 {hasAltText ? 'Present' : 'Missing'}
               </span>
@@ -1566,7 +1566,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Form Labels</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasLabels ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-900'
+                hasLabels ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-200 text-gray-900'
               }`}>
                 {hasLabels ? 'Present' : 'Missing'}
               </span>
@@ -1574,7 +1574,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">ARIA Labels</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasAriaLabels ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasAriaLabels ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasAriaLabels ? 'Present' : 'Not Found'}
               </span>
@@ -1582,7 +1582,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Language Attribute</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasLangAttribute ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-900'
+                hasLangAttribute ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-200 text-gray-900'
               }`}>
                 {hasLangAttribute ? 'Present' : 'Missing'}
               </span>
@@ -1590,7 +1590,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Title Attributes</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasTitleAttributes ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasTitleAttributes ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasTitleAttributes ? 'Present' : 'None'}
               </span>
@@ -1601,14 +1601,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         {/* Code Quality Analysis */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-[#ff4b01] rounded-full mr-2"></span>
             Code Quality Analysis
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">External CSS</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasExternalCSS ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasExternalCSS ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasExternalCSS ? 'Good' : 'Needs Improvement'}
               </span>
@@ -1616,7 +1616,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">External JavaScript</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasExternalJS ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasExternalJS ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasExternalJS ? 'Good' : 'Needs Improvement'}
               </span>
@@ -1624,7 +1624,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Inline Styles</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasInlineStyles ? 'bg-gray-200 text-gray-900' : 'bg-blue-100 text-blue-800'
+                hasInlineStyles ? 'bg-gray-200 text-gray-900' : 'bg-[#ff4b01]/20 text-[#ff4b01]'
               }`}>
                 {hasInlineStyles ? 'Found' : 'None'}
               </span>
@@ -1632,7 +1632,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Deprecated Tags</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasDeprecatedTags ? 'bg-gray-200 text-gray-900' : 'bg-blue-100 text-blue-800'
+                hasDeprecatedTags ? 'bg-gray-200 text-gray-900' : 'bg-[#ff4b01]/20 text-[#ff4b01]'
               }`}>
                 {hasDeprecatedTags ? 'Found' : 'None'}
               </span>
@@ -1640,7 +1640,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Semantic HTML</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasSemanticHTML ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasSemanticHTML ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasSemanticHTML ? 'Present' : 'Not Found'}
               </span>
@@ -1654,14 +1654,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         {/* Performance Indicators */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-[#ff4b01] rounded-full mr-2"></span>
             Performance Indicators
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Lazy Loading</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasLazyLoading ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasLazyLoading ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasLazyLoading ? 'Enabled' : 'Not Enabled'}
               </span>
@@ -1669,7 +1669,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Async Scripts</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasAsyncScripts ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasAsyncScripts ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasAsyncScripts ? 'Present' : 'Not Found'}
               </span>
@@ -1677,7 +1677,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Preload Links</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasPreloadLinks ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasPreloadLinks ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasPreloadLinks ? 'Present' : 'None'}
               </span>
@@ -1688,14 +1688,14 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
         {/* Modern Standards */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-[#ff4b01] rounded-full mr-2"></span>
             Modern Standards
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Viewport Meta Tag</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasViewport ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-900'
+                hasViewport ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-200 text-gray-900'
               }`}>
                 {hasViewport ? 'Present' : 'Missing'}
               </span>
@@ -1703,7 +1703,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Responsive Design</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasResponsiveDesign ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasResponsiveDesign ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasResponsiveDesign ? 'Detected' : 'Not Detected'}
               </span>
@@ -1711,7 +1711,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700">Meta Description</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                hasMetaDescription ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                hasMetaDescription ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'
               }`}>
                 {hasMetaDescription ? 'Present' : 'Missing'}
               </span>
@@ -1724,10 +1724,10 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-6">Improvement Recommendations</h3>
         {recommendations.length === 0 ? (
-          <div className="bg-blue-50 rounded-lg p-6 text-center">
-            <div className="text-blue-600 text-4xl mb-2">🎉</div>
-            <h4 className="font-semibold text-blue-900 mb-1">Excellent Work!</h4>
-            <p className="text-blue-800">Your page follows modern web standards and best practices.</p>
+          <div className="bg-[#ff4b01]/10 rounded-lg p-6 text-center">
+            <div className="text-[#ff4b01] text-4xl mb-2">🎉</div>
+            <h4 className="font-semibold text-[#ff4b01] mb-1">Excellent Work!</h4>
+            <p className="text-[#ff4b01]">Your page follows modern web standards and best practices.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -1735,7 +1735,7 @@ export default function UIQualityTab({ page }: UIQualityTabProps) {
               <div key={rec.id} className={`rounded-lg border-l-4 p-4 ${
                 rec.priority === 'high' ? 'border-gray-400 bg-gray-50' :
                 rec.priority === 'medium' ? 'border-gray-300 bg-gray-25' :
-                'border-blue-300 bg-blue-50'
+                'border-[#ff4b01]/30 bg-[#ff4b01]/10'
               }`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

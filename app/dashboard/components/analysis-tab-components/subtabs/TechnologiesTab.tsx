@@ -199,35 +199,35 @@ const TechnologyIcon = ({ tech, className = "w-8 h-8" }: TechnologyIconProps) =>
 
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'javascript': 'bg-blue-100 text-blue-800',
-      'css': 'bg-blue-200 text-blue-900',
-      'html': 'bg-blue-300 text-blue-900',
-      'framework': 'bg-blue-100 text-blue-800',
-      'library': 'bg-blue-200 text-blue-900',
-      'database': 'bg-blue-300 text-blue-900',
-      'server': 'bg-blue-100 text-blue-800',
-      'analytics': 'bg-blue-200 text-blue-900',
-      'cms': 'bg-blue-300 text-blue-900',
-      'ecommerce': 'bg-blue-100 text-blue-800',
-      'detected': 'bg-blue-100 text-blue-800',
-      'technologies': 'bg-blue-100 text-blue-800',
-      'javascript_framework': 'bg-blue-100 text-blue-800',
-      'website_builder': 'bg-blue-200 text-blue-900',
-      'css_framework': 'bg-blue-300 text-blue-900',
-      'ui_library': 'bg-blue-100 text-blue-800',
-      'testing_framework': 'bg-blue-200 text-blue-900',
-      'build_tool': 'bg-blue-300 text-blue-900',
-      'deployment': 'bg-blue-100 text-blue-800',
-      'monitoring': 'bg-blue-200 text-blue-900',
-      'security': 'bg-blue-300 text-blue-900',
-      'payment': 'bg-blue-100 text-blue-800',
-      'marketing': 'bg-blue-200 text-blue-900',
-      'social_media': 'bg-blue-300 text-blue-900',
-      'chat': 'bg-blue-100 text-blue-800',
-      'search': 'bg-blue-200 text-blue-900',
-      'cdn': 'bg-blue-300 text-blue-900',
-      'hosting': 'bg-blue-100 text-blue-800',
-      'other': 'bg-blue-200 text-blue-900'
+      'javascript': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'css': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'html': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'framework': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'library': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'database': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'server': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'analytics': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'cms': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'ecommerce': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'detected': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'technologies': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'javascript_framework': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'website_builder': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'css_framework': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'ui_library': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'testing_framework': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'build_tool': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'deployment': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'monitoring': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'security': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'payment': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'marketing': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'social_media': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'chat': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'search': 'bg-[#ff4b01]/30 text-[#ff4b01]',
+      'cdn': 'bg-[#ff4b01]/40 text-[#ff4b01]',
+      'hosting': 'bg-[#ff4b01]/20 text-[#ff4b01]',
+      'other': 'bg-[#ff4b01]/30 text-[#ff4b01]'
     }
     return colors[category?.toLowerCase() || 'technologies'] || colors['other']
   }
@@ -305,7 +305,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
           <script src="jquery.min.js"></script>
         </head>
         <body>
-          <div class="text-center bg-blue-500">Test</div>
+          <div class="text-center bg-[#ff4b01]">Test</div>
           <script>gtag('config', 'GA_MEASUREMENT_ID');</script>
         </body>
         </html>
@@ -377,14 +377,14 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
 
       {/* HTML Detection Status */}
       {htmlContent && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-[#ff4b01]/10 border border-[#ff4b01]/30 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span className="text-sm font-medium text-blue-800">HTML Analysis</span>
+              <div className="w-2 h-2 bg-[#ff4b01] rounded-full mr-3"></div>
+              <span className="text-sm font-medium text-[#ff4b01]">HTML Analysis</span>
             </div>
             {isDetecting ? (
-              <div className="flex items-center text-blue-600">
+              <div className="flex items-center text-[#ff4b01]">
                 <svg className="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -392,7 +392,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
                 <span className="text-sm">Detecting...</span>
               </div>
             ) : hasDetectedTechnologies ? (
-              <span className="text-sm text-blue-600 font-medium">
+              <span className="text-sm text-[#ff4b01] font-medium">
                 {detectedTechnologies.length} technologies detected
               </span>
             ) : detectionError ? (
@@ -415,7 +415,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Detection Summary</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalTechnologies}</div>
+                <div className="text-2xl font-bold text-[#ff4b01]">{stats.totalTechnologies}</div>
                 <div className="text-sm text-gray-500">Technologies</div>
               </div>
               <div className="text-center">
@@ -447,7 +447,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
                 <div key={category} className="bg-white rounded-xl border border-gray-200">
                   <div className="p-6 border-b border-gray-100">
                     <h4 className="text-lg font-semibold text-gray-900 capitalize flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-[#ff4b01] rounded-full mr-3"></div>
                       Technologies
                       <span className="ml-2 text-sm font-normal text-gray-500">({techs.length})</span>
                     </h4>
@@ -474,7 +474,7 @@ export default function TechnologiesTab({ project, htmlContent, headers, cookies
                                 {/* <span className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
                                   tech.detection_method === 'project_data'
                                     ? 'bg-green-100 text-green-700'
-                                    : 'bg-blue-100 text-blue-700'
+                                    : 'bg-[#ff4b01]/20 text-[#ff4b01]'
                                 }`}>
                                   {tech.detection_method === 'project_data' ? 'Project' : 'HTML'}
                                 </span> */}

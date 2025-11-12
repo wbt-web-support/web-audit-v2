@@ -144,9 +144,13 @@ export default function FaviconDisplay({
     // Filter out default favicons and find best match
     const nonDefault = favicons.filter((fav) => !fav.isDefault && fav.href);
     
-    if (nonDefault.length === 0) {
+    // If no non-default favicons, use default ones as fallback
+    // This ensures we still show a favicon even if all are marked as default
+    const faviconsToUse = nonDefault.length > 0 ? nonDefault : favicons.filter((fav) => fav.href);
+
+    if (faviconsToUse.length === 0) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('FaviconDisplay: All favicons are marked as default');
+        console.log('FaviconDisplay: No valid favicons found');
       }
       return [];
     }
@@ -157,7 +161,7 @@ export default function FaviconDisplay({
     
     // First try to find by file extension priority
     for (const ext of priorityOrder) {
-      const favicon = nonDefault.find((fav) => {
+      const favicon = faviconsToUse.find((fav) => {
         const href = fav.href?.toLowerCase() || '';
         return href.includes(`.${ext}`);
       });
@@ -170,7 +174,7 @@ export default function FaviconDisplay({
     }
 
     // If no priority format found, prefer "icon" over "apple-touch-icon"
-    const iconFavicon = nonDefault.find((fav) => fav.rel === 'icon');
+    const iconFavicon = faviconsToUse.find((fav) => fav.rel === 'icon');
     if (iconFavicon) {
       const resolvedUrl = resolveFaviconUrl(iconFavicon.href, siteUrl);
       if (resolvedUrl && !resolvedUrls.includes(resolvedUrl)) {
@@ -178,8 +182,8 @@ export default function FaviconDisplay({
       }
     }
 
-    // Add remaining non-default favicons
-    nonDefault.forEach((fav) => {
+    // Add remaining favicons (including ICO files and default favicons if no non-default exist)
+    faviconsToUse.forEach((fav) => {
       const resolvedUrl = resolveFaviconUrl(fav.href, siteUrl);
       if (resolvedUrl && !resolvedUrls.includes(resolvedUrl)) {
         resolvedUrls.push(resolvedUrl);
@@ -189,7 +193,8 @@ export default function FaviconDisplay({
     if (process.env.NODE_ENV === 'development' && resolvedUrls.length > 0) {
       console.log('FaviconDisplay: Extracted favicon URLs', { 
         count: resolvedUrls.length,
-        urls: resolvedUrls
+        urls: resolvedUrls,
+        usingDefault: nonDefault.length === 0
       });
     }
 

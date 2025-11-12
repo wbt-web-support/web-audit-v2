@@ -181,15 +181,15 @@ export default function KeysTab({
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-blue-300 text-blue-900 border-blue-300';
+        return 'bg-[#ff4b01]/40 text-[#ff4b01] border-[#ff4b01]/40';
       case 'high':
-        return 'bg-blue-200 text-blue-900 border-blue-200';
+        return 'bg-[#ff4b01]/30 text-[#ff4b01] border-[#ff4b01]/30';
       case 'medium':
-        return 'bg-blue-100 text-blue-800 border-blue-100';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01] border-[#ff4b01]/20';
       case 'low':
-        return 'bg-blue-50 text-blue-700 border-blue-50';
+        return 'bg-[#ff4b01]/10 text-[#ff4b01] border-[#ff4b01]/10';
       default:
-        return 'bg-blue-100 text-blue-800 border-blue-100';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01] border-[#ff4b01]/20';
     }
   };
   const LoadingSkeleton = () => <div className="space-y-3">
@@ -213,7 +213,7 @@ export default function KeysTab({
   return <div className="space-y-6">
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start">
-          <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
+          <div className="w-5 h-5 text-[#ff4b01] mt-0.5 mr-3 flex items-center justify-center">
             <span className="text-sm">⚠</span>
           </div>
           <div>
@@ -227,7 +227,7 @@ export default function KeysTab({
 
       {/* Loading State */}
       {isLoading && <div className="space-y-4">
-          <div className="flex items-center space-x-2 text-blue-600">
+          <div className="flex items-center space-x-2 text-[#ff4b01]">
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -240,7 +240,7 @@ export default function KeysTab({
       {/* Error State */}
       {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
-              <div className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex items-center justify-center">
+              <div className="w-5 h-5 text-[#ff4b01] mt-0.5 mr-3 flex items-center justify-center">
                 <span className="text-sm">❌</span>
               </div>
               <div>
@@ -253,25 +253,25 @@ export default function KeysTab({
       {/* Analysis Results */}
       {!isLoading && !error && keysData && <>
           {/* Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-[#ff4b01]/10 border border-[#ff4b01]/30 rounded-lg p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0">
-                <h4 className="text-sm font-medium text-blue-800">Analysis Summary</h4>
-                <p className="text-sm text-blue-700 mt-1">
+                <h4 className="text-sm font-medium text-[#ff4b01]">Analysis Summary</h4>
+                <p className="text-sm text-[#ff4b01] mt-1">
                   Found {keysData.summary.totalKeys} keys across {project.total_pages || 1} pages
                   {pageHtml && keysData.summary.totalKeys > 0 && (
-                    <span className="text-xs text-blue-600 ml-2">(analyzed from current page)</span>
+                    <span className="text-xs text-[#ff4b01]/80 ml-2">(analyzed from current page)</span>
                   )}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
-                <span className="text-blue-600 font-medium whitespace-nowrap">
+                <span className="text-[#ff4b01] font-medium whitespace-nowrap">
                   {keysData.summary.exposedKeys} Exposed
                 </span>
-                <span className="text-blue-500 font-medium whitespace-nowrap">
+                <span className="text-[#ff4b01]/90 font-medium whitespace-nowrap">
                   {keysData.summary.secureKeys} Secure
                 </span>
-                <span className="text-blue-400 font-medium whitespace-nowrap">
+                <span className="text-[#ff4b01]/70 font-medium whitespace-nowrap">
                   {keysData.summary.criticalKeys} Critical
                 </span>
               </div>
@@ -308,7 +308,7 @@ export default function KeysTab({
                 <button onClick={() => {
               setStatusFilter('all');
               setSeverityFilter('all');
-            }} className="text-sm text-blue-600 hover:text-blue-800 underline whitespace-nowrap">
+            }} className="text-sm text-[#ff4b01] hover:text-[#e64401] underline whitespace-nowrap">
                   Clear Filters
                 </button>
               </div>
@@ -342,7 +342,7 @@ export default function KeysTab({
                             <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(key.severity)}`}>
                               {key.severity}
                             </span>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${key.status === 'exposed' ? 'bg-blue-300 text-blue-900' : key.status === 'secure' ? 'bg-blue-100 text-blue-800' : 'bg-blue-200 text-blue-900'}`}>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${key.status === 'exposed' ? 'bg-[#ff4b01]/40 text-[#ff4b01]' : key.status === 'secure' ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-[#ff4b01]/30 text-[#ff4b01]'}`}>
                               {key.status}
                             </span>
                           </div>

@@ -25,15 +25,15 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-[#ff4b01]/20 text-[#ff4b01]";
       case "in_progress":
-        return "bg-blue-200 text-blue-900";
+        return "bg-[#ff4b01]/30 text-[#ff4b01]";
       case "pending":
-        return "bg-blue-50 text-blue-700";
+        return "bg-[#ff4b01]/10 text-[#ff4b01]";
       case "failed":
-        return "bg-blue-300 text-blue-900";
+        return "bg-[#ff4b01]/40 text-[#ff4b01]";
       default:
-        return "bg-blue-100 text-blue-800";
+        return "bg-[#ff4b01]/20 text-[#ff4b01]";
     }
   };
 
@@ -74,25 +74,25 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[#ff4b01]">
                 {project.total_pages || 0}
               </div>
               <div className="text-sm text-gray-600">Pages</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[#ff4b01]">
                 {project.total_links || 0}
               </div>
               <div className="text-sm text-gray-600">Links</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[#ff4b01]">
                 {project.total_images || 0}
               </div>
               <div className="text-sm text-gray-600">Images</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[#ff4b01]">
                 {project.total_meta_tags || 0}
               </div>
               <div className="text-sm text-gray-600">Meta Tags</div>
@@ -252,9 +252,9 @@ export default function OverviewSection({ project, scrapedPages = [] }: Overview
                       {page.title || 'Untitled'}
                     </h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-blue-100 text-blue-800' :
-                      page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-blue-200 text-blue-900' :
-                      'bg-blue-300 text-blue-900'
+                      page.status_code && page.status_code >= 200 && page.status_code < 300 ? 'bg-[#ff4b01]/20 text-[#ff4b01]' :
+                      page.status_code && page.status_code >= 300 && page.status_code < 400 ? 'bg-[#ff4b01]/30 text-[#ff4b01]' :
+                      'bg-[#ff4b01]/40 text-[#ff4b01]'
                     }`}>
                       {page.status_code || 'N/A'}
                     </span>

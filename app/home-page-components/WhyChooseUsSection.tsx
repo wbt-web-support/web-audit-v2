@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { ClockIcon, CheckBadgeIcon, DocumentCheckIcon } from "@heroicons/react/24/outline";
 
 export default function WhyChooseUsSection() {
@@ -23,51 +22,32 @@ export default function WhyChooseUsSection() {
           {/* Row 1: Improve Rankings (60%) + Protect Your Site (40%) */}
           <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
             <div className="w-full md:w-[55%] flex">
-              <div className="bg-white text-black rounded-[20px]  flex flex-col gap-4 md:gap-2 h-full shadow-lg border border-slate-200">
-                <h3 className="font-semibold px-12 pt-12 text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-lg border border-slate-200">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
                   Improve Rankings
                 </h3>
-                
-                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow px-12 text-black/70">
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
                   Boost SEO visibility with clear fixes. Identify indexing
                   issues and optimize metadata, structure, and internal links.
                   Stay ahead of algorithm changes.
                 </p>
-                <div className="relative w-full min-h-[400px]  md:max-h-[450px] lg:max-h-[500px]  rounded-lg overflow-hidden ">
-                  <Image
-                    src="/images/home-page/image.png"
-                    alt="Performance and SEO scores dashboard"
-                     height={1000}
-                     width={1000}
-                    className="object-contain object-right w-[80%] absolute  right-0 shadow-lg rounded-tl-lg rounded-bl-lg"
-                  />
-                </div>
               </div>
             </div>
             <div className="w-full md:w-[45%] flex">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 text-black rounded-[20px]  flex flex-col gap-4 md:gap-2 h-full shadow-md border border-slate-300">
-                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight px-12 pt-12 ">
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-md border border-slate-300">
+                <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight">
                   Protect Your Site
                 </h3>
-                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70 px-12">
+                <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
                   Spot security risks early. Detect vulnerabilities and malware
                   before they become threats. Safeguard user data and maintain
                   trust.
                 </p>
-                <div className="relative w-full max-h-[400px]   rounded-2xl overflow-hidden ">
-                  <Image
-                    src="/images/home-page/ProtectYourSite.png"
-                    alt="Performance and SEO scores dashboard"
-                     height={1000}
-                     width={1000}
-                    className="object-contain object-right w-full "
-                  />
-                </div>
               </div>
             </div>
           </div>
 
-          {/* Row 2: Save Time (40%) + Ensure Brand Consistency (60%) */}
+          {/* Row 2: Save Time (45%) + Ensure Consistency (55%) */}
           <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
             <div className="w-full md:w-[45%] flex">
               <div className="bg-slate-50 text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-sm border-2 border-slate-200">
@@ -83,7 +63,7 @@ export default function WhyChooseUsSection() {
               </div>
             </div>
             <div className="w-full md:w-[55%] flex">
-              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full ">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-sm border border-slate-200">
                 <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight flex items-center gap-3">
                   <CheckBadgeIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-black" />
                   Ensure Consistency
@@ -95,11 +75,15 @@ export default function WhyChooseUsSection() {
                 </p>
               </div>
             </div>
-            <div className="w-full md:w-[55%] flex">
-              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full ">
+          </div>
+
+          {/* Row 2.5: Grammar Check (Full Width) */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5 lg:gap-6 items-stretch">
+            <div className="w-full flex">
+              <div className="bg-white text-black rounded-[20px] p-12 md:p-14 lg:p-8 flex flex-col gap-4 md:gap-2 h-full shadow-sm border border-slate-200">
                 <h3 className="font-semibold text-2xl md:text-3xl lg:text-4xl raleway leading-tight flex items-center gap-3">
                   <DocumentCheckIcon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-black" />
-                  Grammar Check 
+                  Grammar Check
                 </h3>
                 <p className="text-sm md:text-base lg:text-lg leading-relaxed flex-grow text-black/70">
                   AI-powered grammar and content analysis for every page. Catch
@@ -123,15 +107,6 @@ export default function WhyChooseUsSection() {
                   speed for smoother browsing. Ensure every user can navigate
                   easily and reduce friction points.
                 </p>
-                <div className="relative w-full min-h-[400px] md:max-h-[450px] lg:max-h-[500px] rounded-lg overflow-hidden">
-                  <Image
-                    src="/images/home-page/uiquality.png"
-                    alt="UI Quality Analysis dashboard"
-                    height={1000}
-                    width={1000}
-                    className="object-contain w-full h-full shadow-lg rounded-lg"
-                  />
-                </div>
               </div>
             </div>
             <div className="w-full md:w-[45%] flex">
@@ -144,15 +119,6 @@ export default function WhyChooseUsSection() {
                   Optimize metadata, improve crawlability, and boost rankings.
                   Stay ahead with actionable insights for better search performance.
                 </p>
-                <div className="relative w-full min-h-[400px] md:max-h-[450px] lg:max-h-[500px] rounded-lg overflow-hidden">
-                  <Image
-                    src="/images/home-page/sco (2).png"
-                    alt="SEO and Structure Analysis dashboard"
-                    height={1000}
-                    width={1000}
-                    className="object-contain w-full h-full shadow-lg rounded-lg"
-                  />
-                </div>
               </div>
             </div>
           </div>

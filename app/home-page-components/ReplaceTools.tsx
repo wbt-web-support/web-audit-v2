@@ -59,8 +59,8 @@ const toolIcons: { [key: string]: ToolIcon } = {
   },
   lighthouse: {
     name: "Lighthouse",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    color: "text-[#ff4b01]",
+    bgColor: "bg-[#ff4b01]/10",
     letter: "LH",
     iconUrl: "/images/tools/lighthouse.svg",
   },
@@ -143,8 +143,8 @@ const toolIcons: { [key: string]: ToolIcon } = {
   },
   languagetool: {
     name: "LanguageTool",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    color: "text-[#ff4b01]",
+    bgColor: "bg-[#ff4b01]/10",
     letter: "LT",
     iconUrl: "/images/tools/languagetool.svg",
   },
@@ -171,8 +171,8 @@ const toolIcons: { [key: string]: ToolIcon } = {
   // },
   ithemes: {
     name: "iThemes Security",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    color: "text-[#ff4b01]",
+    bgColor: "bg-[#ff4b01]/10",
     letter: "IT",
     iconUrl: "/images/tools/ithemes-security.svg",
   },
@@ -185,8 +185,8 @@ const toolIcons: { [key: string]: ToolIcon } = {
   // },
   pagespeed: {
     name: "PageSpeed Insights",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    color: "text-[#ff4b01]",
+    bgColor: "bg-[#ff4b01]/10",
     letter: "PS",
     iconUrl: "/images/tools/google-pagespeed-insights-icon-2021-.svg",
   },
@@ -258,7 +258,7 @@ export default function ReplaceTools() {
       <section className="relative max-w-[90rem] overflow-hidden mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:py-20">
         <div className="relative">
           {/* Dark Blue Top Section */}
-          <div className="relative z-10 bg-[#2F00FF] rounded-t-2xl sm:rounded-t-3xl h-20 sm:h-24 md:h-32 lg:h-40"></div>
+          <div className="relative z-10 bg-[#ff4b01] rounded-t-2xl sm:rounded-t-3xl h-20 sm:h-24 md:h-32 lg:h-40"></div>
           
           {/* Content Container */}
           <div className="relative mx-auto bg-white rounded-b-2xl sm:rounded-b-3xl -mt-1">
@@ -335,9 +335,9 @@ export default function ReplaceTools() {
                         </div>
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-gray-50 rounded-lg p-3 sm:p-4 border-2 border-blue-200 relative">
+                    <div className="bg-gradient-to-br from-[#ff4b01]/10 to-gray-50 rounded-lg p-3 sm:p-4 border-2 border-[#ff4b01]/30 relative">
                       <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                        <span className="bg-[#ff4b01] text-white px-3 py-1 rounded-full text-xs font-semibold">
                           Best Value
                         </span>
                       </div>
@@ -373,15 +373,14 @@ export default function ReplaceTools() {
                         Other Tools
                       </th>
                       <th className="text-right px-4 md:px-6 lg:px-8 py-4 md:py-6 text-sm md:text-base lg:text-lg font-semibold text-gray-800">
-                        <div className="flex items-center justify-end gap-2 md:gap-3">
-                          <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0">
-                            <div className="absolute left-0 top-0 w-1/2 h-full bg-blue-500"></div>
-                            <div className="absolute right-0 top-0 w-1/2 h-full bg-black"></div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm md:text-base lg:text-lg font-semibold">Auditly</div>
-                            <div className="text-sm md:text-base lg:text-lg font-semibold">360</div>
-                          </div>
+                        <div className="flex items-center justify-end">
+                          <Image
+                            src="/orange-black-auditly.png"
+                            alt="Auditly 360"
+                            width={120}
+                            height={40}
+                            className="h-8  w-auto"
+                          />
                         </div>
                       </th>
                     </tr>

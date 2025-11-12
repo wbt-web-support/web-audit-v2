@@ -218,7 +218,7 @@ export default function Profile({
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-black">Personal Information</h2>
-                {!isEditing && <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors">
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="bg-[#ff4b01] text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#e64401] transition-colors">
                     Edit Profile
                   </button>}
               </div>
@@ -238,7 +238,7 @@ export default function Profile({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
-                  {isEditing ? <input type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600" /> : <p className="text-black">{dbFirstName || localFirstName || formData.first_name || userProfile?.first_name || 'Not provided'}</p>}
+                  {isEditing ? <input type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" /> : <p className="text-black">{dbFirstName || localFirstName || formData.first_name || userProfile?.first_name || 'Not provided'}</p>}
                 </motion.div>
                 <motion.div initial={{
                 opacity: 0,
@@ -253,7 +253,7 @@ export default function Profile({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
-                  {isEditing ? <input type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-600 focus:border-blue-600" /> : <p className="text-black">{dbLastName || localLastName || formData.last_name || userProfile?.last_name || 'Not provided'}</p>}
+                  {isEditing ? <input type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" /> : <p className="text-black">{dbLastName || localLastName || formData.last_name || userProfile?.last_name || 'Not provided'}</p>}
                 </motion.div>
               </div>
 
@@ -303,7 +303,7 @@ export default function Profile({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
-                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 capitalize">
+                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-[#ff4b01]/20 text-[#ff4b01] capitalize">
                   {userProfile?.role || 'user'}
                 </span>
               </motion.div>
@@ -322,10 +322,10 @@ export default function Profile({
                   Email Confirmed
                 </label>
                 <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${userProfile?.email_confirmed ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${userProfile?.email_confirmed ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'}`}>
                     {userProfile?.email_confirmed ? 'Confirmed' : 'Pending'}
                   </span>
-                  {!userProfile?.email_confirmed && <button className="text-blue-600 hover:text-blue-800 text-sm">
+                  {!userProfile?.email_confirmed && <button className="text-[#ff4b01] hover:text-[#e64401] text-sm">
                       Resend confirmation
                     </button>}
                 </div>
@@ -341,7 +341,7 @@ export default function Profile({
             }} transition={{
               duration: 0.3
             }}>
-                  <button onClick={handleSave} disabled={isLoading} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button onClick={handleSave} disabled={isLoading} className="bg-[#ff4b01] text-white px-4 py-2 rounded hover:bg-[#e64401] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {isLoading ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button onClick={handleCancel} className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors">

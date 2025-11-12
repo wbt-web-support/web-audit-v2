@@ -279,7 +279,7 @@ function DashboardContentWrapper() {
   if (loading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff4b01] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading dashboard...</p>
         </div>
       </div>;
@@ -291,18 +291,18 @@ function DashboardContentWrapper() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
           <p className="text-gray-600 mb-6">You need to be logged in to access the dashboard.</p>
-          <a href="/login" className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <a href="/login" className="inline-block bg-[#ff4b01] text-white px-6 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Go to Login
           </a>
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gray-50 overflow-x-hidden px-6">
+  return <div className="min-h-screen bg-gray-50 overflow-x-hidden px-4">
       {/* Sidebar */}
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} activeTab={activeTab} onTabChange={handleTabChange} userProfile={userProfile} selectedProjectId={selectedProjectId} />
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-60">
         {/* Header */}
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} userProfile={userProfile} />
 
@@ -321,7 +321,7 @@ function DashboardContentWrapper() {
 export default function DashboardPage() {
   return <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff4b01] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>}>

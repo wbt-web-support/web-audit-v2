@@ -253,7 +253,7 @@ export default function AdminUsers({
       case 'admin':
         return 'bg-red-100 text-red-800';
       case 'user':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#ff4b01]/20 text-[#ff4b01]';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -355,7 +355,7 @@ export default function AdminUsers({
             <h1 className="text-2xl font-bold text-black">User Management</h1>
             <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Add User
           </button>
         </div>
@@ -364,11 +364,11 @@ export default function AdminUsers({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Search users..." />
+            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" placeholder="Search users..." />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
               <option value="user">User</option>
@@ -376,7 +376,7 @@ export default function AdminUsers({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Status</option>
               <option value="verified">Verified</option>
               <option value="blocked">Blocked</option>
@@ -385,7 +385,7 @@ export default function AdminUsers({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
-            <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Plans</option>
               {plans.map(plan => <option key={plan.id} value={plan.plan_type}>
                   {plan.name} ({plan.plan_type})
@@ -395,7 +395,7 @@ export default function AdminUsers({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Project Limit</label>
-            <select value={filterProjectLimit} onChange={e => setFilterProjectLimit(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={filterProjectLimit} onChange={e => setFilterProjectLimit(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="all">All Limits</option>
               <option value="unlimited">Unlimited</option>
               <option value="limited">Limited</option>
@@ -408,7 +408,7 @@ export default function AdminUsers({
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-48">
             <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="created_at">Created Date</option>
               <option value="name">Name</option>
               <option value="email">Email</option>
@@ -419,7 +419,7 @@ export default function AdminUsers({
           </div>
           <div className="min-w-32">
             <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
-            <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]">
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
             </select>
@@ -455,7 +455,7 @@ export default function AdminUsers({
       delay: 0.2
     }}>
         {usersLoading ? <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff4b01]"></div>
           </div> : usersError ? <div className="text-center py-8">
             <div className="text-red-500 mb-2">
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,7 +463,7 @@ export default function AdminUsers({
               </svg>
             </div>
             <p className="text-red-600 font-medium">{usersError}</p>
-            <button onClick={() => loadUsers(plans)} className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button onClick={() => loadUsers(plans)} className="mt-2 text-[#ff4b01] hover:text-[#e64401] text-sm font-medium px-4 py-2 bg-[#ff4b01]/10 rounded-lg hover:bg-[#ff4b01]/20 transition-colors">
               Try again
             </button>
           </div> : <div className="overflow-x-auto">
@@ -557,7 +557,7 @@ export default function AdminUsers({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button onClick={() => handleViewUserDetails(user)} className="text-blue-600 hover:text-blue-900">
+                        <button onClick={() => handleViewUserDetails(user)} className="text-[#ff4b01] hover:text-[#e64401]">
                           View
                         </button>
                         {user.blocked ? <button onClick={() => handleUserAction(user.id, 'unblock')} disabled={actionLoading === 'unblock'} className="text-green-600 hover:text-green-900 disabled:opacity-50">
@@ -620,7 +620,7 @@ export default function AdminUsers({
           <div className="space-y-3">
             {plans.map(plan => <div key={plan.id} className="flex justify-between">
                 <span className="text-gray-700">{plan.name} ({plan.plan_type})</span>
-                <span className="font-semibold text-blue-600">{users.filter(u => u.plan_type === plan.plan_type).length}</span>
+                <span className="font-semibold text-[#ff4b01]">{users.filter(u => u.plan_type === plan.plan_type).length}</span>
               </div>)}
             <div className="flex justify-between">
               <span className="text-gray-700">No Plan</span>
@@ -715,13 +715,13 @@ export default function AdminUsers({
                     </div>
                     <div>
                       <label className="text-sm text-gray-600 block mb-1">Email Status</label>
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.email_confirmed ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.email_confirmed ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'}`}>
                         {selectedUser.email_confirmed ? 'Verified' : 'Not Verified'}
                       </span>
                     </div>
                     <div>
                       <label className="text-sm text-gray-600 block mb-1">Role</label>
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-[#ff4b01]/20 text-[#ff4b01]'}`}>
                         {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
                       </span>
                     </div>
@@ -742,7 +742,7 @@ export default function AdminUsers({
                     <div>
                       <label className="text-sm text-gray-600 block mb-1">Current Plan</label>
                       <div className="flex items-center gap-2">
-                        <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.plan_name === 'pro' ? 'bg-purple-100 text-purple-800' : selectedUser.plan_name === 'basic' ? 'bg-blue-100 text-blue-800' : selectedUser.plan_name === 'free' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
+                        <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.plan_name === 'pro' ? 'bg-purple-100 text-purple-800' : selectedUser.plan_name === 'basic' ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : selectedUser.plan_name === 'free' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
                           {selectedUser.plan_name || 'No Plan'}
                         </span>
                         {selectedUser.plan_type && <span className="text-xs text-gray-500">
@@ -819,12 +819,12 @@ export default function AdminUsers({
                 <button onClick={() => {
               const newRole = selectedUser.role === 'admin' ? 'user' : 'admin';
               handleUserAction(selectedUser.id, 'changeRole', newRole);
-            }} disabled={actionLoading === 'changeRole'} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            }} disabled={actionLoading === 'changeRole'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   {actionLoading === 'changeRole' ? 'Changing...' : `Change to ${selectedUser.role === 'admin' ? 'User' : 'Admin'}`}
                 </button>
-                {selectedUser.blocked ? <button onClick={() => handleUserAction(selectedUser.id, 'unblock')} disabled={actionLoading === 'unblock'} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                {selectedUser.blocked ? <button onClick={() => handleUserAction(selectedUser.id, 'unblock')} disabled={actionLoading === 'unblock'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     {actionLoading === 'unblock' ? 'Unblocking...' : 'Unblock User'}
-                  </button> : <button onClick={() => handleUserAction(selectedUser.id, 'block')} disabled={actionLoading === 'block'} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  </button> : <button onClick={() => handleUserAction(selectedUser.id, 'block')} disabled={actionLoading === 'block'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     {actionLoading === 'block' ? 'Blocking...' : 'Block User'}
                   </button>}
               </div>

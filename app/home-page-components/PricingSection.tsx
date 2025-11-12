@@ -681,7 +681,7 @@ export default function PricingSection({
   return (
     <section
       id="pricing"
-      className={`py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className} `}
+      className={`px-4 py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 ${className} `}
     >
       <div className="max-w-[90rem] mx-auto ">
         {/* Section Header */}
@@ -751,7 +751,7 @@ export default function PricingSection({
               : filteredPlans.length === 2
               ? "sm:grid-cols-2"
               : filteredPlans.length === 3
-              ? "sm:grid-cols-2 md:grid-cols-3"
+              ? "sm:grid-cols-2 lg:grid-cols-3"
               : "sm:grid-cols-2 lg:grid-cols-3"
           }`}
         >
@@ -834,12 +834,12 @@ export default function PricingSection({
 
                   <div className={`p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl mb-4 sm:mb-6 md:mb-8 ${
                     plan.plan_type === "Growth" 
-                      ? "bg-[#447BF8] text-white" 
+                      ? "bg-[#ff4b01] text-white" 
                       : "bg-[#F4F4F4] text-black"
                   }`}>
                     <h3 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h3>
                     <div className="mb-3 sm:mb-4">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-bold">{plan.price}</span>
+                      <span className="text-3xl sm:text-4xl  font-bold">{plan.price}</span>
 
                       {plan.plan_type !== "Starter" && (
                         <span
@@ -875,7 +875,7 @@ export default function PricingSection({
                         ? "bg-white text-black hover:bg-gray-100 disabled:bg-gray-300"
                         : plan.planStatus === "current"
                         ? "bg-gray-500 text-white cursor-not-allowed"
-                        : "bg-white border-blue-400 border text-black hover:bg-blue-400 hover:text-white disabled:bg-gray-500"
+                        : "bg-white border-[#ff4b01] border text-black hover:bg-[#ff4b01] hover:text-white disabled:bg-gray-500"
                     }`}
                   >
                     {loading === plan.id ? "Processing..." : plan.cta}
