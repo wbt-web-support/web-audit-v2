@@ -179,7 +179,7 @@ export default function SiteCrawlForm({
 
   // Show loading state while plan is being fetched
   if (planLoading) {
-    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
+    return <motion.div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
       opacity: 0,
       y: 20
     }} animate={{
@@ -250,7 +250,7 @@ export default function SiteCrawlForm({
 
   // Show error state if plan loading failed
   if (!planInfo) {
-    return <motion.div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
+    return <motion.div className="bg-white p-4 sm:p-6 border border-gray-200 rounded-lg overflow-hidden h-full flex flex-col" initial={{
       opacity: 0,
       y: 20
     }} animate={{
