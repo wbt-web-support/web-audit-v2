@@ -72,8 +72,9 @@ export default function DashboardSidebar({
     verifyRole();
   }, [verifyRole]);
 
-  // Update display name when userProfile changes
+  // Update display name when userProfile or user changes
   useEffect(() => {
+    // Priority 1: Check userProfile first_name and last_name
     if (userProfile?.first_name && userProfile?.last_name) {
       const fullName = `${userProfile.first_name} ${userProfile.last_name}`;
       setDisplayName(fullName);
@@ -84,14 +85,29 @@ export default function DashboardSidebar({
     } else if (userProfile?.last_name) {
       setDisplayName(userProfile.last_name);
       setUserInitial(userProfile.last_name[0].toUpperCase());
-    } else if (userProfile?.email) {
+    } 
+    // Priority 2: Check Google user metadata (full_name or name)
+    else if (user?.user_metadata?.full_name) {
+      const googleName = user.user_metadata.full_name;
+      setDisplayName(googleName);
+      setUserInitial(googleName.trim()[0].toUpperCase());
+    } else if (user?.user_metadata?.name) {
+      const googleName = user.user_metadata.name;
+      setDisplayName(googleName);
+      setUserInitial(googleName.trim()[0].toUpperCase());
+    }
+    // Priority 3: Fall back to email trimming
+    else if (userProfile?.email) {
       setDisplayName(userProfile.email.split('@')[0]);
       setUserInitial(userProfile.email[0].toUpperCase());
+    } else if (user?.email) {
+      setDisplayName(user.email.split('@')[0]);
+      setUserInitial(user.email[0].toUpperCase());
     } else {
       setDisplayName('User');
       setUserInitial('U');
     }
-  }, [userProfile]);
+  }, [userProfile, user]);
 
   // Refresh plan information when user changes
   const handlePlanRefresh = useCallback(() => {
