@@ -4,28 +4,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/lib/stores/authStore'
 
 export default function Navbar() {
   const [isHeroSection, setIsHeroSection] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, loading, authChecked, user } = useAuth();
-  const [authState, setAuthState] = useState(() => isAuthenticated);
-
-  // Update UI when authentication state changes (login/logout)
-  useEffect(() => {
-    // Update auth state whenever isAuthenticated or user changes
-    // This ensures immediate update on login/logout without requiring page refresh
-    setAuthState(isAuthenticated);
-  }, [isAuthenticated, user]);
+  const { loading, authChecked } = useAuth();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   // Close mobile menu when auth state changes (only after auth is checked)
   useEffect(() => {
     if (authChecked) {
       setIsMobileMenuOpen(false);
     }
-  }, [authChecked, isAuthenticated]);
+  }, [authChecked, isLoggedIn]);
 
   const items = [
     {
@@ -247,7 +241,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-2 md:gap-3">
           {!loading && authChecked && (
             <>
-              {authState ? (
+              {isLoggedIn ? (
                 <Link 
                   href="/dashboard"
                   className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
@@ -352,7 +346,7 @@ export default function Navbar() {
           <div className="p-4 border-t border-gray-200/50 space-y-3">
             {!loading && authChecked && (
               <>
-                {authState ? (
+                {isLoggedIn ? (
                   <Link 
                     href="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}

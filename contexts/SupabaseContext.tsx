@@ -66,6 +66,7 @@ import {
   getUserProjects as getUserProjectsRaw,
   getUserSubscription as getUserSubscriptionRaw,
 } from './supabase-user-management';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 // Auth and audit project logic are kept local in this context for now
 
@@ -77,6 +78,7 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(
 );
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
+  const { setLoggedIn } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -167,7 +169,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         if (isMounted) {
           setSession(session);
 
-          setUser(session?.user ?? null);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          setLoggedIn(!!currentUser);
 
           if (session?.user) {
             // Create a fallback profile immediately to avoid loading issues
@@ -299,7 +303,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         case "SIGNED_IN":
           setSession(session);
 
-          setUser(session?.user ?? null);
+          const signedInUser = session?.user ?? null;
+          setUser(signedInUser);
+          setLoggedIn(!!signedInUser);
 
           break;
 
@@ -307,6 +313,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           setSession(null);
 
           setUser(null);
+          setLoggedIn(false);
 
           setUserProfile(null);
 
@@ -320,14 +327,18 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         case "USER_UPDATED":
           setSession(session);
 
-          setUser(session?.user ?? null);
+          const updatedUser = session?.user ?? null;
+          setUser(updatedUser);
+          setLoggedIn(!!updatedUser);
 
           break;
 
         default:
           setSession(session);
 
-          setUser(session?.user ?? null);
+          const defaultUser = session?.user ?? null;
+          setUser(defaultUser);
+          setLoggedIn(!!defaultUser);
       }
 
       if (session?.user) {
@@ -513,6 +524,16 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   };
 
 
+  // Wrapped signOut to ensure Zustand store is updated
+  const handleSignOut = async () => {
+    const result = await signOut();
+    // Explicitly update Zustand store on logout
+    if (!result.error) {
+      setLoggedIn(false);
+    }
+    return result;
+  };
+
   const value = {
     user,
     userProfile,
@@ -523,7 +544,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signInWithGoogle,
-    signOut,
+    signOut: handleSignOut,
     resendConfirmation,
     updateProfile: async (updates: Partial<UserProfile>) => updateProfileRaw(user, updates),
     // Audit Projects
