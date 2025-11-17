@@ -70,15 +70,88 @@ export async function GET(request: NextRequest) {
 
     const planStatistics = Array.from(planStatsMap.values())
 
+    // Helper function to get user display name
+    const getUserDisplayName = (user: { first_name?: string | null; last_name?: string | null; email?: string | null }) => {
+      if (user?.first_name && user?.last_name) {
+        return `${user.first_name} ${user.last_name}`;
+      }
+      if (user?.first_name) {
+        return user.first_name;
+      }
+      if (user?.last_name) {
+        return user.last_name;
+      }
+      // Fallback to email username if name is not available
+      if (user?.email) {
+        return user.email.split('@')[0];
+      }
+      return 'Unknown User';
+    };
+
+    // Fetch auth user data for users who might have Google auth
+    const userIds = payments?.map(p => p.user_id).filter(Boolean) || [];
+    const authUserDataMap = new Map<string, any>();
+    
+    // Fetch auth data for all unique user IDs
+    if (userIds.length > 0) {
+      try {
+        const uniqueUserIds = [...new Set(userIds)];
+        await Promise.all(
+          uniqueUserIds.map(async (userId) => {
+            try {
+              const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+              if (!authError && authUser?.user) {
+                authUserDataMap.set(userId, {
+                  raw_user_meta_data: authUser.user.user_metadata || {},
+                  app_metadata: authUser.user.app_metadata || {}
+                });
+              }
+            } catch (err) {
+              // Silently fail for individual users
+              console.warn(`Failed to fetch auth data for user ${userId}:`, err);
+            }
+          })
+        );
+      } catch (err) {
+        // Silently fail - we'll just use database data
+        console.warn('Failed to fetch some auth user data:', err);
+      }
+    }
+
     // Format payment history
     const formattedPayments = payments?.map(payment => {
       // Handle the case where users might be an array or single object
       const user = Array.isArray(payment.users) ? payment.users[0] : payment.users
       
+      // Try to get Google auth data
+      const authData = authUserDataMap.get(payment.user_id);
+      const googleFirstName = authData?.raw_user_meta_data?.first_name || 
+        authData?.raw_user_meta_data?.full_name?.split(' ')[0];
+      const googleLastName = authData?.raw_user_meta_data?.last_name || 
+        authData?.raw_user_meta_data?.full_name?.split(' ').slice(1).join(' ');
+      const googleFullName = authData?.raw_user_meta_data?.full_name || 
+        authData?.raw_user_meta_data?.name;
+
+      // Determine display name with priority: Google > Database > Email
+      let userName = 'Unknown User';
+      if (googleFullName) {
+        userName = googleFullName;
+      } else if (googleFirstName && googleLastName) {
+        userName = `${googleFirstName} ${googleLastName}`;
+      } else if (user?.first_name && user?.last_name) {
+        userName = `${user.first_name} ${user.last_name}`;
+      } else if (googleFirstName || user?.first_name) {
+        userName = googleFirstName || user?.first_name || '';
+      } else if (googleLastName || user?.last_name) {
+        userName = googleLastName || user?.last_name || '';
+      } else if (user?.email) {
+        userName = user.email.split('@')[0];
+      }
+      
       return {
         id: payment.id,
         user: user?.email || 'Unknown',
-        userName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Unknown User',
+        userName: userName,
         plan: payment.plan_name,
         amount: Number(payment.amount),
         currency: payment.currency || 'INR',

@@ -718,7 +718,7 @@ export default function AdminPlans({
           </div>
         </motion.div>
 
-        <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
+        {/* <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
         opacity: 0,
         y: 20
       }} animate={{
@@ -740,7 +740,7 @@ export default function AdminPlans({
               <span className="font-medium text-black">Export Plans</span>
             </button>
           </div>
-        </motion.div>
+        </motion.div> */}
 
         <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
         opacity: 0,

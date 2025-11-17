@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '@/contexts/SupabaseContext';
 import { supabase } from '@/lib/supabase-client';
 import FeedbackShowcase from './FeedbackShowcase';
+import UserDetailsModal from './UserDetailsModal';
 interface AdminUsersProps {
   userProfile: {
     id: string;
@@ -37,6 +38,16 @@ interface User {
   auth_users?: {
     last_sign_in_at: string;
     email_confirmed_at: string;
+    raw_user_meta_data?: {
+      full_name?: string;
+      name?: string;
+      first_name?: string;
+      last_name?: string;
+      avatar_url?: string;
+    };
+    app_metadata?: {
+      provider?: string;
+    };
   };
   project_count?: number;
   plan_limit?: number;
@@ -73,6 +84,13 @@ export default function AdminUsers({
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userActivity, setUserActivity] = useState<Record<string, unknown> | null>(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  const [authUserData, setAuthUserData] = useState<{
+    raw_user_meta_data?: Record<string, unknown>;
+    app_metadata?: Record<string, unknown>;
+    providers?: string[];
+    last_sign_in_at?: string;
+    email_confirmed_at?: string;
+  } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -240,12 +258,40 @@ export default function AdminUsers({
   const handleViewUserDetails = async (user: User) => {
     setSelectedUser(user);
     setShowUserDetails(true);
+    setAuthUserData(null);
     try {
-      // Load user activity, projects, and subscription
-      const [activityResult] = await Promise.all([getUserActivity(user.id)]);
+      // Load user activity and auth data in parallel
+      const [activityResult, authDataResult] = await Promise.all([
+        getUserActivity(user.id),
+        fetchAuthUserData(user.id)
+      ]);
       if (activityResult.data) setUserActivity(activityResult.data);
+      if (authDataResult) setAuthUserData(authDataResult);
     } catch (error) {
       console.error('Error loading user details:', error);
+    }
+  };
+
+  const fetchAuthUserData = async (userId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+
+      const response = await fetch(`/api/admin/user-auth-data?userId=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch auth user data');
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching auth user data:', error);
+      return null;
     }
   };
   const getRoleColor = (role: string) => {
@@ -266,17 +312,6 @@ export default function AdminUsers({
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-  const renderDateField = (value: unknown, label: string) => {
-    if (value && typeof value === 'string') {
-      return <div className="bg-gray-50 rounded p-4">
-          <div>
-            <span className="text-gray-600 text-sm">{label}</span>
-            <p className="text-black font-medium mt-1">{formatDate(value)}</p>
-          </div>
-        </div>;
-    }
-    return null;
   };
   const getUserDisplayName = (user: User) => {
     if (user.first_name && user.last_name) {
@@ -355,9 +390,9 @@ export default function AdminUsers({
             <h1 className="text-2xl font-bold text-black">User Management</h1>
             <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
           </div>
-          <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
+          {/* <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Add User
-          </button>
+          </button> */}
         </div>
 
         {/* Filters */}
@@ -668,168 +703,24 @@ export default function AdminUsers({
       </div>
 
       {/* User Details Modal */}
-      {showUserDetails && selectedUser && <motion.div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} exit={{
-      opacity: 0
-    }} onClick={() => setShowUserDetails(false)}>
-          <motion.div className="bg-white rounded-lg  max-w-4xl w-full max-h-[90vh] overflow-hidden" initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: 20
-      }} onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-black">{getUserDisplayName(selectedUser)}</h2>
-                  <p className="text-gray-600 mt-1">{selectedUser.email}</p>
-                </div>
-                <button onClick={() => setShowUserDetails(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                  ×
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Basic Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-black mb-4">Basic Information</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Name</label>
-                      <p className="text-black font-medium">{getUserDisplayName(selectedUser)}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Email</label>
-                      <p className="text-black font-medium">{selectedUser.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Email Status</label>
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.email_confirmed ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'}`}>
-                        {selectedUser.email_confirmed ? 'Verified' : 'Not Verified'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Role</label>
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-[#ff4b01]/20 text-[#ff4b01]'}`}>
-                        {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Status</label>
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.blocked ? 'bg-red-100 text-red-800' : selectedUser.email_confirmed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {selectedUser.blocked ? 'Blocked' : selectedUser.email_confirmed ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Created</label>
-                      <p className="text-black font-medium">{formatDate(selectedUser.created_at)}</p>
-                    </div>
-                    {selectedUser.last_activity_at && <div>
-                        <label className="text-sm text-gray-600 block mb-1">Last Activity</label>
-                        <p className="text-black font-medium">{formatDate(selectedUser.last_activity_at)}</p>
-                      </div>}
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Current Plan</label>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${selectedUser.plan_name === 'pro' ? 'bg-purple-100 text-purple-800' : selectedUser.plan_name === 'basic' ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : selectedUser.plan_name === 'free' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
-                          {selectedUser.plan_name || 'No Plan'}
-                        </span>
-                        {selectedUser.plan_type && <span className="text-xs text-gray-500">
-                            ({selectedUser.plan_type})
-                          </span>}
-                      </div>
-                    </div>
-                     <div>
-                       <label className="text-sm text-gray-600 block mb-1">Project Limit</label>
-                       <p className="text-black font-medium">
-                         {selectedUser.plan_limit === -1 ? 'Unlimited' : selectedUser.plan_limit !== undefined && selectedUser.plan_limit !== null ? `${selectedUser.plan_limit} projects` : selectedUser.plan_type ? 'No limit set' : 'No plan assigned'}
-                       </p>
-                     </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Current Projects</label>
-                       <div className="flex items-center gap-2">
-                         <p className="text-black font-medium">{selectedUser.project_count || 0}</p>
-                         {selectedUser.plan_limit === -1 ? <span className="text-sm text-gray-500">unlimited</span> : selectedUser.plan_limit !== undefined && selectedUser.plan_limit !== null ? <span className="text-sm text-gray-500">
-                             of {selectedUser.plan_limit}
-                           </span> : selectedUser.plan_type ? <span className="text-sm text-gray-500">no limit set</span> : <span className="text-sm text-gray-500">no plan</span>}
-                         {selectedUser.plan_limit && selectedUser.plan_limit > 0 && selectedUser.project_count && selectedUser.project_count > selectedUser.plan_limit && <span className="text-xs text-red-500 font-medium">
-                             (Exceeded!)
-                           </span>}
-                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600 block mb-1">Image Scan Credits</label>
-                      <div className="flex items-center gap-2">
-                        <p className={`font-medium ${(selectedUser.image_scan_credits ?? 0) < 5 ? 'text-yellow-600' : 'text-black'}`}>
-                          {selectedUser.image_scan_credits ?? 0}
-                        </p>
-                        {(selectedUser.image_scan_credits ?? 0) < 5 && (selectedUser.image_scan_credits ?? 0) > 0 && (
-                          <span className="text-xs text-yellow-600">⚠️ Low credits</span>
-                        )}
-                        {(selectedUser.image_scan_credits ?? 0) === 0 && (
-                          <span className="text-xs text-red-600">⚠️ No credits</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Activity Summary */}
-                <div>
-                  <h3 className="text-lg font-semibold text-black mb-4">Activity Summary</h3>
-                  {userActivity ? <div className="space-y-4">
-                      <div className="bg-gray-50 rounded p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Total Projects</span>
-                          <span className="text-xl font-semibold text-black">{typeof userActivity.totalProjects === 'number' ? userActivity.totalProjects : 0}</span>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Total Tickets</span>
-                          <span className="text-xl font-semibold text-black">{typeof userActivity.totalTickets === 'number' ? userActivity.totalTickets : 0}</span>
-                        </div>
-                      </div>
-                      {renderDateField(userActivity.lastProject, 'Last Project')}
-                      {renderDateField(userActivity.lastTicket, 'Last Ticket')}
-                    </div> : <div className="text-center py-8">
-                      <div className="text-gray-500">Loading activity...</div>
-                    </div>}
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-              <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowUserDetails(false)} className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 transition-colors">
-                  Cancel
-                </button>
-                <button onClick={() => {
-              const newRole = selectedUser.role === 'admin' ? 'user' : 'admin';
-              handleUserAction(selectedUser.id, 'changeRole', newRole);
-            }} disabled={actionLoading === 'changeRole'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                  {actionLoading === 'changeRole' ? 'Changing...' : `Change to ${selectedUser.role === 'admin' ? 'User' : 'Admin'}`}
-                </button>
-                {selectedUser.blocked ? <button onClick={() => handleUserAction(selectedUser.id, 'unblock')} disabled={actionLoading === 'unblock'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    {actionLoading === 'unblock' ? 'Unblocking...' : 'Unblock User'}
-                  </button> : <button onClick={() => handleUserAction(selectedUser.id, 'block')} disabled={actionLoading === 'block'} className="px-4 py-2 bg-[#ff4b01] text-white rounded hover:bg-[#e64401] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    {actionLoading === 'block' ? 'Blocking...' : 'Block User'}
-                  </button>}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>}
+      <UserDetailsModal
+        isOpen={showUserDetails}
+        user={selectedUser ? {
+          ...selectedUser,
+          auth_users: authUserData ? {
+            last_sign_in_at: authUserData.last_sign_in_at || '',
+            email_confirmed_at: authUserData.email_confirmed_at || '',
+            raw_user_meta_data: authUserData.raw_user_meta_data as any,
+            app_metadata: authUserData.app_metadata as any,
+          } : selectedUser.auth_users
+        } : null}
+        userActivity={userActivity}
+        actionLoading={actionLoading}
+        onClose={() => {
+          setShowUserDetails(false);
+          setAuthUserData(null);
+        }}
+        onUserAction={handleUserAction}
+      />
     </motion.div>;
 }

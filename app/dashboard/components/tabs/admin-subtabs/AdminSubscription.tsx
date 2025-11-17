@@ -238,9 +238,9 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-black">Subscription Plans</h3>
-          <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
+          {/* <button className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors">
             Add Plan
-          </button>
+          </button> */}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -444,7 +444,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
           </div>
         </motion.div>
 
-        <motion.div
+        {/* <motion.div
           className="bg-white rounded-lg border border-gray-200 p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -462,7 +462,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
               <span className="font-medium text-black">Manage Billing Settings</span>
             </button>
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </motion.div>
   )

@@ -260,7 +260,7 @@ export default function CreditPackagesManagement() {
 
       {/* Credit Package Form Modal */}
       {showCreditPackageForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
             className="bg-white rounded-lg p-6 w-full max-w-md"
             initial={{ opacity: 0, scale: 0.9 }}

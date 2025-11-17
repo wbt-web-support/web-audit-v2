@@ -62,8 +62,63 @@ export default function Profile({
   const [dbLastName, setDbLastName] = useState('');
   const [dbRole, setDbRole] = useState('');
 
-  // Create full name from first and last name - prioritize database values
-  const fullName = dbFirstName && dbLastName ? `${dbFirstName} ${dbLastName}` : localFirstName && localLastName ? `${localFirstName} ${localLastName}` : formData.first_name && formData.last_name ? `${formData.first_name} ${formData.last_name}` : userProfile?.first_name && userProfile?.last_name ? `${userProfile.first_name} ${userProfile.last_name}` : dbFirstName || dbLastName || localFirstName || localLastName || formData.first_name || formData.last_name || userProfile?.first_name || userProfile?.last_name || 'Not provided';
+  // Helper function to get display name with priority: Google > Database > Email
+  const getDisplayName = (type: 'first' | 'last' | 'full') => {
+    // Get Google auth data
+    const googleFirstName = user?.user_metadata?.first_name || 
+      user?.user_metadata?.full_name?.split(' ')[0];
+    const googleLastName = user?.user_metadata?.last_name || 
+      user?.user_metadata?.full_name?.split(' ').slice(1).join(' ');
+    const googleFullName = user?.user_metadata?.full_name || 
+      user?.user_metadata?.name;
+
+    if (type === 'first') {
+      return googleFirstName || 
+        dbFirstName || 
+        localFirstName || 
+        formData.first_name || 
+        userProfile?.first_name || 
+        (userProfile?.email ? userProfile.email.split('@')[0] : '');
+    }
+    
+    if (type === 'last') {
+      return googleLastName || 
+        dbLastName || 
+        localLastName || 
+        formData.last_name || 
+        userProfile?.last_name || 
+        '';
+    }
+    
+    // Full name
+    if (googleFullName) {
+      return googleFullName;
+    }
+    if (googleFirstName && googleLastName) {
+      return `${googleFirstName} ${googleLastName}`;
+    }
+    if (dbFirstName && dbLastName) {
+      return `${dbFirstName} ${dbLastName}`;
+    }
+    if (localFirstName && localLastName) {
+      return `${localFirstName} ${localLastName}`;
+    }
+    if (formData.first_name && formData.last_name) {
+      return `${formData.first_name} ${formData.last_name}`;
+    }
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`;
+    }
+    // Fallback to email username
+    if (userProfile?.email) {
+      return userProfile.email.split('@')[0];
+    }
+    return '';
+  };
+
+  const displayFirstName = getDisplayName('first');
+  const displayLastName = getDisplayName('last');
+  const fullName = getDisplayName('full');
 
   // Fetch actual project count
   useEffect(() => {
@@ -238,7 +293,24 @@ export default function Profile({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
-                  {isEditing ? <input type="text" name="first_name" value={formData.first_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" /> : <p className="text-black">{dbFirstName || localFirstName || formData.first_name || userProfile?.first_name || 'Not provided'}</p>}
+                  {isEditing ? (
+                    <input 
+                      type="text" 
+                      name="first_name" 
+                      value={formData.first_name} 
+                      onChange={handleInputChange} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-black">{displayFirstName}</p>
+                      {!dbFirstName && !localFirstName && !formData.first_name && !userProfile?.first_name && user?.user_metadata?.first_name && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded" title="From Google account">
+                          Google
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
                 <motion.div initial={{
                 opacity: 0,
@@ -253,7 +325,24 @@ export default function Profile({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
-                  {isEditing ? <input type="text" name="last_name" value={formData.last_name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" /> : <p className="text-black">{dbLastName || localLastName || formData.last_name || userProfile?.last_name || 'Not provided'}</p>}
+                  {isEditing ? (
+                    <input 
+                      type="text" 
+                      name="last_name" 
+                      value={formData.last_name} 
+                      onChange={handleInputChange} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-black">{displayLastName || '-'}</p>
+                      {!dbLastName && !localLastName && !formData.last_name && !userProfile?.last_name && user?.user_metadata?.last_name && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded" title="From Google account">
+                          Google
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               </div>
 
@@ -270,7 +359,14 @@ export default function Profile({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
                 </label>
-                <p className="text-black">{fullName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-black">{fullName}</p>
+                  {user?.user_metadata?.full_name || user?.user_metadata?.name ? (
+                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded" title="From Google account">
+                      Google
+                    </span>
+                  ) : null}
+                </div>
               </motion.div>
 
               <motion.div initial={{
@@ -286,50 +382,13 @@ export default function Profile({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
                 </label>
-                <p className="text-black">{userProfile?.email || 'Not provided'}</p>
+                <p className="text-black">{userProfile?.email || user?.email || ''}</p>
                 <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
               </motion.div>
 
-              <motion.div initial={{
-              opacity: 0,
-              y: 10
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.4,
-              delay: 0.7
-            }}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Role
-                </label>
-                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-[#ff4b01]/20 text-[#ff4b01] capitalize">
-                  {userProfile?.role || 'user'}
-                </span>
-              </motion.div>
+            
 
-              <motion.div initial={{
-              opacity: 0,
-              y: 10
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.4,
-              delay: 0.8
-            }}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Confirmed
-                </label>
-                <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${userProfile?.email_confirmed ? 'bg-[#ff4b01]/20 text-[#ff4b01]' : 'bg-gray-100 text-gray-800'}`}>
-                    {userProfile?.email_confirmed ? 'Confirmed' : 'Pending'}
-                  </span>
-                  {!userProfile?.email_confirmed && <button className="text-[#ff4b01] hover:text-[#e64401] text-sm">
-                      Resend confirmation
-                    </button>}
-                </div>
-              </motion.div>
+             
 
 
               {isEditing && <motion.div className="flex space-x-3 pt-4 border-t border-gray-200" initial={{

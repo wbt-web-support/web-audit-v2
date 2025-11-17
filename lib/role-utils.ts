@@ -65,13 +65,36 @@ export class RoleVerifier {
         data: profile,
         error: profileError
       } = await supabase.from('users').select('role, email_confirmed, created_at').eq('id', userId).single();
+      
+      // Handle profile fetch errors gracefully
       if (profileError) {
+        // Check if it's a "not found" error (PGRST116) - profile might not exist yet
+        if (profileError.code === 'PGRST116' || profileError.message?.includes('No rows')) {
+          console.warn('Profile not found for user:', userId, '- User may need to complete registration');
+          // Return default user role if profile doesn't exist yet
+          return {
+            isAdmin: false,
+            isUser: true,
+            role: 'user' as UserRole,
+            verified: false,
+            error: 'User profile not found - may need to complete registration'
+          };
+        }
         console.error('Profile fetch error:', profileError);
-        return this.createErrorResult(`Database error: ${profileError.message}`);
+        const errorMessage = profileError.message || profileError.code || 'Unknown database error';
+        return this.createErrorResult(`Database error: ${errorMessage}`);
       }
+      
       if (!profile) {
-        console.error('Profile not found for user:', userId);
-        return this.createErrorResult('User profile not found');
+        console.warn('Profile not found for user:', userId);
+        // Return default user role if profile doesn't exist
+        return {
+          isAdmin: false,
+          isUser: true,
+          role: 'user' as UserRole,
+          verified: false,
+          error: 'User profile not found'
+        };
       }
       const role = profile.role as UserRole;
       const result: RoleVerificationResult = {
