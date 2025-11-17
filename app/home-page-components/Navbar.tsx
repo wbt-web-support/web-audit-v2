@@ -10,7 +10,22 @@ export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, authChecked, user } = useAuth();
+  const [authState, setAuthState] = useState(() => isAuthenticated);
+
+  // Update UI when authentication state changes (login/logout)
+  useEffect(() => {
+    // Update auth state whenever isAuthenticated or user changes
+    // This ensures immediate update on login/logout without requiring page refresh
+    setAuthState(isAuthenticated);
+  }, [isAuthenticated, user]);
+
+  // Close mobile menu when auth state changes (only after auth is checked)
+  useEffect(() => {
+    if (authChecked) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [authChecked, isAuthenticated]);
 
   const items = [
     {
@@ -230,9 +245,9 @@ export default function Navbar() {
 
         {/* Desktop Buttons - Hidden on mobile */}
         <div className="hidden md:flex items-center gap-2 md:gap-3">
-          {!loading && (
+          {!loading && authChecked && (
             <>
-              {isAuthenticated ? (
+              {authState ? (
                 <Link 
                   href="/dashboard"
                   className={`${buttonClasses} px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 rounded-xl md:rounded-2xl cursor-pointer transition-all duration-300 whitespace-nowrap text-sm md:text-base relative overflow-hidden group hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl`}
@@ -335,9 +350,9 @@ export default function Navbar() {
 
           {/* Auth Buttons */}
           <div className="p-4 border-t border-gray-200/50 space-y-3">
-            {!loading && (
+            {!loading && authChecked && (
               <>
-                {isAuthenticated ? (
+                {authState ? (
                   <Link 
                     href="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}

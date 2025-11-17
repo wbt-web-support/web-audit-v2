@@ -51,17 +51,17 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#FF4D04]/5 to-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-12 md:py-16 lg:py-20">
         {/* Back Button */}
         <Link
           href="/"
-          className="inline-block text-sm md:text-base font-medium text-blue-600 hover:text-blue-800 mb-6 md:mb-8 transition-colors"
+          className="inline-block text-sm md:text-base font-medium text-[#FF4D04] hover:text-[#FF4D04]/80 mb-6 md:mb-8 transition-colors"
         >
           ← Back to Home
         </Link>
-        <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-6 md:p-8 lg:p-10">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-blue-900 mb-4 md:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-[#FF4D04]/20 p-6 md:p-8 lg:p-10">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#FF4D04] mb-4 md:mb-6">
             Contact Us
           </h1>
           <p className="text-base md:text-lg text-gray-700 mb-8 md:mb-10">
@@ -84,7 +84,7 @@ export default function ContactPage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-sm md:text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF4D04] focus:border-[#FF4D04] outline-none transition-colors text-sm md:text-base"
                   placeholder="Your name"
                 />
               </div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-sm md:text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF4D04] focus:border-[#FF4D04] outline-none transition-colors text-sm md:text-base"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -122,7 +122,7 @@ export default function ContactPage() {
                 value={formData.subject}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-sm md:text-base bg-white"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF4D04] focus:border-[#FF4D04] outline-none transition-colors text-sm md:text-base bg-white"
               >
                 <option value="">Select a subject</option>
                 <option value="support">Technical Support</option>
@@ -147,7 +147,7 @@ export default function ContactPage() {
                 onChange={handleChange}
                 required
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none text-sm md:text-base"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF4D04] focus:border-[#FF4D04] outline-none transition-colors resize-none text-sm md:text-base"
                 placeholder="Tell us how we can help you..."
               />
             </div>
@@ -156,7 +156,7 @@ export default function ContactPage() {
               <div
                 className={`p-4 rounded-lg ${
                   submitStatus.type === "success"
-                    ? "bg-blue-50 text-blue-800 border border-blue-200"
+                    ? "bg-[#FF4D04]/5 text-[#FF4D04] border border-[#FF4D04]/20"
                     : "bg-red-50 text-red-800 border border-red-200"
                 }`}
               >
@@ -167,14 +167,14 @@ export default function ContactPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full md:w-auto bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              className="w-full md:w-auto bg-[#FF4D04] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#FF4D04]/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
             >
               {isSubmitting ? "Sending..." : "Send Message"}
             </button>
           </form>
 
           <div className="mt-12 md:mt-16 pt-8 md:pt-12 border-t border-gray-200">
-            <h2 className="text-xl md:text-2xl font-semibold text-blue-800 mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#FF4D04] mb-6">
               Other Ways to Reach Us
             </h2>
             <div className="space-y-4">
@@ -186,7 +186,7 @@ export default function ContactPage() {
                   For general inquiries, email us at{" "}
                   <a
                     href="mailto:support@auditly360.com"
-                    className="text-blue-600 hover:text-blue-800 underline"
+                    className="text-[#FF4D04] hover:text-[#FF4D04]/80 underline"
                   >
                     support@auditly360.com
                   </a>
