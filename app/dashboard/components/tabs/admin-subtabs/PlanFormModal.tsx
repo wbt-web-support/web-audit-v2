@@ -32,6 +32,7 @@ interface PlanFormData {
   sort_order: number;
   razorpay_plan_id: string;
   subscription_id: string;
+  image_scan_credits: number;
 }
 
 interface PlanFormModalProps {
@@ -305,6 +306,26 @@ export default function PlanFormModal({
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {formData.max_projects === -1 ? 'Unlimited projects' : `${formData.max_projects} project${formData.max_projects !== 1 ? 's' : ''} allowed`}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Free Image Scan Credits <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    value={formData.image_scan_credits || 0} 
+                    onChange={e => setFormData(prev => ({
+                      ...prev,
+                      image_scan_credits: parseInt(e.target.value) || 0
+                    }))} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff4b01] focus:border-[#ff4b01]" 
+                    min="0" 
+                    placeholder="Number of free image scan credits"
+                    required 
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Number of free image scan credits provided with this plan when user subscribes or updates their plan.
                   </p>
                 </div>
               </div>

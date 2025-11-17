@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const planData = {
+    const planData: Record<string, unknown> = {
       name,
       description: body.description || '',
       plan_type,
@@ -130,16 +130,42 @@ export async function POST(request: NextRequest) {
       limits: limits || {}
     };
 
-    const { data, error } = await supabase
+    // Only include image_scan_credits if the column exists in the database
+    // If the column doesn't exist, run: database/add_image_scan_credits_to_plans.sql
+    if (body.image_scan_credits !== undefined) {
+      planData.image_scan_credits = body.image_scan_credits;
+    }
+
+    let { data, error } = await supabase
       .from('plans')
       .insert([planData])
       .select()
       .single();
 
-    if (error) {
+    // If error is due to missing image_scan_credits column, retry without it
+    if (error && error.message?.includes('image_scan_credits') && error.message?.includes('column')) {
+      console.warn('⚠️ image_scan_credits column not found. Retrying without it. Please run: database/add_image_scan_credits_to_plans.sql');
+      const { image_scan_credits, ...planDataWithoutCredits } = planData;
+      const retryResult = await supabase
+        .from('plans')
+        .insert([planDataWithoutCredits])
+        .select()
+        .single();
+      
+      if (retryResult.error) {
+        console.error('Error creating plan:', retryResult.error);
+        return NextResponse.json(
+          { error: 'Failed to create plan', details: retryResult.error.message },
+          { status: 500 }
+        );
+      }
+      
+      data = retryResult.data;
+      error = null;
+    } else if (error) {
       console.error('Error creating plan:', error);
       return NextResponse.json(
-        { error: 'Failed to create plan' },
+        { error: 'Failed to create plan', details: error.message },
         { status: 500 }
       );
     }

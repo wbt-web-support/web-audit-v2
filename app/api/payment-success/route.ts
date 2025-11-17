@@ -357,6 +357,43 @@ export async function POST(request: NextRequest) {
           // Verify the update was successful
           if (!Array.isArray(fallbackUpdateResult) || fallbackUpdateResult.length === 0) {
             console.warn('Fallback: Update succeeded but no data returned - user might not exist');
+          } else {
+            // Add image scan credits from plan to user (fallback case)
+            const planCredits = (plan as { image_scan_credits?: number }).image_scan_credits || 0;
+            if (planCredits > 0) {
+              try {
+                // Get current user credits
+                const { data: currentUser, error: userFetchError } = await supabaseServiceClient
+                  .from('users')
+                  .select('image_scan_credits')
+                  .eq('id', user.id)
+                  .single();
+
+                if (!userFetchError && currentUser) {
+                  const currentCredits = currentUser.image_scan_credits || 0;
+                  const newCredits = currentCredits + planCredits;
+
+                  // Update user credits
+                  const { error: creditUpdateError } = await supabaseServiceClient
+                    .from('users')
+                    .update({
+                      image_scan_credits: newCredits,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', user.id);
+
+                  if (creditUpdateError) {
+                    console.error('Error updating user image scan credits (fallback):', creditUpdateError);
+                    // Don't fail the request, just log the error
+                  } else {
+                    console.log(`✅ Added ${planCredits} image scan credits to user (fallback). Total credits: ${newCredits}`);
+                  }
+                }
+              } catch (creditError) {
+                console.error('Error processing image scan credits (fallback):', creditError);
+                // Don't fail the request, just log the error
+              }
+            }
           }
         }
         // Send payment success email for fallback case too
@@ -561,6 +598,43 @@ export async function POST(request: NextRequest) {
       // Verify the update was successful
       if (!Array.isArray(updateResult) || updateResult.length === 0) {
         console.warn('Update succeeded but no data returned - user might not exist');
+      } else {
+        // Add image scan credits from plan to user
+        const planCredits = (plan as { image_scan_credits?: number }).image_scan_credits || 0;
+        if (planCredits > 0) {
+          try {
+            // Get current user credits
+            const { data: currentUser, error: userFetchError } = await supabaseServiceClient
+              .from('users')
+              .select('image_scan_credits')
+              .eq('id', user.id)
+              .single();
+
+            if (!userFetchError && currentUser) {
+              const currentCredits = currentUser.image_scan_credits || 0;
+              const newCredits = currentCredits + planCredits;
+
+              // Update user credits
+              const { error: creditUpdateError } = await supabaseServiceClient
+                .from('users')
+                .update({
+                  image_scan_credits: newCredits,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+
+              if (creditUpdateError) {
+                console.error('Error updating user image scan credits:', creditUpdateError);
+                // Don't fail the request, just log the error
+              } else {
+                console.log(`✅ Added ${planCredits} image scan credits to user. Total credits: ${newCredits}`);
+              }
+            }
+          } catch (creditError) {
+            console.error('Error processing image scan credits:', creditError);
+            // Don't fail the request, just log the error
+          }
+        }
       }
     }
 

@@ -68,11 +68,29 @@ export async function PUT(
       delete updateData.razorpay_plan_id;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('plans')
       .update(updateData)
       .eq('id', id)
       .select();
+
+    // If error is due to missing image_scan_credits column, retry without it
+    if (error && error.message?.includes('image_scan_credits') && error.message?.includes('column')) {
+      console.warn('⚠️ image_scan_credits column not found. Retrying without it. Please run: database/add_image_scan_credits_to_plans.sql');
+      const { image_scan_credits, ...updateDataWithoutCredits } = updateData;
+      const retryResult = await supabase
+        .from('plans')
+        .update(updateDataWithoutCredits)
+        .eq('id', id)
+        .select();
+      
+      if (retryResult.error) {
+        error = retryResult.error;
+      } else {
+        data = retryResult.data;
+        error = null;
+      }
+    }
 
     // Check if any rows were affected
     if (!data || data.length === 0) {

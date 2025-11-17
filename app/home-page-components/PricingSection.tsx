@@ -872,10 +872,14 @@ export default function PricingSection({
                     disabled={loading === plan.id || !plan.canPurchase}
                     className={`w-full py-3 sm:py-4 mt-4 sm:mt-6 md:mt-8 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 ${
                       plan.popular && plan.billing_cycle === billingCycle
-                        ? "bg-white text-black hover:bg-gray-100 disabled:bg-gray-300"
+                        ? plan.plan_type === "Growth"
+                          ? "bg-white text-black hover:bg-[#ff4b01] hover:text-white disabled:bg-gray-300 cursor-pointer"
+                          : "bg-white text-black hover:bg-gray-100 disabled:bg-gray-300 cursor-pointer"
                         : plan.planStatus === "current"
                         ? "bg-gray-500 text-white cursor-not-allowed"
-                        : "bg-white border-[#ff4b01] border text-black hover:bg-[#ff4b01] hover:text-white disabled:bg-gray-500"
+                        : plan.plan_type === "Growth"
+                        ? "bg-white border-[#ff4b01] border text-black  disabled:bg-gray-500 cursor-pointer"
+                        : "bg-white border-[#ff4b01] border text-black hover:bg-[#ff4b01] hover:text-white disabled:bg-gray-500 cursor-pointer"
                     }`}
                   >
                     {loading === plan.id ? "Processing..." : plan.cta}

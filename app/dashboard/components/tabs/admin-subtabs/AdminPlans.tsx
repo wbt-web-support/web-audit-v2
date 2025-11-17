@@ -66,6 +66,7 @@ interface Plan {
   end_date?: string;
   created_at: string;
   updated_at: string;
+  image_scan_credits?: number;
 }
 
 interface PlanFormData {
@@ -85,6 +86,7 @@ interface PlanFormData {
   sort_order: number;
   razorpay_plan_id: string;
   subscription_id: string;
+  image_scan_credits: number;
 }
 
 // Helper function to convert old feature format to new format
@@ -136,7 +138,8 @@ export default function AdminPlans({
     color: 'gray',
     sort_order: 0,
     razorpay_plan_id: '',
-    subscription_id: ''
+    subscription_id: '',
+    image_scan_credits: 0
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -268,6 +271,9 @@ export default function AdminPlans({
         razorpay_plan_id: data.razorpay_plan_id && data.razorpay_plan_id.trim() !== '' ? data.razorpay_plan_id : null
       } : data;
 
+      // Remove image_scan_credits if column doesn't exist (will be handled gracefully)
+      // The migration file database/add_image_scan_credits_to_plans.sql should be run first
+
       // Debug: Log the data being sent
 
       // Validate plan_type before proceeding
@@ -300,7 +306,39 @@ export default function AdminPlans({
             throw new Error('Unknown action');
         }
         if (result.error) {
-          useApiFallback = true;
+          // Check if error is due to missing column
+          const errorMessage = result.error.message || '';
+          if (errorMessage.includes("image_scan_credits") && errorMessage.includes("column")) {
+            console.warn('⚠️ image_scan_credits column not found in plans table. Please run the migration: database/add_image_scan_credits_to_plans.sql');
+            // Remove image_scan_credits from data and retry
+            if (cleanData && 'image_scan_credits' in cleanData) {
+              const { image_scan_credits, ...dataWithoutCredits } = cleanData;
+              console.warn('Retrying without image_scan_credits field...');
+              // Retry with cleaned data
+              try {
+                switch (action) {
+                  case 'create':
+                    result = await supabase.from('plans').insert([dataWithoutCredits]).select().single();
+                    break;
+                  case 'update':
+                    result = await supabase.from('plans').update(dataWithoutCredits).eq('id', planId).select().single();
+                    break;
+                }
+                if (result.error) {
+                  useApiFallback = true;
+                } else {
+                  // Success without credits field - show warning
+                  alert('⚠️ Plan saved, but image_scan_credits column is missing. Please run the migration: database/add_image_scan_credits_to_plans.sql');
+                }
+              } catch (retryError) {
+                useApiFallback = true;
+              }
+            } else {
+              useApiFallback = true;
+            }
+          } else {
+            useApiFallback = true;
+          }
         }
       } catch (directError) {
         useApiFallback = true;
@@ -393,7 +431,8 @@ export default function AdminPlans({
       color: 'gray',
       sort_order: 0,
       razorpay_plan_id: '',
-      subscription_id: ''
+      subscription_id: '',
+      image_scan_credits: 0
     });
     setIsEditing(false);
   };
@@ -417,7 +456,8 @@ export default function AdminPlans({
       color: plan.color || 'gray',
       sort_order: plan.sort_order || 0,
       razorpay_plan_id: plan.razorpay_plan_id || '',
-      subscription_id: plan.subscription_id || ''
+      subscription_id: plan.subscription_id || '',
+      image_scan_credits: plan.image_scan_credits || 0
     });
     setSelectedPlan(plan);
     setIsEditing(true);
