@@ -12,7 +12,7 @@ interface RevenueChartProps {
 }
 
 export default function RevenueChart({ data, type = 'area' }: RevenueChartProps) {
-  const formatCurrency = (value: number) => `₹${value.toLocaleString()}`
+  const formatCurrency = (value: number) => `$${value.toLocaleString()}`
 
   if (type === 'line') {
     return (

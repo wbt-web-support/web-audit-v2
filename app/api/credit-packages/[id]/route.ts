@@ -39,34 +39,33 @@ export async function PUT(
       });
     }
 
-    // If credits are being changed, check for duplicates
+    // If credits are being changed, check for duplicates (only check active packages)
     if (credits !== undefined) {
       const { data: existing } = await supabaseAdmin
         .from('credit_packages')
         .select('id')
-        .eq('credits', credits)
+        .eq('credits', parseInt(credits, 10))
+        .eq('is_active', true)
         .neq('id', id)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         return NextResponse.json({
           error: 'Duplicate credits',
-          message: `A package with ${credits} credits already exists`
+          message: `An active package with ${credits} credits already exists`
         }, {
           status: 400
         });
       }
     }
 
-    const updateData: any = {
-      updated_at: new Date().toISOString()
-    };
+    const updateData: any = {};
 
-    if (credits !== undefined) updateData.credits = Number(credits);
-    if (price !== undefined) updateData.price = Number(price);
+    if (credits !== undefined) updateData.credits = parseInt(credits, 10);
+    if (price !== undefined) updateData.price = parseFloat(price);
     if (label !== undefined) updateData.label = label.trim();
     if (is_active !== undefined) updateData.is_active = Boolean(is_active);
-    if (sort_order !== undefined) updateData.sort_order = Number(sort_order);
+    if (sort_order !== undefined) updateData.sort_order = parseInt(sort_order, 10);
 
     const { data, error } = await supabaseAdmin
       .from('credit_packages')

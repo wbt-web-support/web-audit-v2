@@ -478,6 +478,20 @@ export default function Billing({
         </div>
       </motion.div> */}
 
+      
+      {/* Pricing Plans */}
+      <motion.div initial={{
+      opacity: 0,
+      y: 20
+    }} animate={{
+      opacity: 1,
+      y: 0
+    }} transition={{
+      duration: 0.5,
+      delay: 0.2
+    }}>
+        <PricingSection currentPlanType={planInfo?.plan_type} currentPlanId={planInfo?.plan_id} currentBillingCycle={planInfo?.billing_cycle} planExpiresAt={planInfo?.plan_expires_at} showBillingToggle={true} showCurrentPlanHighlight={true} className="py-8" />
+      
       {/* Image Scan Credits Section - Only show if user has Image_scane feature */}
       {hasImageScanFeature && (
         <motion.div className="bg-white rounded-lg border border-gray-200 p-6" initial={{
@@ -522,9 +536,9 @@ export default function Billing({
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-black">{pkg.label}</h3>
-                    <span className="text-xs text-gray-500">₹{pkg.pricePerCredit}/credit</span>
+                    <span className="text-xs text-gray-500">${pkg.pricePerCredit}/credit</span>
                   </div>
-                  <p className="text-2xl font-bold text-[#ff4b01] mb-3">₹{pkg.price}</p>
+                  <p className="text-2xl font-bold text-[#ff4b01] mb-3">${pkg.price}</p>
                   <button
                     onClick={() => handlePurchaseCredits(pkg.id || index)}
                     disabled={purchasingPackage === (pkg.id || index)}
@@ -546,18 +560,6 @@ export default function Billing({
         </motion.div>
       )}
 
-      {/* Pricing Plans */}
-      <motion.div initial={{
-      opacity: 0,
-      y: 20
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} transition={{
-      duration: 0.5,
-      delay: 0.2
-    }}>
-        <PricingSection currentPlanType={planInfo?.plan_type} currentPlanId={planInfo?.plan_id} currentBillingCycle={planInfo?.billing_cycle} planExpiresAt={planInfo?.plan_expires_at} showBillingToggle={true} showCurrentPlanHighlight={true} className="py-8" />
       </motion.div>
 
       {/* Billing History */}
@@ -638,7 +640,7 @@ export default function Billing({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-black">
-                      {payment.currency === 'INR' ? '₹' : '$'}{payment.amount}
+                      {payment.currency === 'INR' ? '$' : '$'}{payment.amount}
                     </p>
                     <p className="text-sm text-gray-500">
                       {new Date(payment.payment_date).toLocaleDateString()}

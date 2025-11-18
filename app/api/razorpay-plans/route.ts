@@ -90,10 +90,7 @@ export async function GET(_request: NextRequest) {
         interval: plan.interval,
         interval_count: plan.interval_count,
         period: plan.interval === 'monthly' ? 'per month' : plan.interval === 'yearly' ? 'per year' : plan.interval === 'weekly' ? 'per week' : 'per ' + plan.interval,
-        price: currency === 'INR' ? `₹${(amount / 100).toLocaleString('en-IN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        })}` : `$${(amount / 100).toLocaleString('en-US', {
+        price: `$${(amount / 100).toLocaleString('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         })}`,

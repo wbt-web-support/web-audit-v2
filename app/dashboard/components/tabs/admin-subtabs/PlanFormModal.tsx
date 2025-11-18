@@ -192,7 +192,7 @@ export default function PlanFormModal({
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
                     <input 
                       type="number" 
                       step="0.01" 

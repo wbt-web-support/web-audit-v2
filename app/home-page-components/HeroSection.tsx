@@ -62,7 +62,7 @@ export default function HeroSection() {
       </div>
     </div>
     <div className="iamges mx-4 md:mx-auto -mt-28 md:-mt-46 lg:-mt-52 xl:-mt-60 max-w-[90rem] bg-[#D9D9D9] rounded-t-lg px-6 md:px-8 lg:px-10 pt-6 md:pt-8 lg:pt-10 relative z-[60] lg:block">
-      <Image src='/images/home-page/hero-sec.png' alt='hero-image' width={1200} height={1200} className='rounded-t-lg shadow-lg w-full' />
+      <Image src='/images/home-page/hero-sec.png' alt='hero-image' width={1200} height={1200} className='rounded-t-lg w-full' />
     </div>
     </div>
   )

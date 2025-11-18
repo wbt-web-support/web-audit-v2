@@ -127,11 +127,24 @@ export default function CreditPackagesManagement() {
       return;
     }
 
+    const creditsNum = parseInt(creditPackageForm.credits, 10);
+    const priceNum = parseFloat(creditPackageForm.price);
+
+    if (isNaN(creditsNum) || creditsNum <= 0 || !Number.isInteger(creditsNum)) {
+      alert('Credits must be a positive integer');
+      return;
+    }
+
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert('Price must be a positive number');
+      return;
+    }
+
     const packageData = {
-      credits: parseInt(creditPackageForm.credits),
-      price: parseFloat(creditPackageForm.price),
+      credits: creditsNum,
+      price: priceNum,
       label: creditPackageForm.label.trim(),
-      sort_order: creditPackageForm.sort_order || 0
+      sort_order: parseInt(String(creditPackageForm.sort_order || '0'), 10)
     };
 
     if (editingCreditPackage) {
@@ -163,7 +176,7 @@ export default function CreditPackagesManagement() {
             }}
             className="bg-[#ff4b01] text-white px-4 py-2 rounded-lg hover:bg-[#e64401] transition-colors"
           >
-            Add Package
+            Add Credit Package
           </button>
         </div>
 
@@ -192,6 +205,9 @@ export default function CreditPackagesManagement() {
                     Sort Order
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -199,8 +215,8 @@ export default function CreditPackagesManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {creditPackages.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      No credit packages found. Click "Add Package" to create one.
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      No credit packages found. Click "Add Credit Package" to create one.
                     </td>
                   </tr>
                 ) : (
@@ -217,17 +233,29 @@ export default function CreditPackagesManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-black">
-                          ₹{Number(pkg.price).toLocaleString()}
+                          ${Number(pkg.price).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">₹{pkg.pricePerCredit}</div>
+                        <div className="text-sm text-gray-600">${pkg.pricePerCredit}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{pkg.label}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-600">{pkg.sort_order || 0}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          pkg.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {pkg.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
@@ -290,7 +318,7 @@ export default function CreditPackagesManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price (₹) *
+                  Price ($) *
                 </label>
                 <input
                   type="number"
@@ -343,7 +371,7 @@ export default function CreditPackagesManagement() {
                 <div className="bg-[#ff4b01]/10 border border-[#ff4b01]/30 rounded-lg p-3">
                   <p className="text-sm text-[#ff4b01]">
                     <strong>Price per Credit:</strong>{' '}
-                    ₹{(parseFloat(creditPackageForm.price) / parseInt(creditPackageForm.credits)).toFixed(2)}
+                    ${(parseFloat(creditPackageForm.price) / parseInt(creditPackageForm.credits)).toFixed(2)}
                   </p>
                 </div>
               )}

@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       activities.push({
         id: `payment-${payment.id}`,
         type: 'payment_received',
-        message: `Payment received: ₹${payment.amount} for ${payment.plan_name}`,
+        message: `Payment received: $${payment.amount} for ${payment.plan_name}`,
         timestamp: formatTimestamp(payment.payment_date),
         status,
         priority: 3

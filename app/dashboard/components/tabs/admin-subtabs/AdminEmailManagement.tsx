@@ -717,8 +717,8 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                 {allTemplateTypes.map((type) => (
                   <div key={type.value} className={`rounded-lg p-4 border ${
                     type.is_system
-                      ? 'bg-gray-50 border-gray-200'
-                      : 'bg-[#ff4b01]/10 border-[#ff4b01]/30'
+                      ? 'bg-white border-gray-200'
+                      : 'bg-white border-gray-200'
                   }`}>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
@@ -729,7 +729,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           type.is_system
                             ? 'bg-gray-200 text-gray-700'
-                            : 'bg-[#ff4b01]/30 text-[#ff4b01]'
+                            : 'bg-gray-200 text-[#ff4b01]'
                         }`}>
                           {type.is_system ? 'System' : 'Custom'}
                         </span>
@@ -747,7 +747,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
                     <div className={`text-xs font-mono px-2 py-1 rounded ${
                       type.is_system
                         ? 'text-gray-600 bg-gray-100'
-                        : 'text-[#ff4b01] bg-[#ff4b01]/20'
+                        : 'text-[#ff4b01] bg-gray-100'
                     }`}>
                       {type.value}
                     </div>
@@ -756,7 +756,7 @@ export default function AdminEmailManagement({}: AdminEmailManagementProps) {
               </div>
 
               {getCustomTemplateTypes().length === 0 && (
-                <div className="text-center py-4 bg-[#ff4b01]/10 rounded-lg border border-[#ff4b01]/30 mt-4">
+                <div className="text-center py-4 bg-white rounded-lg border border-gray-200 mt-4">
                   <p className="text-[#ff4b01] text-sm">No custom template types yet. Click &quot;Add Custom Type&quot; to create your first one.</p>
                 </div>
               )}

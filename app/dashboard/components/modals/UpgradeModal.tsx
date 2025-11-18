@@ -140,7 +140,7 @@ export default function UpgradeModal({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-black">₹29.99/month</div>
+                  <div className="font-semibold text-black">$29.99/month</div>
                   <div className="text-xs text-gray-500">Up to 5 projects</div>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export default function UpgradeModal({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-black">₹99.99/month</div>
+                  <div className="font-semibold text-black">$99.99/month</div>
                   <div className="text-xs text-gray-500">Up to 50 projects</div>
                 </div>
               </div>

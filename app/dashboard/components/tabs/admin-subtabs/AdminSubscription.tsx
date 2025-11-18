@@ -208,8 +208,8 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
         {[
           { label: 'Total Subscriptions', value: subscriptionStats.totalSubscriptions, color: 'blue' },
           { label: 'Active Subscriptions', value: subscriptionStats.activeSubscriptions, color: 'green' },
-          { label: 'Monthly Revenue', value: `₹${subscriptionStats.monthlyRevenue.toLocaleString()}`, color: 'purple' },
-          { label: 'Avg Revenue/User', value: `₹${subscriptionStats.averageRevenuePerUser}`, color: 'orange' }
+          { label: 'Monthly Revenue', value: `$${subscriptionStats.monthlyRevenue.toLocaleString()}`, color: 'purple' },
+          { label: 'Avg Revenue/User', value: `$${subscriptionStats.averageRevenuePerUser}`, color: 'orange' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -270,7 +270,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Revenue</span>
-                    <span className="font-semibold text-green-600">₹{plan.revenue.toLocaleString()}</span>
+                    <span className="font-semibold text-green-600">${plan.revenue.toLocaleString()}</span>
                   </div>
                 </div>
               </motion.div>
@@ -386,7 +386,7 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
                       {subscription.plan}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-black font-semibold">
-                      ₹{subscription.amount.toLocaleString()}
+                      ${subscription.amount.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(subscription.status)}`}>
@@ -422,11 +422,11 @@ export default function AdminSubscription({ userProfile: _userProfile }: AdminSu
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-700">Monthly Revenue</span>
-              <span className="font-semibold text-black">₹{subscriptionStats.monthlyRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-black">${subscriptionStats.monthlyRevenue.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Annual Revenue</span>
-              <span className="font-semibold text-black">₹{subscriptionStats.annualRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-black">${subscriptionStats.annualRevenue.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Cancelled Subscriptions</span>

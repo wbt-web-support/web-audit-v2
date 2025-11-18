@@ -12,14 +12,21 @@ interface CreditPackage {
   updated_at: string;
 }
 
-// GET - Fetch all credit packages
-export async function GET() {
+// GET - Fetch all credit packages (for admin management, show all including inactive)
+export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get('active_only') === 'true';
+    
+    let query = supabaseAdmin
       .from('credit_packages')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
+      .select('*');
+    
+    if (activeOnly) {
+      query = query.eq('is_active', true);
+    }
+    
+    const { data, error } = await query.order('sort_order', { ascending: true });
 
     if (error) {
       console.error('Error fetching credit packages:', error);
@@ -35,12 +42,12 @@ export async function GET() {
       success: true,
       packages: (data || []).map(pkg => ({
         id: pkg.id,
-        credits: pkg.credits,
-        price: pkg.price,
+        credits: Number(pkg.credits),
+        price: Number(pkg.price),
         label: pkg.label,
-        is_active: pkg.is_active,
-        sort_order: pkg.sort_order,
-        pricePerCredit: (Number(pkg.price) / pkg.credits).toFixed(2)
+        is_active: Boolean(pkg.is_active),
+        sort_order: Number(pkg.sort_order || 0),
+        pricePerCredit: (Number(pkg.price) / Number(pkg.credits)).toFixed(2)
       }))
     });
   } catch (error) {
@@ -88,12 +95,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if credits value already exists
+    // Check if credits value already exists (only check active packages)
     const { data: existing } = await supabaseAdmin
       .from('credit_packages')
       .select('id')
       .eq('credits', credits)
-      .single();
+      .eq('is_active', true)
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json({
@@ -104,13 +112,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Ensure credits is an integer and price is properly formatted
     const packageData = {
-      credits: Number(credits),
-      price: Number(price),
+      credits: parseInt(credits, 10),
+      price: parseFloat(price),
       label: label.trim(),
-      sort_order: sort_order || 0,
-      is_active: true,
-      updated_at: new Date().toISOString()
+      sort_order: parseInt(sort_order || '0', 10),
+      is_active: true
     };
 
     const { data, error } = await supabaseAdmin

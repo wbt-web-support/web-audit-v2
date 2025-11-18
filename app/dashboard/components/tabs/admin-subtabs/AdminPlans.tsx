@@ -505,7 +505,7 @@ export default function AdminPlans({
   const formatPrice = (price: number | null | undefined, currency: string | null | undefined) => {
     if (!price || price === 0 || isNaN(price)) return 'Free';
     const currencyCode = currency || 'INR';
-    return currencyCode === 'INR' ? `₹${price.toLocaleString()}` : `$${price.toLocaleString()}`;
+    return currencyCode === 'INR' ? `$${price.toLocaleString()}` : `$${price.toLocaleString()}`;
   };
 
   const filteredPlans = plans.filter(plan => {
