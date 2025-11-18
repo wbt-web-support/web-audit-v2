@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuditProject } from '@/types/audit';
 import { RecentProjectSkeleton } from '../SkeletonLoader';
 import { useProjectsStore } from '@/lib/stores/projectsStore';
@@ -12,6 +13,7 @@ interface RecentProjectsProps {
 export default function RecentProjects({
   onProjectSelect
 }: RecentProjectsProps) {
+  const router = useRouter();
   // Use Zustand store for projects data
   const { projects, loading: projectsLoading, error: projectsError, refreshProjects } = useProjectsStore();
   // const previousProjectsRef = useRef<AuditProject[]>([]);
@@ -142,7 +144,14 @@ export default function RecentProjects({
           </div>}
           
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <button className="w-full text-center text-[#ff4b01] font-medium hover:text-[#ff4b01]/80 transition-colors">
+          <button 
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('tab', 'projects');
+              router.push(url.toString());
+            }}
+            className="w-full text-center text-[#ff4b01] font-medium hover:text-[#ff4b01]/80 transition-colors"
+          >
             View All Projects
           </button>
         </div>

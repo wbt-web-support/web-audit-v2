@@ -258,6 +258,9 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
     const percentage = Math.round(score * 100)
     const circumference = 2 * Math.PI * 45 // radius = 45
     const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`
+    // Use hex color directly or className for Tailwind classes
+    const isHexColor = color.startsWith('#')
+    const strokeClassName = isHexColor ? '' : color
     
     return (
       <div className="flex flex-col items-center">
@@ -276,12 +279,12 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
               cx="50"
               cy="50"
               r="45"
-              stroke="currentColor"
+              stroke={isHexColor ? color : "currentColor"}
               strokeWidth="8"
               fill="none"
               strokeDasharray={strokeDasharray}
               strokeLinecap="round"
-              className={color}
+              className={strokeClassName}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -349,25 +352,25 @@ export default function PerformanceSection({ project, onDataUpdate }: Performanc
           <ScoreChart 
             score={categories.performance.score} 
             title="Performance" 
-            color={getScoreColor(categories.performance.score)}
+            color="#FF4A00"
             size="w-20 h-20"
           />
           <ScoreChart 
             score={categories.accessibility.score} 
             title="Accessibility" 
-            color={getScoreColor(categories.accessibility.score)}
+            color="#FF4A00"
             size="w-20 h-20"
           />
           <ScoreChart 
             score={categories['best-practices'].score} 
             title="Best Practices" 
-            color={getScoreColor(categories['best-practices'].score)}
+            color="#FF4A00"
             size="w-20 h-20"
           />
           <ScoreChart 
             score={categories.seo.score} 
             title="SEO" 
-            color={getScoreColor(categories.seo.score)}
+            color="#FF4A00"
             size="w-20 h-20"
           />
         </div>

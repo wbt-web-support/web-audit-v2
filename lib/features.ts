@@ -196,6 +196,14 @@ export const FEATURES: Feature[] = [
     category: 'technical',
     icon: '📄',
     isCore: false
+  },
+  {
+    id: 'ai_keyword_ranking',
+    name: 'AI Keyword Ranking Analysis',
+    description: 'Analyze website search engine rankings for keywords using AI-powered insights',
+    category: 'content',
+    icon: '🔍',
+    isCore: false
   }
 ]
 
